@@ -121,16 +121,19 @@
             });
         }
 
-        // 1. 주소로 PNU 코드 가져오기 (JSONP 적용)
+        // 1. 주소로 PNU 코드 가져오기 (디버깅 알림 추가 버전)
         async function getPnu(address) {
             const categories = ["parcel", "road"]; 
+            let lastResponse = null;
             
             for (let category of categories) {
-                // format=jsonp 로 변경
                 const url = `https://api.vworld.kr/req/search?service=search&request=search&version=2.0&query=${encodeURIComponent(address)}&type=address&category=${category}&format=jsonp&key=${VWORLD_KEY}&domain=${DOMAIN}`;
                 
                 try {
                     const data = await fetchJSONP(url);
+                    lastResponse = data; // VWORLD의 실제 응답 데이터를 임시 저장
+                    
+                    // 정상적으로 PNU를 찾았을 경우
                     if (data.response && data.response.status === 'OK' && data.response.result.items.length > 0) {
                         return data.response.result.items[0].id; 
                     }
@@ -138,6 +141,12 @@
                     console.error(`PNU 조회 실패 (${category}):`, error);
                 }
             }
+            
+            // 🚨 두 방식 모두 PNU를 못 찾았을 때, VWORLD가 보낸 원본 메시지를 팝업으로 띄움
+            if (lastResponse) {
+                alert("VWORLD 서버의 실제 응답 메시지:\n" + JSON.stringify(lastResponse, null, 2));
+            }
+            
             return null;
         }
 
