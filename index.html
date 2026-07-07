@@ -3,92 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>부동산 공시가격 연혁 조회 엔진</title>
+    <title>부동산 공시가격 연혁 대시보드</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans min-h-screen p-4 md:p-8">
+<body class="bg-[#f3f4f6] font-sans min-h-screen">
 
-    <div class="max-w-4xl mx-auto space-y-6">
-        <header class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-            <h1 class="text-2xl font-bold tracking-tight text-slate-900">부동산 공시가격 연혁 통합 조회</h1>
-            <p class="text-sm text-slate-500 mt-2">VWORLD API 기반 연도별 기준시가 및 면적 데이터 추출</p>
-        </header>
-
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-5">
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-2">물건 종류</label>
-                <div class="flex space-x-4">
-                    <label class="flex items-center space-x-2 cursor-pointer">
-                        <input type="radio" name="propType" value="공동주택" checked class="text-indigo-600 focus:ring-indigo-500">
-                        <span class="text-sm font-medium">공동주택 (아파트/빌라)</span>
-                    </label>
-                    <label class="flex items-center space-x-2 cursor-pointer">
-                        <input type="radio" name="propType" value="단독주택" class="text-indigo-600 focus:ring-indigo-500">
-                        <span class="text-sm font-medium">단독/개별주택</span>
-                    </label>
-                    <label class="flex items-center space-x-2 cursor-pointer">
-                        <input type="radio" name="propType" value="토지" class="text-indigo-600 focus:ring-indigo-500">
-                        <span class="text-sm font-medium">개별공시지가 (토지)</span>
-                    </label>
+    <div class="bg-[#0f172a] text-white pt-12 pb-24 px-4">
+        <div class="max-w-4xl mx-auto">
+            <p class="text-indigo-400 font-bold text-sm mb-2 tracking-wider">세무/부동산 데이터 리서치</p>
+            <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight mb-4">부동산 공시가격 연혁 대시보드</h1>
+            <p class="text-slate-400 text-sm md:text-base">
+                단위: 기준시가는 원(₩) · 출처: 국토교통부(VWORLD) · 생성: 자동 갱신
+            </p>
+            
+            <div class="mt-8 border border-slate-700 bg-slate-800/50 rounded-xl p-4 flex justify-between items-center max-w-md">
+                <div>
+                    <p class="text-xs text-slate-400 mb-1">Created for</p>
+                    <p class="text-emerald-400 font-bold text-lg">KangTax Office</p>
                 </div>
+                <div class="text-slate-600 text-2xl font-bold">🏢</div>
             </div>
+        </div>
+    </div>
 
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-2">대상 주소</label>
+    <div class="max-w-4xl mx-auto px-4 -mt-12 pb-12 space-y-6">
+        
+        <div class="bg-white p-6 md:p-8 rounded-2xl shadow-md border border-slate-200">
+            <h2 class="text-lg font-extrabold text-slate-800 mb-6">조회 대상 설정</h2>
+            
+            <div class="space-y-6">
+                <div>
+                    <div class="flex flex-wrap gap-3">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="propType" value="공동주택" checked class="peer sr-only">
+                            <div class="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-sm">공동주택 (아파트/빌라)</div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="propType" value="단독주택" class="peer sr-only">
+                            <div class="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-sm">단독/개별주택</div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="propType" value="토지" class="peer sr-only">
+                            <div class="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-sm">개별공시지가 (토지)</div>
+                        </label>
+                    </div>
+                </div>
+
                 <div class="flex space-x-2">
-                    <input type="text" id="address" readonly placeholder="주소 검색 버튼을 클릭하세요" class="flex-1 bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 text-sm focus:outline-none">
-                    <button onclick="execDaumPostcode()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">주소 검색</button>
+                    <input type="text" id="address" readonly placeholder="주소 검색 버튼을 클릭하세요" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 transition-colors">
+                    <button onclick="execDaumPostcode()" class="bg-slate-800 hover:bg-slate-700 text-white px-5 py-3 rounded-xl text-sm font-medium transition-colors whitespace-nowrap">주소 검색</button>
                 </div>
-            </div>
 
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-2">동 (선택)</label>
-                    <input type="text" id="dong" placeholder="예: 101" class="w-full border border-slate-300 rounded-lg px-4 py-2 text-sm focus:border-indigo-500 focus:outline-none">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <input type="text" id="dong" placeholder="동 (선택) ex: 101" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <input type="text" id="ho" placeholder="호 (선택) ex: 502" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500">
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-2">호 (선택)</label>
-                    <input type="text" id="ho" placeholder="예: 502" class="w-full border border-slate-300 rounded-lg px-4 py-2 text-sm focus:border-indigo-500 focus:outline-none">
-                </div>
-            </div>
 
-            <button onclick="searchPriceHistory()" id="searchBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg shadow-sm transition-all mt-4">
-                연도별 공시가격 조회하기
-            </button>
+                <button onclick="searchPriceHistory()" id="searchBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all mt-2">
+                    연도별 공시가격 조회하기
+                </button>
+            </div>
         </div>
 
-        <div id="result-container" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div id="result-container" class="hidden space-y-6">
             
-            <div class="p-6 border-b border-slate-200 bg-slate-50/50">
-                <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center">
-                    <span class="inline-block w-1.5 h-4 bg-indigo-600 rounded-full mr-2"></span>
-                    연도별 공시가격 변동 추이
-                </h3>
+            <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
+                <h2 class="text-lg font-extrabold text-slate-800 mb-4">기준시가 변동 추이</h2>
                 <div class="relative h-64 w-full">
                     <canvas id="priceChart"></canvas>
                 </div>
             </div>
 
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse min-w-full">
-                    <thead>
-                        <tr class="bg-white text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200" id="table-head">
-                        </tr>
-                    </thead>
-                    <tbody id="table-body" class="divide-y divide-slate-100 text-sm">
-                    </tbody>
-                </table>
+            <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
+                <h2 class="text-lg font-extrabold text-slate-800 mb-4">연도별 상세 데이터</h2>
+                
+                <div id="tag-container" class="flex flex-wrap gap-3">
+                    </div>
             </div>
+
         </div>
     </div>
 
     <script>
+        // 🚨 주의: 아래 따옴표 안에 VWORLD 개발자 센터에서 '깃허브 전용'으로 발급받으신 API 키를 꼭 넣어주세요!
         const VWORLD_KEY = "75321A8E-275D-32A6-82AC-B9D0D8E551FE";
         const DOMAIN = window.location.origin; 
         
-        let priceChartInstance = null; // 차트 인스턴스 전역 변수
+        let priceChartInstance = null;
 
         function execDaumPostcode() {
             new daum.Postcode({
@@ -229,7 +236,6 @@
                 }
 
                 if (historyData.length > 0) {
-                    // 🧹 VWORLD 중복 데이터 제거 로직 (동일 연도/동일 금액)
                     const uniqueData = [];
                     const seen = new Set();
                     historyData.forEach(row => {
@@ -240,12 +246,10 @@
                         }
                     });
 
-                    // 최신 연도순(내림차순) 정렬
                     uniqueData.sort((a, b) => parseInt(b.year) - parseInt(a.year));
                     
-                    // 화면에 그리기
                     renderChart(uniqueData);
-                    renderTable(propType, uniqueData);
+                    renderTags(propType, uniqueData); // 🌟 테이블 대신 태그 렌더링 호출
                     document.getElementById('result-container').classList.remove('hidden');
                 } else {
                     throw new Error("해당 조건에 맞는 공시가격 연혁을 찾지 못했습니다.");
@@ -260,18 +264,15 @@
             }
         }
 
-        // 📈 차트 렌더링 함수
+        // 📈 차트 렌더링 함수 (스타일 다듬기)
         function renderChart(data) {
             const ctx = document.getElementById('priceChart').getContext('2d');
             
-            // 기존 차트가 있으면 지우고 다시 그림 (오류 방지)
             if (priceChartInstance) {
                 priceChartInstance.destroy();
             }
 
-            // 차트는 과거부터 현재순(오름차순)으로 보여주는 것이 자연스러우므로 배열 뒤집기
             const chartData = [...data].reverse();
-            
             const labels = chartData.map(row => row.year);
             const prices = chartData.map(row => row.price);
 
@@ -282,17 +283,16 @@
                     datasets: [{
                         label: '기준시가',
                         data: prices,
-                        borderColor: '#4f46e5', // indigo-600
-                        backgroundColor: 'rgba(79, 70, 229, 0.1)', // 투명도 있는 배경
-                        borderWidth: 2,
-                        pointBackgroundColor: '#4f46e5',
-                        pointBorderColor: '#ffffff',
-                        pointHoverBackgroundColor: '#ffffff',
-                        pointHoverBorderColor: '#4f46e5',
-                        pointRadius: 4,
-                        pointHoverRadius: 6,
+                        borderColor: '#4f46e5',
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#4f46e5',
+                        pointBorderWidth: 2,
+                        pointHoverBackgroundColor: '#4f46e5',
+                        pointRadius: 5,
                         fill: true,
-                        tension: 0.3 // 곡선 부드럽게
+                        tension: 0.4
                     }]
                 },
                 options: {
@@ -303,7 +303,6 @@
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
-                                    // 툴팁에 숫자 포맷팅 (콤마)
                                     return context.parsed.y.toLocaleString() + ' 원';
                                 }
                             }
@@ -312,15 +311,15 @@
                     scales: {
                         y: {
                             beginAtZero: false,
-                            grid: { color: '#f1f5f9' }, // 옅은 그리드선
+                            grid: { color: '#f1f5f9', drawBorder: false },
                             ticks: {
                                 callback: function(value) {
-                                    // Y축 금액을 억 단위로 보기 편하게 축약
                                     if (value >= 100000000) {
                                         return (value / 100000000).toFixed(1) + '억';
                                     }
                                     return value.toLocaleString();
-                                }
+                                },
+                                font: { family: "sans-serif" }
                             }
                         },
                         x: {
@@ -331,36 +330,30 @@
             });
         }
 
-        function renderTable(propType, data) {
-            const thead = document.getElementById('table-head');
-            const tbody = document.getElementById('table-body');
-            
-            thead.innerHTML = "";
-            tbody.innerHTML = "";
-
-            let thHTML = `<th class="px-6 py-4 font-semibold">고시연도</th><th class="px-6 py-4 font-semibold text-right">기준시가 (원)</th>`;
-            if (propType === "공동주택") {
-                thHTML += `<th class="px-6 py-4 font-semibold text-right">전용면적 (㎡)</th>`;
-            } else if (propType === "단독주택") {
-                thHTML += `<th class="px-6 py-4 font-semibold text-right">대지면적 (㎡)</th><th class="px-6 py-4 font-semibold text-right">건물면적 (㎡)</th>`;
-            }
-            thead.innerHTML = thHTML;
+        // 🌟 테이블 대신 둥근 알약(Pill) 태그 형태로 데이터를 렌더링하는 함수
+        function renderTags(propType, data) {
+            const container = document.getElementById('tag-container');
+            container.innerHTML = ""; // 기존 내용 비우기
 
             data.forEach(row => {
-                let trHTML = `
-                    <td class="px-6 py-4 font-medium text-slate-900">${row.year}</td>
-                    <td class="px-6 py-4 font-bold text-indigo-600 text-right text-base">${row.price.toLocaleString()} 원</td>
-                `;
+                let extraInfo = "";
+                // 면적 정보 등을 작게 옆에 표시
                 if (propType === "공동주택") {
-                    trHTML += `<td class="px-6 py-4 text-slate-500 text-right">${row.area}</td>`;
+                    extraInfo = `<span class="text-xs text-slate-400 ml-2 font-normal">${row.area}㎡</span>`;
                 } else if (propType === "단독주택") {
-                    trHTML += `<td class="px-6 py-4 text-slate-500 text-right">${row.landArea}</td><td class="px-6 py-4 text-slate-500 text-right">${row.bldArea}</td>`;
+                    extraInfo = `<span class="text-xs text-slate-400 ml-2 font-normal">건물:${row.bldArea}㎡</span>`;
                 }
+
+                // Tailwind 클래스로 벤치마킹한 디자인 구현
+                const tagHTML = `
+                    <div class="inline-flex items-center bg-white border border-slate-200 rounded-full px-5 py-3 shadow-sm hover:shadow-md hover:border-indigo-400 hover:ring-2 hover:ring-indigo-100 transition-all cursor-default">
+                        <span class="font-extrabold text-slate-800 tracking-tight mr-3 text-sm">${row.year}</span>
+                        <span class="text-indigo-600 font-bold text-base md:text-lg">${row.price.toLocaleString()}<span class="text-sm font-medium ml-1 text-indigo-400">원</span></span>
+                        ${extraInfo}
+                    </div>
+                `;
                 
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50 transition-colors";
-                tr.innerHTML = trHTML;
-                tbody.appendChild(tr);
+                container.innerHTML += tagHTML;
             });
         }
     </script>
