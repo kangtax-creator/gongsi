@@ -98,22 +98,26 @@
             return nums ? nums.join("") : String(text).trim();
         }
 
-        // 1. 주소로 PNU 코드 가져오기
+       // 1. 주소로 PNU 코드 가져오기 (수정: 지번 및 도로명 모두 검색)
         async function getPnu(address) {
-            const url = `https://api.vworld.kr/req/search?service=search&request=search&version=2.0&query=${encodeURIComponent(address)}&type=address&category=parcel&format=json&key=${VWORLD_KEY}&domain=${DOMAIN}`;
+            // parcel(지번)과 road(도로명) 두 가지 모두 순차적으로 검색 시도
+            const categories = ["parcel", "road"]; 
             
-            try {
-                // VWORLD Search API는 JSONP 방식을 지원하므로 브라우저에서 직접 호출 가능
-                const response = await fetch(url);
-                const data = await response.json();
+            for (let category of categories) {
+                const url = `https://api.vworld.kr/req/search?service=search&request=search&version=2.0&query=${encodeURIComponent(address)}&type=address&category=${category}&format=json&key=${VWORLD_KEY}&domain=${DOMAIN}`;
                 
-                if (data.response && data.response.status === 'OK') {
-                    return data.response.result.items[0].id; // PNU 반환
+                try {
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    
+                    if (data.response && data.response.status === 'OK' && data.response.result.items.length > 0) {
+                        return data.response.result.items[0].id; // PNU 반환 성공
+                    }
+                } catch (error) {
+                    console.error(`PNU 조회 실패 (${category}):`, error);
                 }
-            } catch (error) {
-                console.error("PNU 조회 실패:", error);
             }
-            return null;
+            return null; // 두 방식 모두 실패했을 때만 null 반환
         }
 
         // 2. 메인 조회 로직
