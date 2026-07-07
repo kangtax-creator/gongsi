@@ -4,13 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>부동산 공시가격 연혁 대시보드</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 카카오 주소 검색 API -->
     <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
-    <!-- Chart.js 라이브러리 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- 📊 SheetJS (엑셀 다운로드 라이브러리) 추가 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body class="bg-[#f3f4f6] font-sans min-h-screen">
@@ -86,11 +82,9 @@
             </div>
 
             <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
-                <!-- 🌟 엑셀 다운로드 버튼이 포함된 헤더 -->
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-lg font-extrabold text-slate-800">연도별 상세 데이터</h2>
                     <button onclick="downloadExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors flex items-center">
-                        <!-- 다운로드 아이콘 -->
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                         엑셀 다운로드
                     </button>
@@ -104,13 +98,11 @@
     </div>
 
     <script>
-        // 🚨 VWORLD 키 확인
+        // 🚨 VWORLD API 키를 꼭 넣어주세요!
         const VWORLD_KEY = "75321A8E-275D-32A6-82AC-B9D0D8E551FE";
         const DOMAIN = window.location.origin; 
         
         let priceChartInstance = null;
-        
-        // 📊 엑셀 다운로드를 위해 데이터를 임시 저장할 전역 변수
         let currentExcelData = [];
         let currentPropType = "";
 
@@ -265,7 +257,6 @@
 
                     uniqueData.sort((a, b) => parseInt(b.year) - parseInt(a.year));
                     
-                    // 📊 성공적으로 데이터를 가져오면 전역 변수에 저장 (엑셀 다운로드용)
                     currentExcelData = uniqueData;
                     currentPropType = propType;
 
@@ -285,13 +276,24 @@
             }
         }
 
-        // 📊 엑셀 다운로드 실행 함수
+        // 🌟 주소가 포함된 엑셀 다운로드 함수
         function downloadExcel() {
             if (currentExcelData.length === 0) return;
 
-            // 엑셀에 맞게 데이터 컬럼 한글화 및 재배치
+            // 1. 화면에 입력된 주소, 동, 호수 정보 가져오기
+            const addressInput = document.getElementById('address').value;
+            const dongInput = document.getElementById('dong').value;
+            const hoInput = document.getElementById('ho').value;
+
+            // 2. 동/호수가 입력되어 있다면 주소 뒤에 붙이기
+            let fullAddress = addressInput;
+            if (dongInput) fullAddress += ` ${dongInput}동`;
+            if (hoInput) fullAddress += ` ${hoInput}호`;
+
+            // 3. 엑셀 데이터 매핑 (첫 번째 열에 주소 추가)
             const formattedData = currentExcelData.map(row => {
                 let excelRow = {
+                    "대상 주소": fullAddress,  // 👈 여기에 주소가 들어갑니다.
                     "고시연도": row.year,
                     "기준시가(원)": row.price
                 };
@@ -304,12 +306,21 @@
                 return excelRow;
             });
 
-            // SheetJS를 사용하여 엑셀 워크북 생성 및 다운로드 처리
             const worksheet = XLSX.utils.json_to_sheet(formattedData);
+            
+            // 🌟 엑셀 열(셀) 너비 자동 조정 (주소가 길어서 잘리는 현상 방지)
+            const colWidths = [
+                { wch: 45 }, // 대상 주소 (넓게)
+                { wch: 12 }, // 고시연도
+                { wch: 18 }, // 기준시가(원)
+                { wch: 15 }, // 면적 1
+                { wch: 15 }  // 면적 2
+            ];
+            worksheet['!cols'] = colWidths;
+
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "공시가격_연혁");
 
-            // 다운로드되는 엑셀 파일명
             XLSX.writeFile(workbook, "강승완세무사_양도세_기준시가.xlsx");
         }
 
