@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>양도세용 공시가격 연혁 조회 엔진</title>
+    <title>부동산 공시가격 연혁 조회 엔진</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans min-h-screen p-4 md:p-8">
 
@@ -59,9 +60,17 @@
         </div>
 
         <div id="result-container" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="bg-slate-50 border-b border-slate-200 p-4">
-                <h3 class="text-sm font-bold text-slate-800" id="result-msg">조회 결과</h3>
+            
+            <div class="p-6 border-b border-slate-200 bg-slate-50/50">
+                <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center">
+                    <span class="inline-block w-1.5 h-4 bg-indigo-600 rounded-full mr-2"></span>
+                    연도별 공시가격 변동 추이
+                </h3>
+                <div class="relative h-64 w-full">
+                    <canvas id="priceChart"></canvas>
+                </div>
             </div>
+
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse min-w-full">
                     <thead>
@@ -76,12 +85,11 @@
     </div>
 
     <script>
-        // 🚨 주의: 아래 따옴표 안에 VWORLD 개발자 센터에서 '깃허브 전용'으로 발급받으신 API 키를 꼭 넣어주세요!
-        // (현재는 기존에 쓰시던 키가 임시로 들어가 있습니다.)
         const VWORLD_KEY = "75321A8E-275D-32A6-82AC-B9D0D8E551FE";
         const DOMAIN = window.location.origin; 
+        
+        let priceChartInstance = null; // 차트 인스턴스 전역 변수
 
-        // 카카오 주소 검색
         function execDaumPostcode() {
             new daum.Postcode({
                 oncomplete: function(data) {
@@ -90,59 +98,48 @@
             }).open();
         }
 
-        // 숫자 추출 헬퍼 함수
         function extractNum(text) {
             if (!text) return "";
             const nums = String(text).match(/\d+/g);
             return nums ? nums.join("") : String(text).trim();
         }
 
-        // 🌟 [핵심 우회 로직] CORS 차단을 뚫는 JSONP 통신 함수 (VWORLD 포맷 에러 완벽 해결)
         function fetchJSONP(url) {
             return new Promise((resolve, reject) => {
                 const callbackName = 'vworld_cb_' + Math.round(100000 * Math.random());
                 const script = document.createElement('script');
-                
                 window[callbackName] = function(data) {
                     delete window[callbackName];
                     document.body.removeChild(script);
                     resolve(data);
                 };
-
                 const char = url.indexOf('?') > -1 ? '&' : '?';
-                // format=json 은 그대로 두고 뒤에 callback 꼬리표만 몰래 붙입니다.
                 script.src = url + char + 'callback=' + callbackName;
-                
                 script.onerror = () => {
                     delete window[callbackName];
                     document.body.removeChild(script);
-                    reject(new Error('VWORLD 서버 응답 지연 또는 CORS 우회 실패'));
+                    reject(new Error('서버 응답 지연'));
                 };
-
                 document.body.appendChild(script);
             });
         }
 
-        // 1. 주소로 PNU 코드 가져오기
         async function getPnu(address) {
             const categories = ["parcel", "road"]; 
-            
             for (let category of categories) {
                 const url = `https://api.vworld.kr/req/search?service=search&request=search&version=2.0&query=${encodeURIComponent(address)}&type=address&category=${category}&format=json&key=${VWORLD_KEY}&domain=${DOMAIN}`;
-                
                 try {
                     const data = await fetchJSONP(url);
                     if (data.response && data.response.status === 'OK' && data.response.result.items.length > 0) {
                         return data.response.result.items[0].id; 
                     }
                 } catch (error) {
-                    console.error(`PNU 조회 실패 (${category}):`, error);
+                    console.error(`PNU 조회 실패:`, error);
                 }
             }
             return null;
         }
 
-        // 2. 메인 조회 로직
         async function searchPriceHistory() {
             const address = document.getElementById('address').value;
             const propType = document.querySelector('input[name="propType"]:checked').value;
@@ -163,7 +160,7 @@
             try {
                 const pnu = await getPnu(address);
                 if (!pnu) {
-                    throw new Error(`'${address}' 주소를 인식할 수 없습니다. 정확한 지번이나 도로명 주소인지 확인해 주세요.`);
+                    throw new Error(`'${address}' 주소를 인식할 수 없습니다.`);
                 }
 
                 let apiUrl = "";
@@ -217,7 +214,6 @@
                                 year: `${yearVal}년`,
                                 price: parseInt(priceVal)
                             };
-
                             if (propType === "공동주택") {
                                 row.area = item.prvuseAr || item.totArea || "N/A";
                             } else if (propType === "단독주택") {
@@ -233,9 +229,24 @@
                 }
 
                 if (historyData.length > 0) {
-                    historyData.sort((a, b) => parseInt(b.year) - parseInt(a.year));
-                    renderTable(propType, historyData);
-                    document.getElementById('result-msg').innerText = "✅ 양도세 계산용 기준시가 전체 내역 조회 완료!";
+                    // 🧹 VWORLD 중복 데이터 제거 로직 (동일 연도/동일 금액)
+                    const uniqueData = [];
+                    const seen = new Set();
+                    historyData.forEach(row => {
+                        const key = `${row.year}_${row.price}`;
+                        if (!seen.has(key)) {
+                            seen.add(key);
+                            uniqueData.push(row);
+                        }
+                    });
+
+                    // 최신 연도순(내림차순) 정렬
+                    uniqueData.sort((a, b) => parseInt(b.year) - parseInt(a.year));
+                    
+                    // 화면에 그리기
+                    renderChart(uniqueData);
+                    renderTable(propType, uniqueData);
+                    document.getElementById('result-container').classList.remove('hidden');
                 } else {
                     throw new Error("해당 조건에 맞는 공시가격 연혁을 찾지 못했습니다.");
                 }
@@ -249,7 +260,77 @@
             }
         }
 
-        // 3. 테이블 렌더링 함수
+        // 📈 차트 렌더링 함수
+        function renderChart(data) {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            
+            // 기존 차트가 있으면 지우고 다시 그림 (오류 방지)
+            if (priceChartInstance) {
+                priceChartInstance.destroy();
+            }
+
+            // 차트는 과거부터 현재순(오름차순)으로 보여주는 것이 자연스러우므로 배열 뒤집기
+            const chartData = [...data].reverse();
+            
+            const labels = chartData.map(row => row.year);
+            const prices = chartData.map(row => row.price);
+
+            priceChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '기준시가',
+                        data: prices,
+                        borderColor: '#4f46e5', // indigo-600
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)', // 투명도 있는 배경
+                        borderWidth: 2,
+                        pointBackgroundColor: '#4f46e5',
+                        pointBorderColor: '#ffffff',
+                        pointHoverBackgroundColor: '#ffffff',
+                        pointHoverBorderColor: '#4f46e5',
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        fill: true,
+                        tension: 0.3 // 곡선 부드럽게
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    // 툴팁에 숫자 포맷팅 (콤마)
+                                    return context.parsed.y.toLocaleString() + ' 원';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            grid: { color: '#f1f5f9' }, // 옅은 그리드선
+                            ticks: {
+                                callback: function(value) {
+                                    // Y축 금액을 억 단위로 보기 편하게 축약
+                                    if (value >= 100000000) {
+                                        return (value / 100000000).toFixed(1) + '억';
+                                    }
+                                    return value.toLocaleString();
+                                }
+                            }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
         function renderTable(propType, data) {
             const thead = document.getElementById('table-head');
             const tbody = document.getElementById('table-body');
@@ -281,8 +362,6 @@
                 tr.innerHTML = trHTML;
                 tbody.appendChild(tr);
             });
-
-            document.getElementById('result-container').classList.remove('hidden');
         }
     </script>
 </body>
