@@ -40,7 +40,6 @@
 
     <div class="max-w-4xl mx-auto px-4 -mt-12 pb-12 grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
         
-        <!-- 단건 검색 폼 -->
         <div class="md:col-span-2 space-y-6">
             <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
                 <h2 class="text-lg font-extrabold text-slate-800 mb-4 flex items-center">
@@ -81,7 +80,6 @@
                 </div>
             </div>
 
-            <!-- 결과 출력 영역 -->
             <div id="result-container" class="hidden space-y-6">
                 <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
                     <h2 class="text-lg font-extrabold text-slate-800 mb-4">기준시가 변동 추이</h2>
@@ -102,14 +100,13 @@
             </div>
         </div>
 
-        <!-- 대량 조회 폼 -->
         <div class="space-y-6">
             <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
                 <h2 class="text-lg font-extrabold text-slate-800 mb-2 flex items-center">
                     <span class="w-2 h-2 bg-emerald-600 rounded-full mr-2"></span> 엑셀 대량 조회 (Batch)
                 </h2>
                 <p class="text-xs text-slate-400 mb-4 leading-relaxed">
-                    A열에 주소를 붙여넣고 파일을 올려주세요. (예: 경기도 하남시 위례대로6길 15, 7201-102 형식 모두 인식 가능)
+                    A열에 주소를 붙여넣고 파일을 올려주세요. (예: 강남구 언주로 56, 2901 형식도 완벽 인식)
                 </p>
 
                 <div class="space-y-4">
@@ -205,7 +202,6 @@
             return null;
         }
 
-        // 🌟 [핵심 수정] 스마트 추출기 및 페이지네이션 결합된 엑셀 대량 처리 함수
         async function handleBulkExcel(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -231,7 +227,6 @@
                     
                     const validRows = [];
 
-                    // 1. A열에 적힌 글자에서 '주소'와 '동/호수'를 정밀하게 분리해 냅니다.
                     for (let i = 0; i < rows.length; i++) {
                         if (i === 0 && (rows[i][0] === "주소" || rows[i][0] === "대상 주소")) continue;
                         
@@ -242,13 +237,25 @@
                         let ho = rows[i][2] ? String(rows[i][2]).replace(/\D/g, '') : "";
                         let baseAddr = rawAddr;
 
-                        // A열에 (위례대로6길 15, 7201-102) 형태로 입력된 경우 동/호수 스캔
+                        // 🌟 [핵심 수정] 동/호수 및 '단일 호수' 정밀 필터링 정규식
                         if (!dong && !ho) {
-                            const match = rawAddr.match(/(\d+)\s*(?:동|-)\s*(\d+)\s*(?:호)?\s*$/);
-                            if (match) {
-                                dong = match[1];
-                                ho = match[2];
-                                baseAddr = rawAddr.replace(match[0], '').replace(/,\s*$/, '').trim();
+                            // 1. "101-202", "101동 202호" 형태 매칭
+                            let matchDongHo = rawAddr.match(/(\d+)\s*(?:동|-)\s*(\d+)\s*(?:호)?\s*$/);
+                            // 2. ", 2901", ", 2901호" 형태 (쉼표 뒤에 달랑 호수만 있는 경우)
+                            let matchHoComma = rawAddr.match(/,\s*(?:제)?(\d+)\s*(?:호)?\s*$/);
+                            // 3. " 2901호" 형태 (띄어쓰기 후 호수만 있는 경우)
+                            let matchHoText = rawAddr.match(/\s+(?:제)?(\d+)\s*호\s*$/);
+
+                            if (matchDongHo) {
+                                dong = matchDongHo[1];
+                                ho = matchDongHo[2];
+                                baseAddr = rawAddr.replace(matchDongHo[0], '').replace(/,\s*$/, '').trim();
+                            } else if (matchHoComma) {
+                                ho = matchHoComma[1];
+                                baseAddr = rawAddr.replace(matchHoComma[0], '').trim();
+                            } else if (matchHoText) {
+                                ho = matchHoText[1];
+                                baseAddr = rawAddr.replace(matchHoText[0], '').replace(/,\s*$/, '').trim();
                             }
                         }
                         validRows.push({ rawAddr, baseAddr, dong, ho });
@@ -271,7 +278,6 @@
                         progressBar.style.width = `${percent}%`;
                         percentageText.innerText = `${percent}%`;
 
-                        // 2. 동/호수가 제거된 순수 주소(baseAddr)로 PNU 획득
                         const pnu = await getPnu(baseAddr);
                         if (!pnu) {
                             finalBulkRows.push({ "대상 주소": rawAddr, "고시연도": "오류", "기준시가(원)": "주소 인식 불가" });
@@ -285,7 +291,6 @@
                         else { apiUrl = "https://api.vworld.kr/ned/data/getIndvdLandPriceAttr"; priceField = "pblntfPclnd"; }
 
                         try {
-                            // 3. 페이지를 끝까지 순회하며 해당 동/호수 데이터만 쏙쏙 추출
                             let pageNo = 1;
                             let keepFetching = true;
                             const seenYears = new Set();
@@ -306,11 +311,12 @@
                                 if (items.length === 0) break;
 
                                 for (const item of items) {
-                                    // 🌟 공동주택인 경우 동/호수가 일치하는지 철저하게 필터링
                                     if (propType === "공동주택") {
                                         const itemDong = extractNum(item.dongNm);
                                         const itemHo = extractNum(item.hoNm);
-                                        if ((dong && itemDong !== dong) || (ho && itemHo !== ho)) continue;
+                                        // 🌟 수정된 필터링: 동이 없으면 호수만 검사해서 철저히 일치하는 세대만 추출
+                                        if (dong && itemDong !== dong) continue;
+                                        if (ho && itemHo !== ho) continue;
                                     }
 
                                     const priceVal = item[priceField] || item.housePc || item.prc || 0;
@@ -430,7 +436,8 @@
                         if (propType === "공동주택") {
                             const itemDong = extractNum(item.dongNm);
                             const itemHo = extractNum(item.hoNm);
-                            if ((dong && itemDong !== dong) || (ho && itemHo !== ho)) continue;
+                            if (dong && itemDong !== dong) continue;
+                            if (ho && itemHo !== ho) continue;
                         }
 
                         const priceVal = item[priceField] || item.housePc || item.prc || 0;
