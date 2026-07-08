@@ -40,8 +40,8 @@
 
     <div class="max-w-4xl mx-auto px-4 -mt-12 pb-12 grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
         
+        <!-- 단건 검색 폼 -->
         <div class="md:col-span-2 space-y-6">
-            
             <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
                 <h2 class="text-lg font-extrabold text-slate-800 mb-4 flex items-center">
                     <span class="w-2 h-2 bg-indigo-600 rounded-full mr-2"></span> 개별 주소 검색 (단건)
@@ -81,6 +81,7 @@
                 </div>
             </div>
 
+            <!-- 결과 출력 영역 -->
             <div id="result-container" class="hidden space-y-6">
                 <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
                     <h2 class="text-lg font-extrabold text-slate-800 mb-4">기준시가 변동 추이</h2>
@@ -99,16 +100,16 @@
                     <div id="tag-container" class="flex flex-wrap gap-3"></div>
                 </div>
             </div>
-
         </div>
 
+        <!-- 대량 조회 폼 -->
         <div class="space-y-6">
             <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
                 <h2 class="text-lg font-extrabold text-slate-800 mb-2 flex items-center">
                     <span class="w-2 h-2 bg-emerald-600 rounded-full mr-2"></span> 엑셀 대량 조회 (Batch)
                 </h2>
                 <p class="text-xs text-slate-400 mb-4 leading-relaxed">
-                    구글 스프레드시트나 엑셀 파일의 **A열(첫 번째 줄)에 주소들을 리스트업**하여 업로드해 주세요. 시스템이 자동으로 데이터를 취합하여 최종 결과 파일을 만들어 줍니다.
+                    A열에 주소를 붙여넣고 파일을 올려주세요. (예: 경기도 하남시 위례대로6길 15, 7201-102 형식 모두 인식 가능)
                 </p>
 
                 <div class="space-y-4">
@@ -142,7 +143,6 @@
                 </div>
             </div>
         </div>
-
     </div>
 
     <script>
@@ -153,7 +153,6 @@
         let currentExcelData = [];
         let currentPropType = "";
 
-        // 자바스크립트 딜레이(Sleep) 함수 생성 - VWORLD 서버 과부하 차단 우회용
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
         function execDaumPostcode() {
@@ -206,7 +205,7 @@
             return null;
         }
 
-        // 🌟 [핵심 신규 기능] 대량 엑셀 업로드 처리 함수
+        // 🌟 [핵심 수정] 스마트 추출기 및 페이지네이션 결합된 엑셀 대량 처리 함수
         async function handleBulkExcel(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -218,7 +217,7 @@
             const percentageText = document.getElementById('bulk-percentage');
 
             progressContainer.classList.remove('hidden');
-            statusText.innerText = "파일 읽는 중...";
+            statusText.innerText = "데이터 스마트 분석 중...";
             progressBar.style.width = "0%";
             percentageText.innerText = "0%";
 
@@ -227,38 +226,55 @@
                 try {
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
-                    
-                    // 엑셀 데이터를 배열 데이터로 변환
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                     const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
                     
-                    // A열에서 주소 목록만 추출 (첫 줄이 제목일 수 있으므로 공백 제외 및 필터링)
-                    const addresses = rows.map(r => r[0] ? String(r[0]).trim() : "").filter(a => a !== "" && a !== "주소" && a !== "대상 주소");
+                    const validRows = [];
 
-                    if (addresses.length === 0) {
-                        alert("엑셀 파일의 A열에서 유효한 주소를 찾지 못했습니다.");
+                    // 1. A열에 적힌 글자에서 '주소'와 '동/호수'를 정밀하게 분리해 냅니다.
+                    for (let i = 0; i < rows.length; i++) {
+                        if (i === 0 && (rows[i][0] === "주소" || rows[i][0] === "대상 주소")) continue;
+                        
+                        let rawAddr = rows[i][0] ? String(rows[i][0]).trim() : "";
+                        if (!rawAddr) continue;
+                        
+                        let dong = rows[i][1] ? String(rows[i][1]).replace(/\D/g, '') : "";
+                        let ho = rows[i][2] ? String(rows[i][2]).replace(/\D/g, '') : "";
+                        let baseAddr = rawAddr;
+
+                        // A열에 (위례대로6길 15, 7201-102) 형태로 입력된 경우 동/호수 스캔
+                        if (!dong && !ho) {
+                            const match = rawAddr.match(/(\d+)\s*(?:동|-)\s*(\d+)\s*(?:호)?\s*$/);
+                            if (match) {
+                                dong = match[1];
+                                ho = match[2];
+                                baseAddr = rawAddr.replace(match[0], '').replace(/,\s*$/, '').trim();
+                            }
+                        }
+                        validRows.push({ rawAddr, baseAddr, dong, ho });
+                    }
+
+                    if (validRows.length === 0) {
+                        alert("엑셀 파일에서 유효한 주소를 찾지 못했습니다.");
                         progressContainer.classList.add('hidden');
                         return;
                     }
 
-                    const totalCount = addresses.length;
+                    const totalCount = validRows.length;
                     const finalBulkRows = [];
 
-                    // 주소 리스트 순차적으로 API 호출 (안전 간격 적용)
                     for (let i = 0; i < totalCount; i++) {
-                        const targetAddr = addresses[i];
+                        const { rawAddr, baseAddr, dong, ho } = validRows[i];
                         
-                        // 화면에 현재 진행률 실시간 업데이트
                         const percent = Math.round(((i + 1) / totalCount) * 100);
                         statusText.innerText = `데이터 수집 중... (${i + 1}/${totalCount})`;
                         progressBar.style.width = `${percent}%`;
                         percentageText.innerText = `${percent}%`;
 
-                        // 1. PNU 코드 수집
-                        const pnu = await getPnu(targetAddr);
+                        // 2. 동/호수가 제거된 순수 주소(baseAddr)로 PNU 획득
+                        const pnu = await getPnu(baseAddr);
                         if (!pnu) {
-                            finalBulkRows.push({ "대상 주소": targetAddr, "고시연도": "오류", "기준시가(원)": "주소 인식 불가" });
+                            finalBulkRows.push({ "대상 주소": rawAddr, "고시연도": "오류", "기준시가(원)": "주소 인식 불가" });
                             continue;
                         }
 
@@ -268,27 +284,35 @@
                         else if (propType === "단독주택") { apiUrl = "https://api.vworld.kr/ned/data/getIndvdHousingPriceAttr"; priceField = "pblntfPc"; }
                         else { apiUrl = "https://api.vworld.kr/ned/data/getIndvdLandPriceAttr"; priceField = "pblntfPclnd"; }
 
-                        // 2. 해당 부동산의 연혁 수집
                         try {
-                            const params = new URLSearchParams({ key: VWORLD_KEY, pnu: pnu, format: "json", numOfRows: "1000", pageNo: "1", domain: DOMAIN });
-                            const resData = await fetchJSONP(`${apiUrl}?${params.toString()}`);
+                            // 3. 페이지를 끝까지 순회하며 해당 동/호수 데이터만 쏙쏙 추출
+                            let pageNo = 1;
+                            let keepFetching = true;
+                            const seenYears = new Set();
+                            const tempHistory = [];
 
-                            let items = [];
-                            for (const key in resData) {
-                                if (resData[key] && resData[key].field) {
-                                    items = Array.isArray(resData[key].field) ? resData[key].field : [resData[key].field];
-                                    break;
+                            while (keepFetching) {
+                                const params = new URLSearchParams({ key: VWORLD_KEY, pnu: pnu, format: "json", numOfRows: "1000", pageNo: String(pageNo), domain: DOMAIN });
+                                const resData = await fetchJSONP(`${apiUrl}?${params.toString()}`);
+
+                                let items = [];
+                                for (const key in resData) {
+                                    if (resData[key] && resData[key].field) {
+                                        items = Array.isArray(resData[key].field) ? resData[key].field : [resData[key].field];
+                                        break;
+                                    }
                                 }
-                            }
 
-                            if (items.length === 0) {
-                                finalBulkRows.push({ "대상 주소": targetAddr, "고시연도": "정보 없음", "기준시가(원)": "공시가격 데이터 누락" });
-                            } else {
-                                // 중복 제거 및 데이터 정렬
-                                const seenYears = new Set();
-                                const tempHistory = [];
+                                if (items.length === 0) break;
 
                                 for (const item of items) {
+                                    // 🌟 공동주택인 경우 동/호수가 일치하는지 철저하게 필터링
+                                    if (propType === "공동주택") {
+                                        const itemDong = extractNum(item.dongNm);
+                                        const itemHo = extractNum(item.hoNm);
+                                        if ((dong && itemDong !== dong) || (ho && itemHo !== ho)) continue;
+                                    }
+
                                     const priceVal = item[priceField] || item.housePc || item.prc || 0;
                                     const yearVal = item.stdrYear || item.pblntfYear;
 
@@ -298,7 +322,7 @@
                                             seenYears.add(uniqueKey);
                                             
                                             let rowObj = {
-                                                "대상 주소": targetAddr,
+                                                "대상 주소": rawAddr,
                                                 "고시연도": `${yearVal}년`,
                                                 "기준시가(원)": parseInt(priceVal)
                                             };
@@ -309,19 +333,24 @@
                                         }
                                     }
                                 }
-                                // 최신 연도순 정렬 후 결합
-                                tempHistory.sort((a, b) => parseInt(b["고시연도"]) - parseInt(a["고시연ed"]));
+
+                                if (items.length < 1000) keepFetching = false;
+                                pageNo++;
+                            }
+
+                            if (tempHistory.length === 0) {
+                                finalBulkRows.push({ "대상 주소": rawAddr, "고시연도": "정보 없음", "기준시가(원)": "공시가격 데이터 누락" });
+                            } else {
+                                tempHistory.sort((a, b) => parseInt(b["고시연도"]) - parseInt(a["고시연도"]));
                                 finalBulkRows.push(...tempHistory);
                             }
                         } catch (err) {
-                            finalBulkRows.push({ "대상 주소": targetAddr, "고시연도": "에러", "기준시가(원)": "서버 통신 실패" });
+                            finalBulkRows.push({ "대상 주소": rawAddr, "고시연도": "에러", "기준시가(원)": "서버 통신 실패" });
                         }
 
-                        // 🔥 정부 API 서버 차단 방지를 위한 안정적인 간격(딜레이 0.2초)
                         await sleep(200); 
                     }
 
-                    // 3. 전체 취합 데이터 홍보 행 추가 후 다운로드 처리
                     statusText.innerText = "엑셀 빌드 및 파일 생성 중...";
                     finalBulkRows.push({});
                     finalBulkRows.push({
@@ -339,7 +368,7 @@
                     XLSX.writeFile(bulkWorkbook, "강승완세무사_대량_공시가격_추출결과.xlsx");
                     
                     statusText.innerText = "✅ 대량 취합 다운로드 완료!";
-                    event.target.value = ""; // 초기화
+                    event.target.value = ""; 
 
                 } catch (err) {
                     alert("엑셀 파일 파싱 중 문제가 발생했습니다.");
