@@ -8,8 +8,8 @@
     <meta name="keywords" content="부동산 공시가격, 연도별 기준시가, 양도세 계산, 상속세, 증여세, 양도소득세, 부동산 세무, 강승완 세무사, 세무상담, micro-tax">
     <meta name="description" content="양도세, 상속세, 증여세 계산을 위한 과거 연도별 부동산 공시가격 자동 조회 및 엑셀 다운로드 도구입니다.">
     
-    <meta property="og:title" content="부동산 공시가격 대량 추출 엔진">
-    <meta property="og:description" content="여러 물건지도 한번에! - 부동산 공시가격 통합 조회 시스템">
+    <meta property="og:title" content="부동산 공시가격 대량 추출 엔진 - 강승완 세무사">
+    <meta property="og:description" content="양도세, 상속세, 증여세 계산을 위한 연도별 기준시가 통합 조회 시스템">
     <meta property="og:image" content="https://gongsi-ten.vercel.app/thumbnail.jpg">
     <meta property="og:url" content="https://gongsi-ten.vercel.app">
 
@@ -106,16 +106,17 @@
                     <span class="w-2 h-2 bg-emerald-600 rounded-full mr-2"></span> 엑셀 대량 조회 (Batch)
                 </h2>
                 <p class="text-xs text-slate-400 mb-4 leading-relaxed">
-                    A열에 주소를 붙여넣고 파일을 올려주세요. (예: 강남구 언주로 56, 2901 형식도 완벽 인식)
+                    A열에 주소를 붙여넣고 파일을 올려주세요. 아파트, 단독주택, 토지가 섞여 있어도 알아서 분류해 드립니다.
                 </p>
 
                 <div class="space-y-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 mb-1">파일 물건 종류 지정</label>
-                        <select id="bulkPropType" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none text-slate-700 font-medium">
-                            <option value="공동주택">공동주택 (아파트/빌라)</option>
-                            <option value="단독주택">단독/개별주택</option>
-                            <option value="토지">개별공시지가 (토지)</option>
+                        <select id="bulkPropType" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none text-slate-700 font-bold text-indigo-700">
+                            <option value="auto">🌟 자동 분류 (아파트·주택·토지 통합검색)</option>
+                            <option value="공동주택">공동주택 전용 (아파트/빌라)</option>
+                            <option value="단독주택">단독/개별주택 전용</option>
+                            <option value="토지">개별공시지가 (토지) 전용</option>
                         </select>
                     </div>
 
@@ -145,6 +146,8 @@
     <script>
         const VWORLD_KEY = "75321A8E-275D-32A6-82AC-B9D0D8E551FE";
         const DOMAIN = window.location.origin; 
+        // 📞 연락처 세팅: 이 부분을 수정하시면 전체 엑셀 하단에 들어갑니다!
+        const OFFICE_PHONE = "02-XXXX-XXXX"; 
         
         let priceChartInstance = null;
         let currentExcelData = [];
@@ -244,7 +247,7 @@
             const file = event.target.files[0];
             if (!file) return;
 
-            const propType = document.getElementById('bulkPropType').value;
+            const selectedPropType = document.getElementById('bulkPropType').value;
             const progressContainer = document.getElementById('bulk-progress-container');
             const progressBar = document.getElementById('bulk-progress-bar');
             const statusText = document.getElementById('bulk-status-text');
@@ -275,8 +278,8 @@
                         let ho = rows[i][2] ? String(rows[i][2]).replace(/\D/g, '') : "";
                         let baseAddr = rawAddr;
 
-                        // 🔥 공동주택인 경우에만 동/호수를 잘라내는 로직 실행 (단독주택, 토지는 원본 주소 유지)
-                        if (propType === "공동주택" && !dong && !ho) {
+                        // 자동분류이거나 공동주택일 때 일단 동/호수 분리 시도
+                        if ((selectedPropType === "auto" || selectedPropType === "공동주택") && !dong && !ho) {
                             let matchDongHo = rawAddr.match(/(\d+)\s*(?:동|-)\s*(\d+)\s*(?:호)?\s*$/);
                             let matchHoComma = rawAddr.match(/,\s*(?:제)?(\d+)\s*(?:호)?\s*$/);
                             let matchHoText = rawAddr.match(/\s+(?:제)?(\d+)\s*호\s*$/);
@@ -305,103 +308,111 @@
                     const totalCount = validRows.length;
                     const finalBulkRows = [];
 
+                    // 폭포수(Waterfall) 탐색 순서: 공동주택 -> 단독주택 -> 토지
+                    const typesToTry = selectedPropType === "auto" ? ["공동주택", "단독주택", "토지"] : [selectedPropType];
+
                     for (let i = 0; i < totalCount; i++) {
                         const { rawAddr, baseAddr, dong, ho } = validRows[i];
                         
                         const percent = Math.round(((i + 1) / totalCount) * 100);
-                        statusText.innerText = `데이터 수집 중... (${i + 1}/${totalCount})`;
+                        statusText.innerText = `스마트 탐색 중... (${i + 1}/${totalCount})`;
                         progressBar.style.width = `${percent}%`;
                         percentageText.innerText = `${percent}%`;
 
                         const pnu = await getPnu(baseAddr);
                         if (!pnu) {
-                            finalBulkRows.push({ "대상 주소": rawAddr, "가격기준연도": "오류", "기준일자": "", "공시일자": "", "기준시가(원)": "주소 인식 불가" });
+                            finalBulkRows.push({ "대상 주소": rawAddr, "물건 구분": "오류", "가격기준연도": "오류", "기준일자": "", "공시일자": "", "기준시가(원)": "주소 인식 불가" });
                             continue;
                         }
 
-                        let apiUrl = "";
-                        let priceField = "";
-                        if (propType === "공동주택") { apiUrl = "https://api.vworld.kr/ned/data/getApartHousingPriceAttr"; priceField = "pblntfPc"; }
-                        else if (propType === "단독주택") { apiUrl = "https://api.vworld.kr/ned/data/getIndvdHousingPriceAttr"; priceField = "pblntfPc"; }
-                        else { apiUrl = "https://api.vworld.kr/ned/data/getIndvdLandPriceAttr"; priceField = "pblntfPclnd"; }
+                        let isDataFound = false;
 
-                        try {
-                            let pageNo = 1;
-                            let keepFetching = true;
-                            const seenKeys = new Set();
-                            const tempHistory = [];
+                        // 🌟 자동 분류 로직 시작
+                        for (let probeType of typesToTry) {
+                            let apiUrl = "";
+                            let priceField = "";
+                            if (probeType === "공동주택") { apiUrl = "https://api.vworld.kr/ned/data/getApartHousingPriceAttr"; priceField = "pblntfPc"; }
+                            else if (probeType === "단독주택") { apiUrl = "https://api.vworld.kr/ned/data/getIndvdHousingPriceAttr"; priceField = "pblntfPc"; }
+                            else { apiUrl = "https://api.vworld.kr/ned/data/getIndvdLandPriceAttr"; priceField = "pblntfPclnd"; }
 
-                            while (keepFetching) {
-                                const params = new URLSearchParams({ key: VWORLD_KEY, pnu: pnu, format: "json", numOfRows: "1000", pageNo: String(pageNo), domain: DOMAIN });
-                                const resData = await fetchJSONP(`${apiUrl}?${params.toString()}`);
+                            try {
+                                let pageNo = 1;
+                                let keepFetching = true;
+                                const seenKeys = new Set();
+                                const tempHistory = [];
 
-                                let items = [];
-                                for (const key in resData) {
-                                    if (resData[key] && resData[key].field) {
-                                        items = Array.isArray(resData[key].field) ? resData[key].field : [resData[key].field];
-                                        break;
-                                    }
-                                }
+                                while (keepFetching) {
+                                    const params = new URLSearchParams({ key: VWORLD_KEY, pnu: pnu, format: "json", numOfRows: "1000", pageNo: String(pageNo), domain: DOMAIN });
+                                    const resData = await fetchJSONP(`${apiUrl}?${params.toString()}`);
 
-                                if (items.length === 0) break;
-
-                                for (const item of items) {
-                                    if (propType === "공동주택") {
-                                        const itemDong = extractNum(item.dongNm);
-                                        const itemHo = extractNum(item.hoNm);
-                                        if (dong && itemDong !== dong) continue;
-                                        if (ho && itemHo !== ho) continue;
-                                    }
-
-                                    const priceVal = item[priceField] || item.housePc || item.prc || 0;
-                                    const yearVal = item.stdrYear || item.pblntfYear;
-                                    const baseDate = formatBaseDate(item.stdrMt);
-                                    
-                                    let pubDate = formatPubDate(item.pblntfDe || item.pblntfDate || item.pblntfYmd || item.pblntfDay);
-                                    if (propType === "토지" && !pubDate) {
-                                        pubDate = estimateLandPubDate(yearVal, item.stdrMt);
-                                    }
-
-                                    if (priceVal && yearVal) {
-                                        const uniqueKey = `${yearVal}_${priceVal}_${baseDate}_${pubDate}`;
-                                        if (!seenKeys.has(uniqueKey)) {
-                                            seenKeys.add(uniqueKey);
-                                            
-                                            let rowObj = {
-                                                "대상 주소": rawAddr,
-                                                "가격기준연도": `${yearVal}년`,
-                                                "기준일자": baseDate,
-                                                "공시일자": pubDate,
-                                                "기준시가(원)": parseInt(priceVal)
-                                            };
-                                            
-                                            if (propType === "공동주택") { 
-                                                rowObj["전용면적(㎡)"] = item.prvuseAr || item.totArea || "N/A"; 
-                                            }
-                                            else if (propType === "단독주택") { 
-                                                rowObj["대지면적_전체(㎡)"] = item.ladRegstrAr || item.totPlotAr || item.plotAr || "N/A";
-                                                rowObj["대지면적_산정(㎡)"] = item.calcPlotAr || item.calcLadAr || rowObj["대지면적_전체(㎡)"];
-                                                rowObj["건물연면적_전체(㎡)"] = item.buldAllTotAr || item.totFlrAr || "N/A";
-                                                rowObj["건물연면적_산정(㎡)"] = item.calcBuldTotAr || item.calcTotFlrAr || item.calcBuldAr || rowObj["건물연면적_전체(㎡)"];
-                                            }
-                                            
-                                            tempHistory.push(rowObj);
+                                    let items = [];
+                                    for (const key in resData) {
+                                        if (resData[key] && resData[key].field) {
+                                            items = Array.isArray(resData[key].field) ? resData[key].field : [resData[key].field];
+                                            break;
                                         }
                                     }
+
+                                    if (items.length === 0) break; // 해당 물건 종류 데이터가 없으면 탈출 후 다음 종류 찔러보기
+
+                                    for (const item of items) {
+                                        if (probeType === "공동주택") {
+                                            const itemDong = extractNum(item.dongNm);
+                                            const itemHo = extractNum(item.hoNm);
+                                            if (dong && itemDong !== dong) continue;
+                                            if (ho && itemHo !== ho) continue;
+                                        }
+
+                                        const priceVal = item[priceField] || item.housePc || item.prc || 0;
+                                        const yearVal = item.stdrYear || item.pblntfYear;
+                                        const baseDate = formatBaseDate(item.stdrMt);
+                                        
+                                        let pubDate = formatPubDate(item.pblntfDe || item.pblntfDate || item.pblntfYmd || item.pblntfDay);
+                                        if (probeType === "토지" && !pubDate) {
+                                            pubDate = estimateLandPubDate(yearVal, item.stdrMt);
+                                        }
+
+                                        if (priceVal && yearVal) {
+                                            const uniqueKey = `${yearVal}_${priceVal}_${baseDate}_${pubDate}`;
+                                            if (!seenKeys.has(uniqueKey)) {
+                                                seenKeys.add(uniqueKey);
+                                                
+                                                // 🌟 통합 엑셀 포맷 구성 (어떤 물건이든 모든 열에 맞춰 출력)
+                                                let rowObj = {
+                                                    "대상 주소": rawAddr,
+                                                    "물건 구분": probeType, // 👈 자동분류 시 찾은 종류 표시
+                                                    "가격기준연도": `${yearVal}년`,
+                                                    "기준일자": baseDate,
+                                                    "공시일자": pubDate,
+                                                    "기준시가(원)": parseInt(priceVal),
+                                                    "전용면적(㎡)": probeType === "공동주택" ? (item.prvuseAr || item.totArea || "-") : "-",
+                                                    "대지면적_전체(㎡)": probeType === "단독주택" ? (item.ladRegstrAr || item.totPlotAr || item.plotAr || "-") : "-",
+                                                    "대지면적_산정(㎡)": probeType === "단독주택" ? (item.calcPlotAr || item.calcLadAr || item.ladRegstrAr || item.totPlotAr || "-") : "-",
+                                                    "건물연면적_전체(㎡)": probeType === "단독주택" ? (item.buldAllTotAr || item.totFlrAr || "-") : "-",
+                                                    "건물연면적_산정(㎡)": probeType === "단독주택" ? (item.calcBuldTotAr || item.calcTotFlrAr || item.calcBuldAr || item.buldAllTotAr || "-") : "-"
+                                                };
+                                                tempHistory.push(rowObj);
+                                            }
+                                        }
+                                    }
+
+                                    if (items.length < 1000) keepFetching = false;
+                                    pageNo++;
                                 }
 
-                                if (items.length < 1000) keepFetching = false;
-                                pageNo++;
+                                if (tempHistory.length > 0) {
+                                    tempHistory.sort((a, b) => parseInt(b["가격기준연도"]) - parseInt(a["가격기준연도"]));
+                                    finalBulkRows.push(...tempHistory);
+                                    isDataFound = true;
+                                    break; // 💡 데이터를 찾았으므로 다른 종류(토지 등)는 더 이상 찔러보지 않고 스킵!
+                                }
+                            } catch (err) {
+                                console.error(err);
                             }
+                        }
 
-                            if (tempHistory.length === 0) {
-                                finalBulkRows.push({ "대상 주소": rawAddr, "가격기준연도": "정보 없음", "기준일자": "", "공시일자": "", "기준시가(원)": "공시가격 데이터 누락" });
-                            } else {
-                                tempHistory.sort((a, b) => parseInt(b["가격기준연도"]) - parseInt(a["가격기준연도"]));
-                                finalBulkRows.push(...tempHistory);
-                            }
-                        } catch (err) {
-                            finalBulkRows.push({ "대상 주소": rawAddr, "가격기준연도": "에러", "기준일자": "", "공시일자": "", "기준시가(원)": "서버 통신 실패" });
+                        if (!isDataFound) {
+                            finalBulkRows.push({ "대상 주소": rawAddr, "물건 구분": "없음", "가격기준연도": "정보 없음", "기준일자": "", "공시일자": "", "기준시가(원)": "해당 주소의 데이터 없음" });
                         }
 
                         await sleep(200); 
@@ -411,19 +422,20 @@
                     finalBulkRows.push({});
                     finalBulkRows.push({
                         "대상 주소": "💡 양도세/상속세/증여세 및 부동산 절세 상담:",
-                        "가격기준연도": "강승완 세무사",
-                        "기준일자": "02-2679-0679",
-                        "공시일자": "www.micro-tax.com",
+                        "물건 구분": "강승완 세무사",
+                        "가격기준연도": OFFICE_PHONE, // 📞 위에서 세팅한 전화번호 출력
+                        "기준일자": "www.micro-tax.com",
+                        "공시일자": "",
                         "기준시가(원)": ""
                     });
 
                     const bulkWorksheet = XLSX.utils.json_to_sheet(finalBulkRows);
-                    bulkWorksheet['!cols'] = [{ wch: 45 }, { wch: 12 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 }];
+                    bulkWorksheet['!cols'] = [{ wch: 45 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 15 }, { wch: 18 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }];
                     
                     const bulkWorkbook = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(bulkWorkbook, bulkWorksheet, "대량_조회_결과");
+                    XLSX.utils.book_append_sheet(bulkWorkbook, bulkWorksheet, "대량_통합조회_결과");
                     
-                    XLSX.writeFile(bulkWorkbook, "강승완세무사_대량_공시가격_추출결과.xlsx");
+                    XLSX.writeFile(bulkWorkbook, "강승완세무사_대량_공시가격_통합결과.xlsx");
                     
                     statusText.innerText = "✅ 대량 취합 다운로드 완료!";
                     event.target.value = ""; 
@@ -436,6 +448,7 @@
             reader.readAsArrayBuffer(file);
         }
 
+        // [이하 단건 조회 로직은 기존과 동일]
         async function searchPriceHistory() {
             const address = document.getElementById('address').value;
             const propType = document.querySelector('input[name="propType"]:checked').value;
@@ -586,9 +599,9 @@
             formattedData.push({ 
                 "대상 주소": "💡 양도세/상속세/증여세 및 부동산 절세 상담:", 
                 "가격기준연도": "강승완 세무사", 
-                "기준일자": "",
-                "공시일자": "",
-                "기준시가(원)": "www.micro-tax.com" 
+                "기준일자": OFFICE_PHONE, // 📞 단건 조회 시에도 전화번호 출력
+                "공시일자": "www.micro-tax.com",
+                "기준시가(원)": "" 
             });
 
             const worksheet = XLSX.utils.json_to_sheet(formattedData);
