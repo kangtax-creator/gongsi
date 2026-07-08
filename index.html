@@ -9,7 +9,7 @@
     <meta name="description" content="양도세, 상속세, 증여세 계산을 위한 과거 연도별 부동산 공시가격 자동 조회 및 엑셀 다운로드 도구입니다.">
     
     <meta property="og:title" content="부동산 공시가격 대량 추출 엔진">
-    <meta property="og:description" content="여러 물건지를 한번에! - 부동산 공시가격 통합 조회 시스템">
+    <meta property="og:description" content="여러 물건지도 한번에! - 부동산 공시가격 통합 조회 시스템">
     <meta property="og:image" content="https://gongsi-ten.vercel.app/thumbnail.jpg">
     <meta property="og:url" content="https://gongsi-ten.vercel.app">
 
@@ -202,19 +202,42 @@
             return null;
         }
 
-        // 🌟 기준일자(월) 포맷팅 함수 (예: 1 -> 01월01일)
         function formatBaseDate(stdrMt) {
             if (!stdrMt) return "01월01일";
             const mt = String(stdrMt).padStart(2, '0');
             return `${mt}월01일`;
         }
 
-        // 🌟 공시일자 포맷팅 함수 (20260430 -> 2026-04-30)
         function formatPubDate(rawDate) {
-            if (rawDate && rawDate.length === 8) {
-                return `${rawDate.substring(0,4)}-${rawDate.substring(4,6)}-${rawDate.substring(6,8)}`;
+            if (rawDate && String(rawDate).length >= 8) {
+                const str = String(rawDate).replace(/\D/g, '');
+                if(str.length >= 8) {
+                    return `${str.substring(0,4)}-${str.substring(4,6)}-${str.substring(6,8)}`;
+                }
             }
             return "";
+        }
+
+        function estimateLandPubDate(year, month) {
+            const y = parseInt(year);
+            const m = parseInt(month || 1);
+            
+            let targetMonth = m === 1 ? (y >= 2022 ? 4 : 5) : 10;
+            let targetDay = (targetMonth === 4 || targetMonth === 6 || targetMonth === 9 || targetMonth === 11) ? 30 : 31;
+            
+            let date = new Date(y, targetMonth - 1, targetDay);
+            
+            if (date.getDay() === 0) { 
+                date.setDate(targetDay - 2);
+            } else if (date.getDay() === 6) { 
+                date.setDate(targetDay - 1);
+            }
+            
+            const resY = date.getFullYear();
+            const resM = String(date.getMonth() + 1).padStart(2, '0');
+            const resD = String(date.getDate()).padStart(2, '0');
+            
+            return `${resY}-${resM}-${resD}`;
         }
 
         async function handleBulkExcel(event) {
@@ -252,7 +275,8 @@
                         let ho = rows[i][2] ? String(rows[i][2]).replace(/\D/g, '') : "";
                         let baseAddr = rawAddr;
 
-                        if (!dong && !ho) {
+                        // 🔥 공동주택인 경우에만 동/호수를 잘라내는 로직 실행 (단독주택, 토지는 원본 주소 유지)
+                        if (propType === "공동주택" && !dong && !ho) {
                             let matchDongHo = rawAddr.match(/(\d+)\s*(?:동|-)\s*(\d+)\s*(?:호)?\s*$/);
                             let matchHoComma = rawAddr.match(/,\s*(?:제)?(\d+)\s*(?:호)?\s*$/);
                             let matchHoText = rawAddr.match(/\s+(?:제)?(\d+)\s*호\s*$/);
@@ -332,7 +356,11 @@
                                     const priceVal = item[priceField] || item.housePc || item.prc || 0;
                                     const yearVal = item.stdrYear || item.pblntfYear;
                                     const baseDate = formatBaseDate(item.stdrMt);
-                                    const pubDate = formatPubDate(item.pblntfDe || item.pblntfDate);
+                                    
+                                    let pubDate = formatPubDate(item.pblntfDe || item.pblntfDate || item.pblntfYmd || item.pblntfDay);
+                                    if (propType === "토지" && !pubDate) {
+                                        pubDate = estimateLandPubDate(yearVal, item.stdrMt);
+                                    }
 
                                     if (priceVal && yearVal) {
                                         const uniqueKey = `${yearVal}_${priceVal}_${baseDate}_${pubDate}`;
@@ -467,7 +495,11 @@
                         const priceVal = item[priceField] || item.housePc || item.prc || 0;
                         const yearVal = item.stdrYear || item.pblntfYear;
                         const baseDate = formatBaseDate(item.stdrMt);
-                        const pubDate = formatPubDate(item.pblntfDe || item.pblntfDate);
+                        
+                        let pubDate = formatPubDate(item.pblntfDe || item.pblntfDate || item.pblntfYmd || item.pblntfDay);
+                        if (propType === "토지" && !pubDate) {
+                            pubDate = estimateLandPubDate(yearVal, item.stdrMt);
+                        }
 
                         if (priceVal && yearVal) {
                             const row = { 
