@@ -95,7 +95,7 @@
                             엑셀 다운로드
                         </button>
                     </div>
-                    <div id="tag-container" class="flex flex-wrap gap-3"></div>
+                    <div id="tag-container" class="flex flex-col gap-3"></div>
                 </div>
             </div>
         </div>
@@ -202,14 +202,17 @@
             return null;
         }
 
-        // 🌟 공시일자 포맷팅 함수 (20210429 -> 2021-04-29)
-        function formatPubDate(rawDate, stdrMt, year) {
+        // 🌟 기준일자(월) 포맷팅 함수 (예: 1 -> 01월01일)
+        function formatBaseDate(stdrMt) {
+            if (!stdrMt) return "01월01일";
+            const mt = String(stdrMt).padStart(2, '0');
+            return `${mt}월01일`;
+        }
+
+        // 🌟 공시일자 포맷팅 함수 (20260430 -> 2026-04-30)
+        function formatPubDate(rawDate) {
             if (rawDate && rawDate.length === 8) {
                 return `${rawDate.substring(0,4)}-${rawDate.substring(4,6)}-${rawDate.substring(6,8)}`;
-            }
-            // 공시일자가 누락된 경우 기준월(stdrMt)로 대체 표기
-            if (stdrMt) {
-                return `${year}-${String(stdrMt).padStart(2, '0')}-01 (기준)`;
             }
             return "";
         }
@@ -288,8 +291,7 @@
 
                         const pnu = await getPnu(baseAddr);
                         if (!pnu) {
-                            // 양식에 맞추기 위해 빈 값 삽입
-                            finalBulkRows.push({ "대상 주소": rawAddr, "고시연도": "오류", "공시일자": "", "기준시가(원)": "주소 인식 불가" });
+                            finalBulkRows.push({ "대상 주소": rawAddr, "가격기준연도": "오류", "기준일자": "", "공시일자": "", "기준시가(원)": "주소 인식 불가" });
                             continue;
                         }
 
@@ -329,22 +331,31 @@
 
                                     const priceVal = item[priceField] || item.housePc || item.prc || 0;
                                     const yearVal = item.stdrYear || item.pblntfYear;
-                                    const pubDate = formatPubDate(item.pblntfDe || item.pblntfDate, item.stdrMt, yearVal); // 공시일자 추출
+                                    const baseDate = formatBaseDate(item.stdrMt);
+                                    const pubDate = formatPubDate(item.pblntfDe || item.pblntfDate);
 
                                     if (priceVal && yearVal) {
-                                        // 같은 연도라도 정기공시(1.1)와 수시공시(6.1)가 있을 수 있으므로 공시일자까지 Key로 묶음
-                                        const uniqueKey = `${yearVal}_${priceVal}_${pubDate}`;
+                                        const uniqueKey = `${yearVal}_${priceVal}_${baseDate}_${pubDate}`;
                                         if (!seenKeys.has(uniqueKey)) {
                                             seenKeys.add(uniqueKey);
                                             
                                             let rowObj = {
                                                 "대상 주소": rawAddr,
-                                                "고시연도": `${yearVal}년`,
-                                                "공시일자": pubDate, // 엑셀에 공시일자 열 추가
+                                                "가격기준연도": `${yearVal}년`,
+                                                "기준일자": baseDate,
+                                                "공시일자": pubDate,
                                                 "기준시가(원)": parseInt(priceVal)
                                             };
-                                            if (propType === "공동주택") { rowObj["전용면적(㎡)"] = item.prvuseAr || "N/A"; }
-                                            else if (propType === "단독주택") { rowObj["대지면적(㎡)"] = item.ladRegstrAr || "N/A"; rowObj["건물면적(㎡)"] = item.buldAllTotAr || "N/A"; }
+                                            
+                                            if (propType === "공동주택") { 
+                                                rowObj["전용면적(㎡)"] = item.prvuseAr || item.totArea || "N/A"; 
+                                            }
+                                            else if (propType === "단독주택") { 
+                                                rowObj["대지면적_전체(㎡)"] = item.ladRegstrAr || item.totPlotAr || item.plotAr || "N/A";
+                                                rowObj["대지면적_산정(㎡)"] = item.calcPlotAr || item.calcLadAr || rowObj["대지면적_전체(㎡)"];
+                                                rowObj["건물연면적_전체(㎡)"] = item.buldAllTotAr || item.totFlrAr || "N/A";
+                                                rowObj["건물연면적_산정(㎡)"] = item.calcBuldTotAr || item.calcTotFlrAr || item.calcBuldAr || rowObj["건물연면적_전체(㎡)"];
+                                            }
                                             
                                             tempHistory.push(rowObj);
                                         }
@@ -356,13 +367,13 @@
                             }
 
                             if (tempHistory.length === 0) {
-                                finalBulkRows.push({ "대상 주소": rawAddr, "고시연도": "정보 없음", "공시일자": "", "기준시가(원)": "공시가격 데이터 누락" });
+                                finalBulkRows.push({ "대상 주소": rawAddr, "가격기준연도": "정보 없음", "기준일자": "", "공시일자": "", "기준시가(원)": "공시가격 데이터 누락" });
                             } else {
-                                tempHistory.sort((a, b) => parseInt(b["고시연도"]) - parseInt(a["고시연도"]));
+                                tempHistory.sort((a, b) => parseInt(b["가격기준연도"]) - parseInt(a["가격기준연도"]));
                                 finalBulkRows.push(...tempHistory);
                             }
                         } catch (err) {
-                            finalBulkRows.push({ "대상 주소": rawAddr, "고시연도": "에러", "공시일자": "", "기준시가(원)": "서버 통신 실패" });
+                            finalBulkRows.push({ "대상 주소": rawAddr, "가격기준연도": "에러", "기준일자": "", "공시일자": "", "기준시가(원)": "서버 통신 실패" });
                         }
 
                         await sleep(200); 
@@ -372,13 +383,14 @@
                     finalBulkRows.push({});
                     finalBulkRows.push({
                         "대상 주소": "💡 양도세/상속세/증여세 및 부동산 절세 상담:",
-                        "고시연도": "강승완 세무사",
+                        "가격기준연도": "강승완 세무사",
+                        "기준일자": "",
                         "공시일자": "",
                         "기준시가(원)": "www.micro-tax.com"
                     });
 
                     const bulkWorksheet = XLSX.utils.json_to_sheet(finalBulkRows);
-                    bulkWorksheet['!cols'] = [{ wch: 45 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }];
+                    bulkWorksheet['!cols'] = [{ wch: 45 }, { wch: 12 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 }];
                     
                     const bulkWorkbook = XLSX.utils.book_new();
                     XLSX.utils.book_append_sheet(bulkWorkbook, bulkWorksheet, "대량_조회_결과");
@@ -454,12 +466,25 @@
 
                         const priceVal = item[priceField] || item.housePc || item.prc || 0;
                         const yearVal = item.stdrYear || item.pblntfYear;
-                        const pubDate = formatPubDate(item.pblntfDe || item.pblntfDate, item.stdrMt, yearVal); // 공시일자 추출
+                        const baseDate = formatBaseDate(item.stdrMt);
+                        const pubDate = formatPubDate(item.pblntfDe || item.pblntfDate);
 
                         if (priceVal && yearVal) {
-                            const row = { year: `${yearVal}년`, pubDate: pubDate, price: parseInt(priceVal) };
-                            if (propType === "공동주택") { row.area = item.prvuseAr || "N/A"; }
-                            else if (propType === "단독주택") { row.landArea = item.ladRegstrAr || "N/A"; row.bldArea = item.buldAllTotAr || "N/A"; }
+                            const row = { 
+                                year: `${yearVal}년`, 
+                                baseDate: baseDate, 
+                                pubDate: pubDate, 
+                                price: parseInt(priceVal) 
+                            };
+                            
+                            if (propType === "공동주택") { 
+                                row.area = item.prvuseAr || item.totArea || "N/A"; 
+                            } else if (propType === "단독주택") { 
+                                row.landTotal = item.ladRegstrAr || item.totPlotAr || item.plotAr || "N/A";
+                                row.landCalc = item.calcPlotAr || item.calcLadAr || row.landTotal;
+                                row.bldTotal = item.buldAllTotAr || item.totFlrAr || "N/A";
+                                row.bldCalc = item.calcBuldTotAr || item.calcTotFlrAr || item.calcBuldAr || row.bldTotal;
+                            }
                             historyData.push(row);
                         }
                     }
@@ -471,7 +496,7 @@
                     const uniqueData = [];
                     const seen = new Set();
                     historyData.forEach(row => {
-                        const key = `${row.year}_${row.price}_${row.pubDate}`;
+                        const key = `${row.year}_${row.price}_${row.baseDate}_${row.pubDate}`;
                         if (!seen.has(key)) { seen.add(key); uniqueData.push(row); }
                     });
 
@@ -509,25 +534,33 @@
             const formattedData = currentExcelData.map(row => {
                 let excelRow = { 
                     "대상 주소": fullAddress, 
-                    "고시연도": row.year, 
+                    "가격기준연도": row.year, 
+                    "기준일자": row.baseDate,
                     "공시일자": row.pubDate, 
                     "기준시가(원)": row.price 
                 };
-                if (currentPropType === "공동주택") { excelRow["전용면적(㎡)"] = row.area; }
-                else if (currentPropType === "단독주택") { excelRow["대지면적(㎡)"] = row.landArea; excelRow["건물면적(㎡)"] = row.bldArea; }
+                if (currentPropType === "공동주택") { 
+                    excelRow["전용면적(㎡)"] = row.area; 
+                } else if (currentPropType === "단독주택") { 
+                    excelRow["대지면적_전체(㎡)"] = row.landTotal; 
+                    excelRow["대지면적_산정(㎡)"] = row.landCalc;
+                    excelRow["건물연면적_전체(㎡)"] = row.bldTotal;
+                    excelRow["건물연면적_산정(㎡)"] = row.bldCalc;
+                }
                 return excelRow;
             });
 
             formattedData.push({}); 
             formattedData.push({ 
                 "대상 주소": "💡 양도세/상속세/증여세 및 부동산 절세 상담:", 
-                "고시연도": "강승완 세무사", 
+                "가격기준연도": "강승완 세무사", 
+                "기준일자": "",
                 "공시일자": "",
                 "기준시가(원)": "www.micro-tax.com" 
             });
 
             const worksheet = XLSX.utils.json_to_sheet(formattedData);
-            worksheet['!cols'] = [{ wch: 45 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }];
+            worksheet['!cols'] = [{ wch: 45 }, { wch: 12 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 }];
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "공시가격_연혁");
             XLSX.writeFile(workbook, "강승완세무사_양도세_기준시가.xlsx");
@@ -566,15 +599,26 @@
             const container = document.getElementById('tag-container');
             container.innerHTML = "";
             data.forEach(row => {
-                let extraInfo = propType === "공동주택" ? `${row.area}㎡` : (propType === "단독주택" ? `건물:${row.bldArea}㎡` : "");
-                let pubDateDisplay = row.pubDate ? `<span class="text-xs text-slate-500 ml-3 pl-3 border-l border-slate-300 font-medium">공시일: ${row.pubDate}</span>` : "";
+                let extraInfo = "";
+                if (propType === "공동주택") {
+                    extraInfo = `전용면적: ${row.area}㎡`;
+                } else if (propType === "단독주택") {
+                    extraInfo = `대지(전체/산정): ${row.landTotal}/${row.landCalc}㎡ │ 건물(전체/산정): ${row.bldTotal}/${row.bldCalc}㎡`;
+                }
+
+                let dateDisplay = `<span class="text-xs text-slate-500 ml-3 pl-3 border-l border-slate-300 font-medium">기준일: ${row.baseDate}</span>`;
+                if(row.pubDate) {
+                    dateDisplay += `<span class="text-xs text-slate-500 ml-2 font-medium">/ 공시일: ${row.pubDate}</span>`;
+                }
                 
                 container.innerHTML += `
-                    <div class="inline-flex items-center bg-white border border-slate-200 rounded-full px-5 py-3 shadow-sm cursor-default">
-                        <span class="font-extrabold text-slate-800 tracking-tight mr-3 text-sm">${row.year}</span>
-                        <span class="text-indigo-600 font-bold text-base">${row.price.toLocaleString()}<span class="text-sm font-medium ml-1 text-indigo-400">원</span></span>
-                        ${pubDateDisplay}
-                        <span class="text-xs text-slate-400 ml-2 font-normal">${extraInfo}</span>
+                    <div class="flex flex-col bg-white border border-slate-200 rounded-xl px-5 py-4 shadow-sm">
+                        <div class="flex items-center mb-1">
+                            <span class="font-extrabold text-slate-800 tracking-tight mr-3 text-sm">${row.year}</span>
+                            <span class="text-indigo-600 font-bold text-base">${row.price.toLocaleString()}<span class="text-sm font-medium ml-1 text-indigo-400">원</span></span>
+                            ${dateDisplay}
+                        </div>
+                        ${extraInfo ? `<span class="text-xs text-slate-400 font-normal mt-1">${extraInfo}</span>` : ""}
                     </div>`;
             });
         }
