@@ -231,27 +231,6 @@
             return "";
         }
 
-        function estimateLandPubDate(year, month) {
-            const y = parseInt(year);
-            const m = parseInt(month || 1);
-            
-            let targetMonth = m === 1 ? (y >= 2022 ? 4 : 5) : 10;
-            let targetDay = (targetMonth === 4 || targetMonth === 6 || targetMonth === 9 || targetMonth === 11) ? 30 : 31;
-            
-            let date = new Date(y, targetMonth - 1, targetDay);
-            
-            if (date.getDay() === 0) { 
-                date.setDate(targetDay - 2);
-            } else if (date.getDay() === 6) { 
-                date.setDate(targetDay - 1);
-            }
-            
-            const resY = date.getFullYear();
-            const resM = String(date.getMonth() + 1).padStart(2, '0');
-            const resD = String(date.getDate()).padStart(2, '0');
-            
-            return `${resY}-${resM}-${resD}`;
-        }
 
         async function handleBulkExcel(event) {
             const file = event.target.files[0];
@@ -388,10 +367,7 @@
                                         const baseDate = formatBaseDate(item.stdrMt);
                                         
                                         let pubDate = formatPubDate(item.pblntfDe || item.pblntfDate || item.pblntfYmd || item.pblntfDay);
-                                        if (probeType === "토지" && !pubDate) {
-                                            pubDate = estimateLandPubDate(yearVal, item.stdrMt);
-                                        }
-
+                                       
                                         if (priceVal && yearVal) {
                                             const uniqueKey = `${yearVal}_${priceVal}_${baseDate}_${pubDate}`;
                                             if (!seenKeys.has(uniqueKey)) {
@@ -542,9 +518,6 @@
                         const baseDate = formatBaseDate(item.stdrMt);
                         
                         let pubDate = formatPubDate(item.pblntfDe || item.pblntfDate || item.pblntfYmd || item.pblntfDay);
-                        if (propType === "토지" && !pubDate) {
-                            pubDate = estimateLandPubDate(yearVal, item.stdrMt);
-                        }
 
                         if (priceVal && yearVal) {
                             const row = { 
