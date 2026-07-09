@@ -385,21 +385,20 @@
 
                 let allParsedItems = [];
 
-                // 4. 각 월별 데이터 비동기 병렬 호출 (🌟 CORS 우회 프록시 적용)
+                // 4. 각 월별 데이터 비동기 병렬 호출 (🌟 고성능 프록시 및 최적화 적용)
                 const fetchPromises = targetMonths.map(async (ym) => {
-                    // 원본 국토교통부 API 주소 조립
-                    const targetUrl = `https://apis.data.go.kr/1613000/${apiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=9999`;
+                    // 국토부 서버 과부하(Timeout) 방지를 위해 최대 추출 건수를 3000건으로 최적화
+                    const targetUrl = `https://apis.data.go.kr/1613000/${apiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=3000`;
                     
-                    // CORS 차단을 우회하기 위한 무료 프록시 서버(allorigins) 결합
-                    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+                    // 타임아웃에 강하고 가벼운 고성능 프록시망(corsproxy.io)으로 우회
+                    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
                     
                     try {
                         const response = await fetch(proxyUrl);
                         if (!response.ok) return;
                         
-                        // 프록시 서버는 결과를 JSON 객체에 담아서 보내주므로, contents를 한 겹 벗겨내야 진짜 XML이 나옵니다.
-                        const json = await response.json();
-                        const xmlText = json.contents;
+                        // JSON 껍데기 없이 순수 XML 데이터를 다이렉트로 수신하여 파싱 속도 극대화
+                        const xmlText = await response.text();
                         
                         const parser = new DOMParser();
                         const xmlDoc = parser.parseFromString(xmlText, "text/xml");
