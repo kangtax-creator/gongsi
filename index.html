@@ -385,19 +385,32 @@
 
                 let allParsedItems = [];
 
-                // 4. 각 월별 데이터 비동기 병렬 호출 (🌟 Vercel 자체 Rewrite 프록시 적용)
-                const fetchPromises = targetMonths.map(async (ym) => {
-                    // 외부 프록시 사이트를 거치지 않고, Vercel이 만들어준 우리만의 전용 통로(/api/rtms/)를 사용합니다.
-                    // CORS 에러와 국토부 방화벽(403) 차단을 동시에 완벽하게 회피합니다.
+                // 4. 각 월별 데이터 '순차적' 호출 (🌟 정부 서버 DDoS 오인 및 500 에러 방지)
+                for (let i = 0; i < targetMonths.length; i++) {
+                    let ym = targetMonths[i];
+                    
+                    // 진행 상황을 버튼에 실시간으로 보여줌
+                    btn.innerText = `국토부 데이터 연동 중... (${i+1}/${targetMonths.length}개월 스캔 중)`;
+                    
                     const targetUrl = `/api/rtms/${apiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=3000`;
                     
                     try {
                         const response = await fetch(targetUrl);
-                        if (!response.ok) return;
+                        if (!response.ok) {
+                            console.warn(`${ym}월 데이터 호출 실패 (500 에러 등). 다음 달로 넘어갑니다.`);
+                            continue;
+                        }
                         
-                        // JSON 껍데기 없이 순수 XML 데이터를 다이렉트로 수신하여 파싱 속도 극대화
                         const xmlText = await response.text();
                         
+                        // 🌟 혹시 아직 키가 승인되지 않았을 때를 위한 에러 감지 로직
+                        if (xmlText.includes('SERVICE KEY IS NOT REGISTERED ERROR') || xmlText.includes('등록되지 않은 서비스키')) {
+                            alert("발급받으신 API 키가 아직 국토부 서버망에 동기화되지 않았습니다.\n(일반적으로 발급 후 1~2시간 소요)\n조금만 더 기다렸다가 다시 시도해 주세요!");
+                            btn.innerText = "국토부 오픈 API 호출 및 법정 오차(±5%) 자동 스크리닝 실행";
+                            btn.disabled = false;
+                            return; // 함수 강제 종료
+                        }
+
                         const parser = new DOMParser();
                         const xmlDoc = parser.parseFromString(xmlText, "text/xml");
                         const xmlItems = xmlDoc.getElementsByTagName("item");
@@ -428,11 +441,12 @@
                             });
                         }
                     } catch (e) {
-                        console.error("국토부 실거래 데이터 수집 중 에러:", e);
+                        console.error(`${ym}월 데이터 파싱 중 에러:`, e);
                     }
-                });
-
-                await Promise.all(fetchPromises);
+                    
+                    // 🌟 핵심: 한 달 치 데이터를 긁어온 후, 서버가 숨을 쉴 수 있도록 0.3초 대기 (이게 없으면 뻗습니다)
+                    await sleep(300);
+                }
 
                 // 5. 상증세법 시행령 요건 정밀 세무 스크리닝 (🌟 지번 일치 + 면적 ±5% + 기간 내)
                 const minArea = targetAreaInput * 0.95;
