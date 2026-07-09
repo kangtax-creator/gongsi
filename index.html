@@ -385,16 +385,14 @@
 
                 let allParsedItems = [];
 
-                // 4. 각 월별 데이터 비동기 병렬 호출 (🌟 고성능 프록시 및 최적화 적용)
+                // 4. 각 월별 데이터 비동기 병렬 호출 (🌟 Vercel 자체 Rewrite 프록시 적용)
                 const fetchPromises = targetMonths.map(async (ym) => {
-                    // 국토부 서버 과부하(Timeout) 방지를 위해 최대 추출 건수를 3000건으로 최적화
-                    const targetUrl = `https://apis.data.go.kr/1613000/${apiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=3000`;
-                    
-                    // 타임아웃에 강하고 가벼운 고성능 프록시망(corsproxy.io)으로 우회
-                    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+                    // 외부 프록시 사이트를 거치지 않고, Vercel이 만들어준 우리만의 전용 통로(/api/rtms/)를 사용합니다.
+                    // CORS 에러와 국토부 방화벽(403) 차단을 동시에 완벽하게 회피합니다.
+                    const targetUrl = `/api/rtms/${apiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=3000`;
                     
                     try {
-                        const response = await fetch(proxyUrl);
+                        const response = await fetch(targetUrl);
                         if (!response.ok) return;
                         
                         // JSON 껍데기 없이 순수 XML 데이터를 다이렉트로 수신하여 파싱 속도 극대화
