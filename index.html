@@ -236,7 +236,6 @@
 
     <script>
         const VWORLD_KEY = "75321A8E-275D-32A6-82AC-B9D0D8E551FE";
-        // 🌟 국토교통부 실거래가 오픈 API 개인 인증키 연동 완료
         const DATA_GO_KR_KEY = "83a79624397baf59da6f5daea52c9c0478aceccf3f20b707e26f9866c85f7b8f";
         const DOMAIN = window.location.origin; 
         const OFFICE_PHONE = "02-XXXX-XXXX"; 
@@ -333,7 +332,7 @@
             return "";
         }
 
-        // 🌟 [유사매매사례] 국토교통부 실거래가 오픈 API 연동 엔진 실행기
+        // 🌟 [유사매매사례 핵심 로직 고도화] 
         async function fetchSimilarSalePrices() {
             const baseDateInput = document.getElementById('sigaBaseDate').value;
             const targetAreaInput = parseFloat(document.getElementById('sigaTargetArea').value);
@@ -356,10 +355,17 @@
             btn.disabled = true;
 
             try {
-                // 1. PNU 앞 5자리로 LAWD_CD(시군구 법정동코드) 빌드
+                // 1. PNU 해독하여 시군구코드(LAWD_CD) 및 타겟 지번(Jibun) 정밀 추출
                 const lawdCd = globalCurrentPnu.substring(0, 5);
                 
-                // 2. 상증세법 평가기간 기반 월별 타겟 검색 리스트 연산
+                // PNU 19자리: 시도(2) + 시군구(3) + 읍면동(3) + 리(2) + 산(1) + 본번(4) + 부번(4)
+                const isSan = globalCurrentPnu.substring(10, 11) === '2';
+                const bon = parseInt(globalCurrentPnu.substring(11, 15));
+                const bu = parseInt(globalCurrentPnu.substring(15, 19));
+                // API 데이터와 완벽 일치시키는 지번 조립 (예: "325-8", "산15")
+                const exactTargetJibun = (isSan ? "산" : "") + (bu === 0 ? String(bon) : `${bon}-${bu}`);
+                
+                // 2. 상증세법 평가기간 기반 월별 타겟 리스트 연산
                 const baseDate = new Date(baseDateInput);
                 const startMonths = -6;
                 const endMonths = taxType === "증여" ? 3 : 6;
@@ -373,15 +379,15 @@
                 }
 
                 // 3. 국토교통부 아파트/다세대/오피스텔 매매 API 엔드포인트 분기
-                let apiPath = "rtmsDataSvcAptTrade/getRTMSDataSvcAptTradeDev"; // 아파트 기본값
+                let apiPath = "rtmsDataSvcAptTrade/getRTMSDataSvcAptTradeDev"; 
                 if (targetType === "RH") apiPath = "rtmsDataSvcRhTrade/getRTMSDataSvcRhTradeDev";
                 if (targetType === "OFFI") apiPath = "rtmsDataSvcOffiTrade/getRTMSDataSvcOffiTrade";
 
                 let allParsedItems = [];
 
-                // 4. 각 월별 데이터를 비동기 병렬 구조로 초고속 호출
+                // 4. 각 월별 데이터 비동기 병렬 호출 (🌟 numOfRows=9999 적용으로 데이터 누락 완전 차단)
                 const fetchPromises = targetMonths.map(async (ym) => {
-                    const proxyUrl = `https://apis.data.go.kr/1613000/${apiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}`;
+                    const proxyUrl = `https://apis.data.go.kr/1613000/${apiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=9999`;
                     try {
                         const response = await fetch(proxyUrl);
                         if (!response.ok) return;
@@ -423,35 +429,37 @@
 
                 await Promise.all(fetchPromises);
 
-                // 5. 상증세법 시행령 요건 정밀 세무 스크리닝 (면적 ±5% 이내)
+                // 5. 상증세법 시행령 요건 정밀 세무 스크리닝 (🌟 지번 일치 + 면적 ±5% + 기간 내)
                 const minArea = targetAreaInput * 0.95;
                 const maxArea = targetAreaInput * 1.05;
 
-                // 계약일자가 상증세법 평가기간 내에 위치하는지 타임라인 유효성 검증
                 const startTimeLimit = new Date(baseDate.getFullYear(), baseDate.getMonth() + startMonths, baseDate.getDate());
                 const endTimeLimit = new Date(baseDate.getFullYear(), baseDate.getMonth() + endMonths, baseDate.getDate());
 
                 let filteredCandidates = allParsedItems.filter(item => {
                     const itemDate = new Date(item.date);
-                    // 면적 조건 ±5% 만족 여부 판정
+                    
+                    // 🌟 핀셋 필터 1: PNU에서 역추적한 대상 지번과 API 거래 내역의 지번이 완벽하게 일치하는가?
+                    const isJibunValid = item.jibun.replace(/\s/g, '') === exactTargetJibun.replace(/\s/g, '');
+                    
+                    // 필터 2 & 3: 면적 5% 오차 및 날짜 범위 검증
                     const isAreaValid = item.area >= minArea && item.area <= maxArea;
-                    // 날짜 조건 만족 여부 판정
                     const isDateValid = itemDate >= startTimeLimit && itemDate <= endTimeLimit;
                     
-                    return isAreaValid && isDateValid;
+                    return isJibunValid && isAreaValid && isDateValid;
                 });
 
-                // 6. 평가기준일과 가장 가까운 계약일 순서로 최적 정렬 정돈
+                // 6. 평가기준일과 가장 가까운 계약일 순서로 최적 정렬
                 filteredCandidates.sort((a, b) => {
                     return Math.abs(new Date(a.date) - baseDate) - Math.abs(new Date(b.date) - baseDate);
                 });
 
-                // 7. 결과 테이블 동적 바인딩 및 시각화 출력
+                // 7. 결과 테이블 동적 바인딩
                 tbody.innerHTML = "";
                 badge.innerText = `${filteredCandidates.length}건 발견`;
 
                 if (filteredCandidates.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400 font-medium">동일 시군구 내 법정 평가기간 및 전용면적 ±5% 조건을 동시 충족하는 적합한 유사매매사례 가액이 존재하지 않습니다.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400 font-medium">선택하신 조건(단지 지번 일치, 법정 평가기간 내, 전용면적 ±5% 오차율 이내)을 동시에 충족하는 거래 내역이 존재하지 않습니다.</td></tr>`;
                 } else {
                     filteredCandidates.forEach((row, index) => {
                         let areaErrorRate = (((row.area - targetAreaInput) / targetAreaInput) * 100).toFixed(2);
@@ -675,7 +683,7 @@
             try {
                 const pnu = await getPnu(address);
                 if (!pnu) throw new Error("지번 코드를 인식하지 못했습니다.");
-                globalCurrentPnu = pnu; // 🌟 PNU 전역변수 캐싱하여 실거래가 연동 기초자료로 제공
+                globalCurrentPnu = pnu; 
 
                 let apiUrl = ""; let priceField = "";
                 if (propType === "공동주택") { apiUrl = "https://api.vworld.kr/ned/data/getApartHousingPriceAttr"; priceField = "pblntfPc"; }
@@ -733,7 +741,6 @@
                     renderTags(propType, uniqueData);
                     document.getElementById('result-container').classList.remove('hidden');
 
-                    // 🌟 [실무 편의 기능] 조회된 최신 면적 및 기준시가를 유사매매사례 탭 필드에 다이렉트 자동 연동
                     if (uniqueData[0]) {
                         if (propType === "공동주택" && uniqueData[0].area) {
                             document.getElementById('sigaTargetArea').value = parseFloat(uniqueData[0].area);
