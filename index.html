@@ -385,13 +385,21 @@
 
                 let allParsedItems = [];
 
-                // 4. 각 월별 데이터 비동기 병렬 호출 (🌟 numOfRows=9999 적용으로 데이터 누락 완전 차단)
+                // 4. 각 월별 데이터 비동기 병렬 호출 (🌟 CORS 우회 프록시 적용)
                 const fetchPromises = targetMonths.map(async (ym) => {
-                    const proxyUrl = `https://apis.data.go.kr/1613000/${apiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=9999`;
+                    // 원본 국토교통부 API 주소 조립
+                    const targetUrl = `https://apis.data.go.kr/1613000/${apiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=9999`;
+                    
+                    // CORS 차단을 우회하기 위한 무료 프록시 서버(allorigins) 결합
+                    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+                    
                     try {
                         const response = await fetch(proxyUrl);
                         if (!response.ok) return;
-                        const xmlText = await response.text();
+                        
+                        // 프록시 서버는 결과를 JSON 객체에 담아서 보내주므로, contents를 한 겹 벗겨내야 진짜 XML이 나옵니다.
+                        const json = await response.json();
+                        const xmlText = json.contents;
                         
                         const parser = new DOMParser();
                         const xmlDoc = parser.parseFromString(xmlText, "text/xml");
