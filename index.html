@@ -8,8 +8,8 @@
     <meta name="keywords" content="부동산 공시가격, 연도별 기준시가, 양도세 계산, 상속세, 증여세, 양도소득세, 부동산 세무, 강승완 세무사, 세무상담, micro-tax">
     <meta name="description" content="양도세, 상속세, 증여세 계산을 위한 과거 연도별 부동산 공시가격 자동 조회 및 엑셀 다운로드 도구입니다.">
     
-    <meta property="og:title" content="부동산 공시가격 대량 추출 엔진 - 강승완 세무사">
-    <meta property="og:description" content="양도세, 상속세, 증여세 계산을 위한 연도별 기준시가 통합 조회 시스템">
+    <meta property="og:title" content="부동산 공시가격 대량 추출 엔진">
+    <meta property="og:description" content="여러 물건도 한번에! - 부동산 공시가격 통합 조회 시스템">
     <meta property="og:image" content="https://gongsi-ten.vercel.app/thumbnail.jpg">
     <meta property="og:url" content="https://gongsi-ten.vercel.app">
 
@@ -40,6 +40,7 @@
 
     <div class="max-w-4xl mx-auto px-4 -mt-12 pb-12 grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
         
+        <!-- 왼쪽 단건 조회 영역 -->
         <div class="md:col-span-2 space-y-6">
             <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
                 <h2 class="text-lg font-extrabold text-slate-800 mb-4 flex items-center">
@@ -100,14 +101,22 @@
             </div>
         </div>
 
+        <!-- 오른쪽 대량 조회 영역 -->
         <div class="space-y-6">
             <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
-                <h2 class="text-lg font-extrabold text-slate-800 mb-2 flex items-center">
+                <h2 class="text-lg font-extrabold text-slate-800 mb-4 flex items-center">
                     <span class="w-2 h-2 bg-emerald-600 rounded-full mr-2"></span> 엑셀 대량 조회 (Batch)
                 </h2>
-                <p class="text-xs text-slate-400 mb-4 leading-relaxed">
-                    A열에 주소를 붙여넣고 파일을 올려주세요. 아파트, 단독주택, 토지가 섞여 있어도 알아서 분류해 드립니다.
-                </p>
+                
+                <!-- 🌟 실무용 유의사항 안내 박스 추가 -->
+                <div class="mb-5 bg-amber-50 border-l-4 border-amber-400 p-4 text-amber-800 text-xs shadow-sm rounded-r-lg leading-relaxed">
+                    <p class="font-bold text-sm mb-1">📢 주소 엑셀 입력 유의사항</p>
+                    <ul class="list-disc ml-4 space-y-1 mt-2">
+                        <li><b>아파트/빌라:</b> 주소 뒤에 <b>쉼표(,)</b>를 찍고 동-호수를 적어주세요.<br><span class="text-amber-600 opacity-80">(예: 위례대로6길 15, 101-102)</span></li>
+                        <li><b>단독주택/토지:</b> 동/호수 표기 없이 <b>지번 또는 도로명</b>까지만 정확히 적어주세요.<br><span class="text-amber-600 opacity-80">(예: 율현동 325-8)</span></li>
+                        <li><span class="font-semibold text-amber-900">자동 분류 시:</span> 쉼표나 동/호 명시가 없으면 지번으로 간주하여 주택과 토지 중 최신 데이터가 있는 것을 우선 추출합니다.</li>
+                    </ul>
+                </div>
 
                 <div class="space-y-4">
                     <div>
@@ -125,7 +134,7 @@
                         <div class="space-y-2">
                             <div class="text-2xl text-slate-400 group-hover:text-emerald-500 transition-colors">📊</div>
                             <p class="text-xs font-bold text-slate-600 group-hover:text-emerald-600 transition-colors">엑셀 파일 선택 또는 드래그</p>
-                            <p class="text-[10px] text-slate-400">.xlsx / .xls 파일만 가능</p>
+                            <p class="text-[10px] text-slate-400">.xlsx / .xls 파일만 가능 (A열에 주소)</p>
                         </div>
                     </div>
 
@@ -146,7 +155,8 @@
     <script>
         const VWORLD_KEY = "75321A8E-275D-32A6-82AC-B9D0D8E551FE";
         const DOMAIN = window.location.origin; 
-        // 📞 연락처 세팅: 이 부분을 수정하시면 전체 엑셀 하단에 들어갑니다!
+        
+        // 📞 연락처 세팅: 필요시 이곳을 수정하세요
         const OFFICE_PHONE = "02-XXXX-XXXX"; 
         
         let priceChartInstance = null;
@@ -278,22 +288,32 @@
                         let ho = rows[i][2] ? String(rows[i][2]).replace(/\D/g, '') : "";
                         let baseAddr = rawAddr;
 
-                        // 자동분류이거나 공동주택일 때 일단 동/호수 분리 시도
+                        // 🌟 [핵심 로직 1] 진짜 아파트 동/호수 형태만 정밀 타겟팅 (지번 오인식 완벽 차단)
                         if ((selectedPropType === "auto" || selectedPropType === "공동주택") && !dong && !ho) {
-                            let matchDongHo = rawAddr.match(/(\d+)\s*(?:동|-)\s*(\d+)\s*(?:호)?\s*$/);
-                            let matchHoComma = rawAddr.match(/,\s*(?:제)?(\d+)\s*(?:호)?\s*$/);
-                            let matchHoText = rawAddr.match(/\s+(?:제)?(\d+)\s*호\s*$/);
+                            
+                            // 1. 쉼표(,) 뒤에 동-호수가 오는 경우
+                            let matchCommaDongHo = rawAddr.match(/,\s*(\d+)\s*(?:동|-)\s*(\d+)\s*(?:호)?\s*$/);
+                            // 2. 쉼표(,) 뒤에 단일 호수만 오는 경우
+                            let matchCommaHoOnly = rawAddr.match(/,\s*(?:제)?(\d+)\s*(?:호)?\s*$/);
+                            // 3. 명시적으로 "동"과 "호"가 적힌 경우
+                            let matchTextDongHo = rawAddr.match(/(\d+)\s*동\s*(\d+)\s*(?:호)?\s*$/);
+                            // 4. 명시적으로 "호"만 적힌 경우
+                            let matchTextHoOnly = rawAddr.match(/\s+(?:제)?(\d+)\s*호\s*$/);
 
-                            if (matchDongHo) {
-                                dong = matchDongHo[1];
-                                ho = matchDongHo[2];
-                                baseAddr = rawAddr.replace(matchDongHo[0], '').replace(/,\s*$/, '').trim();
-                            } else if (matchHoComma) {
-                                ho = matchHoComma[1];
-                                baseAddr = rawAddr.replace(matchHoComma[0], '').trim();
-                            } else if (matchHoText) {
-                                ho = matchHoText[1];
-                                baseAddr = rawAddr.replace(matchHoText[0], '').replace(/,\s*$/, '').trim();
+                            if (matchCommaDongHo) {
+                                dong = matchCommaDongHo[1];
+                                ho = matchCommaDongHo[2];
+                                baseAddr = rawAddr.split(',')[0].trim();
+                            } else if (matchCommaHoOnly) {
+                                ho = matchCommaHoOnly[1];
+                                baseAddr = rawAddr.split(',')[0].trim();
+                            } else if (matchTextDongHo) {
+                                dong = matchTextDongHo[1];
+                                ho = matchTextDongHo[2];
+                                baseAddr = rawAddr.replace(matchTextDongHo[0], '').trim();
+                            } else if (matchTextHoOnly) {
+                                ho = matchTextHoOnly[1];
+                                baseAddr = rawAddr.replace(matchTextHoOnly[0], '').trim();
                             }
                         }
                         validRows.push({ rawAddr, baseAddr, dong, ho });
@@ -307,8 +327,7 @@
 
                     const totalCount = validRows.length;
                     const finalBulkRows = [];
-
-                    // 폭포수(Waterfall) 탐색 순서: 공동주택 -> 단독주택 -> 토지
+                    // 폭포수 탐색 순서: 공동주택 -> 단독주택 -> 토지
                     const typesToTry = selectedPropType === "auto" ? ["공동주택", "단독주택", "토지"] : [selectedPropType];
 
                     for (let i = 0; i < totalCount; i++) {
@@ -325,9 +344,10 @@
                             continue;
                         }
 
-                        let isDataFound = false;
+                        let bestHistory = [];
+                        let maxYearBest = 0;
+                        let finalPropType = "없음";
 
-                        // 🌟 자동 분류 로직 시작
                         for (let probeType of typesToTry) {
                             let apiUrl = "";
                             let priceField = "";
@@ -353,7 +373,7 @@
                                         }
                                     }
 
-                                    if (items.length === 0) break; // 해당 물건 종류 데이터가 없으면 탈출 후 다음 종류 찔러보기
+                                    if (items.length === 0) break;
 
                                     for (const item of items) {
                                         if (probeType === "공동주택") {
@@ -377,10 +397,9 @@
                                             if (!seenKeys.has(uniqueKey)) {
                                                 seenKeys.add(uniqueKey);
                                                 
-                                                // 🌟 통합 엑셀 포맷 구성 (어떤 물건이든 모든 열에 맞춰 출력)
                                                 let rowObj = {
                                                     "대상 주소": rawAddr,
-                                                    "물건 구분": probeType, // 👈 자동분류 시 찾은 종류 표시
+                                                    "물건 구분": probeType,
                                                     "가격기준연도": `${yearVal}년`,
                                                     "기준일자": baseDate,
                                                     "공시일자": pubDate,
@@ -400,18 +419,33 @@
                                     pageNo++;
                                 }
 
+                                // 🌟 [핵심 로직 2] 수집된 데이터 중 가장 최신 연도를 확인하여 멸실/신축 추적
                                 if (tempHistory.length > 0) {
-                                    tempHistory.sort((a, b) => parseInt(b["가격기준연도"]) - parseInt(a["가격기준연도"]));
-                                    finalBulkRows.push(...tempHistory);
-                                    isDataFound = true;
-                                    break; // 💡 데이터를 찾았으므로 다른 종류(토지 등)는 더 이상 찔러보지 않고 스킵!
+                                    let maxYearThisType = Math.max(...tempHistory.map(h => parseInt(h["가격기준연도"])));
+                                    
+                                    // 기존에 찾은 물건 종류보다 더 최신 데이터면 덮어쓰기
+                                    if (maxYearThisType > maxYearBest) {
+                                        maxYearBest = maxYearThisType;
+                                        tempHistory.sort((a, b) => parseInt(b["가격기준연도"]) - parseInt(a["가격기준연도"]));
+                                        bestHistory = tempHistory;
+                                        finalPropType = probeType;
+                                    }
+
+                                    // 만약 최근 데이터(2025~2026년 이상)가 있다면 해당 지번의 현존 자산이 확실하므로 토지까지 안 찾고 탐색 즉시 종료
+                                    if (maxYearThisType >= 2025) {
+                                        break;
+                                    }
                                 }
                             } catch (err) {
                                 console.error(err);
                             }
                         }
 
-                        if (!isDataFound) {
+                        if (bestHistory.length > 0) {
+                            // 최신 연도 기준으로 채택된 내역들의 물건 구분을 최종 타입으로 일괄 통일
+                            bestHistory = bestHistory.map(row => ({...row, "물건 구분": finalPropType}));
+                            finalBulkRows.push(...bestHistory);
+                        } else {
                             finalBulkRows.push({ "대상 주소": rawAddr, "물건 구분": "없음", "가격기준연도": "정보 없음", "기준일자": "", "공시일자": "", "기준시가(원)": "해당 주소의 데이터 없음" });
                         }
 
@@ -423,7 +457,7 @@
                     finalBulkRows.push({
                         "대상 주소": "💡 양도세/상속세/증여세 및 부동산 절세 상담:",
                         "물건 구분": "강승완 세무사",
-                        "가격기준연도": OFFICE_PHONE, // 📞 위에서 세팅한 전화번호 출력
+                        "가격기준연도": OFFICE_PHONE, 
                         "기준일자": "www.micro-tax.com",
                         "공시일자": "",
                         "기준시가(원)": ""
@@ -434,7 +468,6 @@
                     
                     const bulkWorkbook = XLSX.utils.book_new();
                     XLSX.utils.book_append_sheet(bulkWorkbook, bulkWorksheet, "대량_통합조회_결과");
-                    
                     XLSX.writeFile(bulkWorkbook, "강승완세무사_대량_공시가격_통합결과.xlsx");
                     
                     statusText.innerText = "✅ 대량 취합 다운로드 완료!";
@@ -448,7 +481,6 @@
             reader.readAsArrayBuffer(file);
         }
 
-        // [이하 단건 조회 로직은 기존과 동일]
         async function searchPriceHistory() {
             const address = document.getElementById('address').value;
             const propType = document.querySelector('input[name="propType"]:checked').value;
@@ -599,7 +631,7 @@
             formattedData.push({ 
                 "대상 주소": "💡 양도세/상속세/증여세 및 부동산 절세 상담:", 
                 "가격기준연도": "강승완 세무사", 
-                "기준일자": OFFICE_PHONE, // 📞 단건 조회 시에도 전화번호 출력
+                "기준일자": OFFICE_PHONE, 
                 "공시일자": "www.micro-tax.com",
                 "기준시가(원)": "" 
             });
