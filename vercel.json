@@ -3,6 +3,10 @@
     {
       "source": "/api/rtms/:path*",
       "destination": "https://apis.data.go.kr/1613000/:path*"
+    },
+    {
+      "source": "/api/rent/:path*",
+      "destination": "https://apis.data.go.kr/1613000/:path*"
     }
   ]
 }
