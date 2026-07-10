@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>부동산 공시가격 & 상증세 유사매매사례 통합 엔진 | 강승완 세무사</title>
+    <title>부동산 공시가격 & 단지 내 실거래(매매/임대) 통합 조회 | 강승완 세무사</title>
     
-    <meta name="keywords" content="부동산 공시가격, 연도별 기준시가, 유사매매사례가액, 상속세, 증여세, 양도소득세, 매매사례가액, 강승완 세무사, micro-tax">
-    <meta name="description" content="양도·상속·증여세 계산을 위한 연도별 부동산 공시가격 및 상증세법상 유사매매사례가액 통합 조회 시스템입니다.">
+    <meta name="keywords" content="부동산 공시가격, 연도별 기준시가, 실거래가, 매매가, 전세가, 월세, 상속세, 증여세, 양도소득세, 강승완 세무사, micro-tax">
+    <meta name="description" content="양도·상속·증여세 계산을 위한 연도별 부동산 공시가격 및 단지 내 매매/전월세 실거래가 통합 조회 시스템입니다.">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
@@ -18,7 +18,7 @@
     <div class="bg-[#0f172a] text-white pt-12 pb-24 px-4">
         <div class="max-w-6xl mx-auto">
             <p class="text-indigo-400 font-bold text-sm mb-2 tracking-wider">세무/부동산 데이터 리서치 시스템</p>
-            <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight mb-4">부동산 기준시가 & 유사매매사례 통합 조회</h1>
+            <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight mb-4">부동산 기준시가 & 실거래가(매매/임대차) 종합 조회</h1>
             <p class="text-slate-400 text-sm md:text-base">
                 출처: 국토교통부 실거래가 시스템 및 공동주택가격 공시시스템 (VWORLD) · 자동 동기화
             </p>
@@ -124,7 +124,7 @@
                     1. 공시가격 연혁 데이터
                 </button>
                 <button onclick="switchTab('siga')" id="tab-siga" class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none">
-                    2. 상증세법 유사매매사례 탐색
+                    2. 단지 내 매매/전월세 조회
                 </button>
             </div>
 
@@ -153,53 +153,35 @@
                 </div>
             </div>
 
-            <!-- 탭 2: 유사매매사례 컨텐츠 -->
+            <!-- 탭 2: 유사매매사례 컨텐츠 (개편: 매매/전월세 종합 조회) -->
             <div id="content-siga" class="hidden space-y-6">
                 <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200 space-y-4">
                     <h2 class="text-lg font-extrabold text-slate-800 flex items-center">
-                        <span class="w-2 h-2 bg-indigo-600 rounded-full mr-2"></span> 상증령 제49조 유사매매사례 가액 정밀 스크리닝
+                        <span class="w-2 h-2 bg-indigo-600 rounded-full mr-2"></span> 선택 단지 실거래 종합 분석 (매매 & 임대차)
                     </h2>
                     
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
                         <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">상증세 세목 선택</label>
-                            <div class="flex space-x-4 mt-2">
-                                <label class="flex items-center text-xs font-medium text-slate-700 cursor-pointer">
-                                    <input type="radio" name="sigaTaxType" value="증여" checked class="mr-1.5 accent-indigo-600"> 증여세 (전6 ~ 후3)
-                                </label>
-                                <label class="flex items-center text-xs font-medium text-slate-700 cursor-pointer">
-                                    <input type="radio" name="sigaTaxType" value="상속" class="mr-1.5 accent-indigo-600"> 상속세 (전6 ~ 후6)
-                                </label>
-                            </div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">조회 시작 월</label>
+                            <input type="month" id="searchStartMonth" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none font-medium">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">평가기준일자 (상속/증여일)</label>
-                            <input type="date" id="sigaBaseDate" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none font-medium">
+                            <label class="block text-xs font-bold text-slate-600 mb-1">조회 종료 월</label>
+                            <input type="month" id="searchEndMonth" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none font-medium">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-600 mb-1">물건 유형</label>
                             <select id="sigaTargetType" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none font-bold text-slate-700">
-                                <option value="APT">아파트 매매</option>
-                                <option value="RH">연립다세대 매매</option>
-                                <option value="OFFI">오피스텔 매매</option>
+                                <option value="APT">아파트</option>
+                                <option value="RH">연립다세대</option>
+                                <option value="OFFI">오피스텔</option>
                             </select>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-1">대상 자산 전용면적 (㎡) *공시정보 조회시 자동연동</label>
-                            <input type="number" step="0.0001" id="sigaTargetArea" placeholder="예: 84.97" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-indigo-700">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-1">당해 고시 기준시가 (원) *자동 연동</label>
-                            <input type="text" id="sigaTargetPrice" placeholder="조회 시 자동 입력" readonly class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-500">
-                        </div>
-                    </div>
-
                     <div class="pt-2">
-                        <button onclick="fetchSimilarSalePrices()" id="sigaBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition-all">
-                            국토부 오픈 API 호출 및 법정 오차(±5%) 자동 스크리닝 실행
+                        <button onclick="fetchComplexTransactions()" id="sigaBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition-all">
+                            선택 기간 내 단지 전체 매매/전월세 데이터 스캔
                         </button>
                     </div>
                 </div>
@@ -207,33 +189,33 @@
                 <!-- 실거래 결과 테이블 -->
                 <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200 space-y-4">
                     <div class="flex justify-between items-center">
-                        <h3 class="text-base font-extrabold text-slate-800">법정 평가기간 내 유사 가액 검색 결과 (오차 ±5% 이내)</h3>
-                        <span id="siga-count-badge" class="bg-slate-100 text-slate-700 text-xs px-2.5 py-1 rounded-full font-bold">0건 발견</span>
+                        <h3 class="text-base font-extrabold text-slate-800">조회 기간 내 전체 거래 내역</h3>
+                        <div class="flex space-x-2 items-center">
+                            <span id="siga-count-badge" class="bg-indigo-50 text-indigo-700 text-xs px-2.5 py-1 rounded-full font-bold border border-indigo-200">총 0건</span>
+                            <span id="trade-count-badge" class="bg-emerald-50 text-emerald-700 text-xs px-2.5 py-1 rounded-full font-bold border border-emerald-200">매매 0건</span>
+                            <span id="rent-count-badge" class="bg-amber-50 text-amber-700 text-xs px-2.5 py-1 rounded-full font-bold border border-amber-200">전월세 0건</span>
+                        </div>
                     </div>
                     
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="border-b border-slate-200 bg-slate-50 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
+                    <div class="overflow-x-auto max-h-[600px]">
+                        <table class="w-full text-left border-collapse relative">
+                            <thead class="sticky top-0 bg-slate-50 shadow-sm z-10">
+                                <tr class="border-b border-slate-200 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
                                     <th class="py-3 px-4">계약일자</th>
-                                    <th class="py-3 px-4">단지/지번명</th>
-                                    <th class="py-3 px-4">층수</th>
+                                    <th class="py-3 px-4">유형</th>
                                     <th class="py-3 px-4">전용면적(㎡)</th>
-                                    <th class="py-3 px-4">면적 오차율</th>
-                                    <th class="py-3 px-4">거래금액(원)</th>
-                                    <th class="py-3 px-4">상증세 적합도</th>
+                                    <th class="py-3 px-4">층수</th>
+                                    <th class="py-3 px-4">거래금액(매매/보증금)</th>
+                                    <th class="py-3 px-4">월세</th>
                                 </tr>
                             </thead>
                             <tbody id="siga-table-body" class="text-xs divide-y divide-slate-100 text-slate-700">
                                 <tr>
-                                    <td colspan="7" class="py-8 text-center text-slate-400">조건 입력 후 스크리닝을 진행해 주세요. 단지명과 지번이 일치하고 전용면적이 ±5% 범위 내에 들어오는 데이터만 추출됩니다.</td>
+                                    <td colspan="6" class="py-12 text-center text-slate-400 font-medium">조회 기간을 설정하고 스캔 버튼을 눌러주세요. 해당 지번의 모든 거래가 조회됩니다.</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                    <p class="text-[11px] text-slate-400 leading-relaxed mt-2">
-                        💡 <b>실무 유의사항:</b> 국토교통부 API 보안 정책상 거래 물건의 호별 고시가격은 함께 전송되지 않으므로, 추출된 단지 내 오차 범위(±5%) 이내 아파트 후보군들의 개별 기준시가 동질성 여부는 최종 신고 전 단건 조회 탭을 활용해 대조·검증해 주시기 바랍니다.
-                    </p>
                 </div>
             </div>
 
@@ -243,7 +225,7 @@
     <script>
         const VWORLD_KEY = "75321A8E-275D-32A6-82AC-B9D0D8E551FE";
         
-        // 🌟 국토교통부 실거래가 오픈 API 인증키 (세무사님 고유 키 완벽 적용 완료!)
+        // 🌟 국토교통부 실거래가 오픈 API 인증키 (매매 및 전월세 공통 사용)
         const DATA_GO_KR_KEY = "83a79624397baf59da6f5daea52c9c0478aceccf3f20b707e26f9866c85f7b8f";
         
         const DOMAIN = window.location.origin; 
@@ -255,6 +237,19 @@
         let globalCurrentPnu = ""; 
 
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+        // 초기화 시 기본 날짜 세팅 (최근 6개월)
+        document.addEventListener("DOMContentLoaded", () => {
+            const today = new Date();
+            let yyyy = today.getFullYear();
+            let mm = String(today.getMonth() + 1).padStart(2, '0');
+            document.getElementById('searchEndMonth').value = `${yyyy}-${mm}`;
+            
+            today.setMonth(today.getMonth() - 5); // 6개월 전
+            yyyy = today.getFullYear();
+            mm = String(today.getMonth() + 1).padStart(2, '0');
+            document.getElementById('searchStartMonth').value = `${yyyy}-${mm}`;
+        });
 
         function switchTab(tab) {
             const tabGongsi = document.getElementById('tab-gongsi');
@@ -341,175 +336,198 @@
             return "";
         }
 
-        // 🌟 [유사매매사례 최종 엔진 패치: Vercel 프록시, 과부하 방지, 대소문자 문제 완전 해결]
-        async function fetchSimilarSalePrices() {
-            const baseDateInput = document.getElementById('sigaBaseDate').value;
-            const targetAreaInput = parseFloat(document.getElementById('sigaTargetArea').value);
-            const taxType = document.querySelector('input[name="sigaTaxType"]:checked').value;
+        // 🌟 [통합 조회 엔진] 매매 및 전월세 동시 파싱 로직
+        async function fetchComplexTransactions() {
+            const startMonthInput = document.getElementById('searchStartMonth').value;
+            const endMonthInput = document.getElementById('searchEndMonth').value;
             const targetType = document.getElementById('sigaTargetType').value;
             const btn = document.getElementById('sigaBtn');
             const tbody = document.getElementById('siga-table-body');
-            const badge = document.getElementById('siga-count-badge');
 
             if (!globalCurrentPnu) {
-                alert("먼저 좌측 주소창에서 주소를 검색하고 공시가격을 조회하여 PNU 연동을 완료해 주세요.");
+                alert("먼저 좌측 주소창에서 주소를 검색하고 공시가격을 조회하여 단지(PNU) 연동을 완료해 주세요.");
                 return;
             }
-            if (!baseDateInput || isNaN(targetAreaInput)) {
-                alert("평가기준일자 및 대상 자산의 전용면적을 정확하게 입력해 주세요.");
+            if (!startMonthInput || !endMonthInput) {
+                alert("조회 시작 월과 종료 월을 모두 입력해 주세요.");
                 return;
             }
 
-            btn.innerText = "국토부 서버 대기 중... 잠시만 기다려주세요.";
+            btn.innerText = "국토부 실거래가 인프라 스캔 중... 잠시만 기다려주세요.";
             btn.disabled = true;
 
             try {
-                // 1. PNU 해독
+                // 1. PNU 해독 (타겟 지번 확정)
                 const lawdCd = globalCurrentPnu.substring(0, 5);
                 const isSan = globalCurrentPnu.substring(10, 11) === '2';
                 const bon = parseInt(globalCurrentPnu.substring(11, 15));
                 const bu = parseInt(globalCurrentPnu.substring(15, 19));
                 const exactTargetJibun = (isSan ? "산" : "") + (bu === 0 ? String(bon) : `${bon}-${bu}`);
                 
-                // 2. 평가기간 연산
-                const baseDate = new Date(baseDateInput);
-                const startMonths = -6;
-                const endMonths = taxType === "증여" ? 3 : 6;
-                
+                // 2. 조회 기간 월 배열 생성
+                const startD = new Date(startMonthInput + "-01");
+                const endD = new Date(endMonthInput + "-01");
                 let targetMonths = [];
-                for (let i = startMonths; i <= endMonths; i++) {
-                    let d = new Date(baseDate.getFullYear(), baseDate.getMonth() + i, 1);
-                    let yyyy = d.getFullYear();
-                    let mm = String(d.getMonth() + 1).padStart(2, '0');
-                    targetMonths.push(`${yyyy}${mm}`);
+                let currentD = new Date(startD);
+                
+                while (currentD <= endD) {
+                    targetMonths.push(`${currentD.getFullYear()}${String(currentD.getMonth() + 1).padStart(2, '0')}`);
+                    currentD.setMonth(currentD.getMonth() + 1);
                 }
 
-                // 🌟 [핵심 패치 1] 국토부 공식 문서에 맞춘 완벽한 대/소문자(RTMS) 정식 API 엔드포인트 지정
-                let apiPath = "RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade"; 
-                if (targetType === "RH") apiPath = "RTMSDataSvcRhTrade/getRTMSDataSvcRhTrade";
-                if (targetType === "OFFI") apiPath = "RTMSDataSvcOffiTrade/getRTMSDataSvcOffiTrade";
+                // 3. API 엔드포인트 세팅 (매매 / 전월세)
+                let tradeApiPath = "RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade"; 
+                let rentApiPath = "RTMSDataSvcAptRent/getRTMSDataSvcAptRent";
+                
+                if (targetType === "RH") {
+                    tradeApiPath = "RTMSDataSvcRhTrade/getRTMSDataSvcRhTrade";
+                    rentApiPath = "RTMSDataSvcRhRent/getRTMSDataSvcRhRent";
+                } else if (targetType === "OFFI") {
+                    tradeApiPath = "RTMSDataSvcOffiTrade/getRTMSDataSvcOffiTrade";
+                    rentApiPath = "RTMSDataSvcOffiRent/getRTMSDataSvcOffiRent";
+                }
 
-                let allParsedItems = [];
+                let allTransactions = [];
 
-                // 🌟 [핵심 패치 2] 500 과부하 방지 순차 호출 (300ms 딜레이 및 numOfRows=1000 하향 조정)
+                // 4. 월별 데이터 순차 수집 (과부하 방지)
                 for (let i = 0; i < targetMonths.length; i++) {
                     let ym = targetMonths[i];
+                    btn.innerText = `데이터 수집 중... (${i+1}/${targetMonths.length}개월 완료)`;
                     
-                    btn.innerText = `국토부 데이터 수집 중... (${i+1}/${targetMonths.length}개월 처리 완료)`;
-                    
-                    // Vercel 프록시 경로 활용
-                    const targetUrl = `/api/rtms/${apiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1000`;
+                    // Vercel 프록시 경로 활용 (매매는 /api/rtms, 전월세는 /api/rent)
+                    const tradeUrl = `/api/rtms/${tradeApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=3000`;
+                    const rentUrl = `/api/rent/${rentApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=3000`;
                     
                     try {
-                        const response = await fetch(targetUrl);
-                        if (!response.ok) {
-                            console.warn(`${ym}월 데이터 호출 실패 (상태: ${response.status}). 다음 달로 넘어갑니다.`);
-                            continue;
-                        }
-                        
-                        const xmlText = await response.text();
-                        
-                        // 키 오류 점검
-                        if (xmlText.includes('SERVICE KEY IS NOT REGISTERED ERROR') || xmlText.includes('등록되지 않은 서비스키')) {
-                            alert("발급받으신 API 키가 아직 국토부 서버에 동기화 대기 중이거나 키에 오타가 있습니다.\n(확인: 디코딩 키를 정확히 복사하셨나요?)");
-                            btn.innerText = "국토부 오픈 API 호출 및 법정 오차(±5%) 자동 스크리닝 실행";
-                            btn.disabled = false;
-                            return; 
+                        // 🌟 매매와 전월세를 병렬로 찔러서 대기시간 단축
+                        const [tradeRes, rentRes] = await Promise.all([
+                            fetch(tradeUrl).catch(e => null),
+                            fetch(rentUrl).catch(e => null)
+                        ]);
+
+                        // --- 매매 파싱 ---
+                        if (tradeRes && tradeRes.ok) {
+                            const xmlText = await tradeRes.text();
+                            const parser = new DOMParser();
+                            const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+                            const xmlItems = xmlDoc.getElementsByTagName("item");
+                            
+                            for (let item of xmlItems) {
+                                let jibun = item.getElementsByTagName("지번")[0]?.textContent || "";
+                                // 타겟 지번이 일치하는지 먼저 검사 (속도 최적화)
+                                const cleanTargetJibun = exactTargetJibun.replace(/\s/g, '');
+                                const apiJibunList = jibun.replace(/\s/g, '').split(',');
+                                if (!apiJibunList.includes(cleanTargetJibun)) continue;
+
+                                let dealAmount = item.getElementsByTagName("거래금액")[0]?.textContent || "0";
+                                let area = item.getElementsByTagName("전용면적")[0]?.textContent || "0";
+                                let year = item.getElementsByTagName("년")[0]?.textContent || "";
+                                let month = item.getElementsByTagName("월")[0]?.textContent || "";
+                                let rawDay = item.getElementsByTagName("일")[0]?.textContent || "1";
+                                let cleanDay = rawDay.split('~')[0].trim();
+                                let floor = item.getElementsByTagName("층")[0]?.textContent || "-";
+
+                                allTransactions.push({
+                                    type: '매매',
+                                    date: `${year}-${String(month).padStart(2, '0')}-${String(cleanDay).padStart(2, '0')}`,
+                                    floor: floor,
+                                    area: parseFloat(area),
+                                    amount: parseInt(dealAmount.replace(/,/g, '').trim()) * 10000,
+                                    monthlyRent: 0
+                                });
+                            }
                         }
 
-                        const parser = new DOMParser();
-                        const xmlDoc = parser.parseFromString(xmlText, "text/xml");
-                        const xmlItems = xmlDoc.getElementsByTagName("item");
-                        
-                        for (let item of xmlItems) {
-                            let dealAmount = item.getElementsByTagName("거래금액")[0]?.textContent || "0";
-                            let area = item.getElementsByTagName("전용면적")[0]?.textContent || "0";
-                            let year = item.getElementsByTagName("년")[0]?.textContent || "";
-                            let month = item.getElementsByTagName("월")[0]?.textContent || "";
-                            let day = item.getElementsByTagName("일")[0]?.textContent || "";
-                            let complexName = item.getElementsByTagName("아파트")[0]?.textContent || 
-                                               item.getElementsByTagName("연립다세대")[0]?.textContent || 
-                                               item.getElementsByTagName("단지")[0]?.textContent || "";
-                            let jibun = item.getElementsByTagName("지번")[0]?.textContent || "";
-                            let floor = item.getElementsByTagName("층")[0]?.textContent || "-";
+                        // --- 전월세 파싱 ---
+                        if (rentRes && rentRes.ok) {
+                            const xmlText = await rentRes.text();
+                            const parser = new DOMParser();
+                            const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+                            const xmlItems = xmlDoc.getElementsByTagName("item");
+                            
+                            for (let item of xmlItems) {
+                                let jibun = item.getElementsByTagName("지번")[0]?.textContent || "";
+                                const cleanTargetJibun = exactTargetJibun.replace(/\s/g, '');
+                                const apiJibunList = jibun.replace(/\s/g, '').split(',');
+                                if (!apiJibunList.includes(cleanTargetJibun)) continue;
 
-                            let formattedDateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                            let parsedAmount = parseInt(dealAmount.replace(/,/g, '').trim());
-                            let parsedArea = parseFloat(area);
+                                let deposit = item.getElementsByTagName("보증금액")[0]?.textContent || "0";
+                                let monthly = item.getElementsByTagName("월세금액")[0]?.textContent || "0";
+                                let area = item.getElementsByTagName("전용면적")[0]?.textContent || "0";
+                                let year = item.getElementsByTagName("년")[0]?.textContent || "";
+                                let month = item.getElementsByTagName("월")[0]?.textContent || "";
+                                let rawDay = item.getElementsByTagName("일")[0]?.textContent || "1";
+                                let cleanDay = rawDay.split('~')[0].trim();
+                                let floor = item.getElementsByTagName("층")[0]?.textContent || "-";
 
-                            allParsedItems.push({
-                                date: formattedDateStr,
-                                name: complexName.trim(),
-                                jibun: jibun.trim(),
-                                floor: floor,
-                                area: parsedArea,
-                                amount: parsedAmount
-                            });
+                                let parsedMonthly = parseInt(monthly.replace(/,/g, '').trim());
+
+                                allTransactions.push({
+                                    type: parsedMonthly > 0 ? '월세' : '전세',
+                                    date: `${year}-${String(month).padStart(2, '0')}-${String(cleanDay).padStart(2, '0')}`,
+                                    floor: floor,
+                                    area: parseFloat(area),
+                                    amount: parseInt(deposit.replace(/,/g, '').trim()) * 10000,
+                                    monthlyRent: parsedMonthly * 10000
+                                });
+                            }
                         }
+
                     } catch (e) {
-                        console.error(`${ym}월 데이터 파싱 중 에러:`, e);
+                        console.error(`${ym}월 파싱 중 에러:`, e);
                     }
                     
-                    // 🌟 국토부 서버가 뻗지 않도록 300ms 대기 (필수)
-                    await sleep(300);
+                    await sleep(300); // 딜레이
                 }
 
-                // 5. 상증세법 시행령 요건 정밀 세무 스크리닝 
-                const minArea = targetAreaInput * 0.95;
-                const maxArea = targetAreaInput * 1.05;
+                // 5. 날짜 기준 최신순 정렬
+                allTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-                const startTimeLimit = new Date(baseDate.getFullYear(), baseDate.getMonth() + startMonths, baseDate.getDate());
-                const endTimeLimit = new Date(baseDate.getFullYear(), baseDate.getMonth() + endMonths, baseDate.getDate());
-
-                let filteredCandidates = allParsedItems.filter(item => {
-                    const itemDate = new Date(item.date);
-                    const isJibunValid = item.jibun.replace(/\s/g, '') === exactTargetJibun.replace(/\s/g, '');
-                    const isAreaValid = item.area >= minArea && item.area <= maxArea;
-                    const isDateValid = itemDate >= startTimeLimit && itemDate <= endTimeLimit;
-                    
-                    return isJibunValid && isAreaValid && isDateValid;
-                });
-
-                // 6. 평가기준일 정렬
-                filteredCandidates.sort((a, b) => {
-                    return Math.abs(new Date(a.date) - baseDate) - Math.abs(new Date(b.date) - baseDate);
-                });
-
-                // 7. 렌더링
+                // 6. 통계 계산 및 렌더링
+                let tradeCount = 0;
+                let rentCount = 0;
                 tbody.innerHTML = "";
-                badge.innerText = `${filteredCandidates.length}건 발견`;
 
-                if (filteredCandidates.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400 font-medium">선택하신 조건(단지 지번 일치, 법정 평가기간 내, 전용면적 ±5% 오차율 이내)을 동시에 충족하는 거래 내역이 존재하지 않습니다.</td></tr>`;
+                if (allTransactions.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-slate-400 font-medium">설정하신 기간 내에 해당 단지(지번)의 거래 내역이 존재하지 않습니다.</td></tr>`;
                 } else {
-                    filteredCandidates.forEach((row, index) => {
-                        let areaErrorRate = (((row.area - targetAreaInput) / targetAreaInput) * 100).toFixed(2);
-                        let suitabilitySpan = index === 0 
-                            ? `<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">최우선 시가 후보</span>`
-                            : `<span class="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-medium">유사 자산 적합</span>`;
+                    allTransactions.forEach((row) => {
+                        if (row.type === '매매') tradeCount++;
+                        else rentCount++;
+
+                        let typeBadge = '';
+                        if (row.type === '매매') typeBadge = '<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded">매매</span>';
+                        else if (row.type === '전세') typeBadge = '<span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded">전세</span>';
+                        else typeBadge = '<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded">월세</span>';
+
+                        let amountText = row.amount.toLocaleString() + '원';
+                        let monthlyText = row.monthlyRent > 0 ? row.monthlyRent.toLocaleString() + '원' : '-';
 
                         tbody.innerHTML += `
-                            <tr class="hover:bg-slate-50/80 transition-colors">
-                                <td class="py-3 px-4 font-bold text-slate-900">${row.date}</td>
-                                <td class="py-3 px-4 font-medium">${row.name} (지번: ${row.jibun})</td>
-                                <td class="py-3 px-4">${row.floor}층</td>
-                                <td class="py-3 px-4 font-mono font-semibold">${row.area.toFixed(4)}㎡</td>
-                                <td class="py-3 px-4 font-mono text-slate-500">${areaErrorRate > 0 ? '+' : ''}${areaErrorRate}%</td>
-                                <td class="py-3 px-4 font-extrabold text-indigo-600">${(row.amount * 10000).toLocaleString()}원</td>
-                                <td class="py-3 px-4">${suitabilitySpan}</td>
+                            <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0">
+                                <td class="py-3 px-4 font-medium text-slate-700">${row.date}</td>
+                                <td class="py-3 px-4">${typeBadge}</td>
+                                <td class="py-3 px-4 font-mono font-bold text-slate-700">${row.area.toFixed(2)}㎡</td>
+                                <td class="py-3 px-4 text-slate-500">${row.floor}층</td>
+                                <td class="py-3 px-4 font-extrabold ${row.type === '매매' ? 'text-emerald-600' : 'text-slate-800'}">${amountText}</td>
+                                <td class="py-3 px-4 font-bold text-amber-600">${monthlyText}</td>
                             </tr>`;
                     });
                 }
 
+                document.getElementById('siga-count-badge').innerText = `총 ${allTransactions.length}건`;
+                document.getElementById('trade-count-badge').innerText = `매매 ${tradeCount}건`;
+                document.getElementById('rent-count-badge').innerText = `전월세 ${rentCount}건`;
+
             } catch (err) {
                 alert("조회 중 문제가 발생했습니다.");
             } finally {
-                btn.innerText = "국토부 오픈 API 호출 및 법정 오차(±5%) 자동 스크리닝 실행";
+                btn.innerText = "선택 기간 내 단지 전체 매매/전월세 데이터 스캔";
                 btn.disabled = false;
             }
         }
 
-        // --- 이하 Bulk 함수 및 기존 함수 유지 ---
+        // --- 이하 Bulk 함수 및 공시가격 단건 조회 기존 함수 유지 ---
         async function handleBulkExcel(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -763,12 +781,6 @@
                     renderTags(propType, uniqueData);
                     document.getElementById('result-container').classList.remove('hidden');
 
-                    if (uniqueData[0]) {
-                        if (propType === "공동주택" && uniqueData[0].area) {
-                            document.getElementById('sigaTargetArea').value = parseFloat(uniqueData[0].area);
-                        }
-                        document.getElementById('sigaTargetPrice').value = uniqueData[0].price.toLocaleString() + " 원";
-                    }
                 } else { throw new Error("공시가 내역이 존재하지 않습니다."); }
             } catch (error) { alert(error.message); }
             finally { btn.innerText = "기본 정보 및 공시가격 연혁 조회"; btn.disabled = false; }
