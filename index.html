@@ -379,8 +379,8 @@
                 }
 
                 // 3. 국토교통부 아파트/다세대/오피스텔 매매 API 엔드포인트 분기
-                let apiPath = "rtmsDataSvcAptTrade/getRTMSDataSvcAptTradeDev"; 
-                if (targetType === "RH") apiPath = "rtmsDataSvcRhTrade/getRTMSDataSvcRhTradeDev";
+                let apiPath = "rtmsDataSvcAptTrade/getRTMSDataSvcAptTrade"; 
+                if (targetType === "RH") apiPath = "rtmsDataSvcRhTrade/getRTMSDataSvcRhTrade";
                 if (targetType === "OFFI") apiPath = "rtmsDataSvcOffiTrade/getRTMSDataSvcOffiTrade";
 
                 let allParsedItems = [];
