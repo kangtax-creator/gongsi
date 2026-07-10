@@ -35,6 +35,7 @@
 
     <div class="max-w-6xl mx-auto px-4 -mt-12 pb-12 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
+        <!-- 왼쪽: 주소 입력 영역 -->
         <div class="space-y-6">
             <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
                 <h2 class="text-lg font-extrabold text-slate-800 mb-4 flex items-center">
@@ -75,6 +76,7 @@
                 </div>
             </div>
 
+            <!-- 대량 조회 섹션 안내 -->
             <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
                 <h2 class="text-lg font-extrabold text-slate-800 mb-2 flex items-center">
                     <span class="w-2 h-2 bg-emerald-600 rounded-full mr-2"></span> 엑셀 대량 조회 (Batch)
@@ -114,6 +116,7 @@
             </div>
         </div>
 
+        <!-- 오른쪽: 결과 출력 영역 -->
         <div class="lg:col-span-2 space-y-6">
             
             <div class="flex space-x-2 border-b border-slate-200">
@@ -125,6 +128,7 @@
                 </button>
             </div>
 
+            <!-- 탭 1: 공시가격 컨텐츠 -->
             <div id="content-gongsi" class="space-y-6">
                 <div id="result-container" class="hidden space-y-6">
                     <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
@@ -149,6 +153,7 @@
                 </div>
             </div>
 
+            <!-- 탭 2: 유사매매사례 컨텐츠 -->
             <div id="content-siga" class="hidden space-y-6">
                 <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200 space-y-4">
                     <h2 class="text-lg font-extrabold text-slate-800 flex items-center">
@@ -199,6 +204,7 @@
                     </div>
                 </div>
 
+                <!-- 실거래 결과 테이블 -->
                 <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200 space-y-4">
                     <div class="flex justify-between items-center">
                         <h3 class="text-base font-extrabold text-slate-800">법정 평가기간 내 유사 가액 검색 결과 (오차 ±5% 이내)</h3>
@@ -236,7 +242,10 @@
 
     <script>
         const VWORLD_KEY = "75321A8E-275D-32A6-82AC-B9D0D8E551FE";
+        
+        // 🌟 국토교통부 실거래가 오픈 API 인증키 (세무사님 고유 키 완벽 적용 완료!)
         const DATA_GO_KR_KEY = "83a79624397baf59da6f5daea52c9c0478aceccf3f20b707e26f9866c85f7b8f";
+        
         const DOMAIN = window.location.origin; 
         const OFFICE_PHONE = "02-XXXX-XXXX"; 
         
@@ -332,7 +341,7 @@
             return "";
         }
 
-        // 🌟 [유사매매사례 핵심 로직 고도화] 
+        // 🌟 [유사매매사례 최종 엔진 패치: Vercel 프록시, 과부하 방지, 대소문자 문제 완전 해결]
         async function fetchSimilarSalePrices() {
             const baseDateInput = document.getElementById('sigaBaseDate').value;
             const targetAreaInput = parseFloat(document.getElementById('sigaTargetArea').value);
@@ -351,21 +360,18 @@
                 return;
             }
 
-            btn.innerText = "국토부 실거래가 인프라 동기화 및 전수조사 중...";
+            btn.innerText = "국토부 서버 대기 중... 잠시만 기다려주세요.";
             btn.disabled = true;
 
             try {
-                // 1. PNU 해독하여 시군구코드(LAWD_CD) 및 타겟 지번(Jibun) 정밀 추출
+                // 1. PNU 해독
                 const lawdCd = globalCurrentPnu.substring(0, 5);
-                
-                // PNU 19자리: 시도(2) + 시군구(3) + 읍면동(3) + 리(2) + 산(1) + 본번(4) + 부번(4)
                 const isSan = globalCurrentPnu.substring(10, 11) === '2';
                 const bon = parseInt(globalCurrentPnu.substring(11, 15));
                 const bu = parseInt(globalCurrentPnu.substring(15, 19));
-                // API 데이터와 완벽 일치시키는 지번 조립 (예: "325-8", "산15")
                 const exactTargetJibun = (isSan ? "산" : "") + (bu === 0 ? String(bon) : `${bon}-${bu}`);
                 
-                // 2. 상증세법 평가기간 기반 월별 타겟 리스트 연산
+                // 2. 평가기간 연산
                 const baseDate = new Date(baseDateInput);
                 const startMonths = -6;
                 const endMonths = taxType === "증여" ? 3 : 6;
@@ -378,37 +384,37 @@
                     targetMonths.push(`${yyyy}${mm}`);
                 }
 
-                // 3. 국토교통부 아파트/다세대/오피스텔 매매 API 엔드포인트 분기
-                let apiPath = "rtmsDataSvcAptTrade/getRTMSDataSvcAptTrade"; 
-                if (targetType === "RH") apiPath = "rtmsDataSvcRhTrade/getRTMSDataSvcRhTrade";
-                if (targetType === "OFFI") apiPath = "rtmsDataSvcOffiTrade/getRTMSDataSvcOffiTrade";
+                // 🌟 [핵심 패치 1] 국토부 공식 문서에 맞춘 완벽한 대/소문자(RTMS) 정식 API 엔드포인트 지정
+                let apiPath = "RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade"; 
+                if (targetType === "RH") apiPath = "RTMSDataSvcRhTrade/getRTMSDataSvcRhTrade";
+                if (targetType === "OFFI") apiPath = "RTMSDataSvcOffiTrade/getRTMSDataSvcOffiTrade";
 
                 let allParsedItems = [];
 
-                // 4. 각 월별 데이터 '순차적' 호출 (🌟 정부 서버 DDoS 오인 및 500 에러 방지)
+                // 🌟 [핵심 패치 2] 500 과부하 방지 순차 호출 (300ms 딜레이 및 numOfRows=1000 하향 조정)
                 for (let i = 0; i < targetMonths.length; i++) {
                     let ym = targetMonths[i];
                     
-                    // 진행 상황을 버튼에 실시간으로 보여줌
-                    btn.innerText = `국토부 데이터 연동 중... (${i+1}/${targetMonths.length}개월 스캔 중)`;
+                    btn.innerText = `국토부 데이터 수집 중... (${i+1}/${targetMonths.length}개월 처리 완료)`;
                     
-                    const targetUrl = `/api/rtms/${apiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=3000`;
+                    // Vercel 프록시 경로 활용
+                    const targetUrl = `/api/rtms/${apiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1000`;
                     
                     try {
                         const response = await fetch(targetUrl);
                         if (!response.ok) {
-                            console.warn(`${ym}월 데이터 호출 실패 (500 에러 등). 다음 달로 넘어갑니다.`);
+                            console.warn(`${ym}월 데이터 호출 실패 (상태: ${response.status}). 다음 달로 넘어갑니다.`);
                             continue;
                         }
                         
                         const xmlText = await response.text();
                         
-                        // 🌟 혹시 아직 키가 승인되지 않았을 때를 위한 에러 감지 로직
+                        // 키 오류 점검
                         if (xmlText.includes('SERVICE KEY IS NOT REGISTERED ERROR') || xmlText.includes('등록되지 않은 서비스키')) {
-                            alert("발급받으신 API 키가 아직 국토부 서버망에 동기화되지 않았습니다.\n(일반적으로 발급 후 1~2시간 소요)\n조금만 더 기다렸다가 다시 시도해 주세요!");
+                            alert("발급받으신 API 키가 아직 국토부 서버에 동기화 대기 중이거나 키에 오타가 있습니다.\n(확인: 디코딩 키를 정확히 복사하셨나요?)");
                             btn.innerText = "국토부 오픈 API 호출 및 법정 오차(±5%) 자동 스크리닝 실행";
                             btn.disabled = false;
-                            return; // 함수 강제 종료
+                            return; 
                         }
 
                         const parser = new DOMParser();
@@ -444,11 +450,11 @@
                         console.error(`${ym}월 데이터 파싱 중 에러:`, e);
                     }
                     
-                    // 🌟 핵심: 한 달 치 데이터를 긁어온 후, 서버가 숨을 쉴 수 있도록 0.3초 대기 (이게 없으면 뻗습니다)
+                    // 🌟 국토부 서버가 뻗지 않도록 300ms 대기 (필수)
                     await sleep(300);
                 }
 
-                // 5. 상증세법 시행령 요건 정밀 세무 스크리닝 (🌟 지번 일치 + 면적 ±5% + 기간 내)
+                // 5. 상증세법 시행령 요건 정밀 세무 스크리닝 
                 const minArea = targetAreaInput * 0.95;
                 const maxArea = targetAreaInput * 1.05;
 
@@ -457,23 +463,19 @@
 
                 let filteredCandidates = allParsedItems.filter(item => {
                     const itemDate = new Date(item.date);
-                    
-                    // 🌟 핀셋 필터 1: PNU에서 역추적한 대상 지번과 API 거래 내역의 지번이 완벽하게 일치하는가?
                     const isJibunValid = item.jibun.replace(/\s/g, '') === exactTargetJibun.replace(/\s/g, '');
-                    
-                    // 필터 2 & 3: 면적 5% 오차 및 날짜 범위 검증
                     const isAreaValid = item.area >= minArea && item.area <= maxArea;
                     const isDateValid = itemDate >= startTimeLimit && itemDate <= endTimeLimit;
                     
                     return isJibunValid && isAreaValid && isDateValid;
                 });
 
-                // 6. 평가기준일과 가장 가까운 계약일 순서로 최적 정렬
+                // 6. 평가기준일 정렬
                 filteredCandidates.sort((a, b) => {
                     return Math.abs(new Date(a.date) - baseDate) - Math.abs(new Date(b.date) - baseDate);
                 });
 
-                // 7. 결과 테이블 동적 바인딩
+                // 7. 렌더링
                 tbody.innerHTML = "";
                 badge.innerText = `${filteredCandidates.length}건 발견`;
 
@@ -500,13 +502,14 @@
                 }
 
             } catch (err) {
-                alert("국토교통부 API 인프라와 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+                alert("조회 중 문제가 발생했습니다.");
             } finally {
                 btn.innerText = "국토부 오픈 API 호출 및 법정 오차(±5%) 자동 스크리닝 실행";
                 btn.disabled = false;
             }
         }
 
+        // --- 이하 Bulk 함수 및 기존 함수 유지 ---
         async function handleBulkExcel(event) {
             const file = event.target.files[0];
             if (!file) return;
