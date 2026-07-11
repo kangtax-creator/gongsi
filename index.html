@@ -796,7 +796,10 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { tooltip: { mode: 'index', intersect: false } },
+                    plugins: { 
+                        tooltip: { mode: 'index', intersect: false },
+                        legend: { display: true, position: 'top', labels: { usePointStyle: true, boxWidth: 8 } }
+                    },
                     interaction: { mode: 'nearest', axis: 'x', intersect: false }
                 }
             });
@@ -812,14 +815,38 @@
             let datasets = [];
             
             if (viewType === 'all') {
-                // 전체 보기: 매매와 전세 흐름을 한 선으로 묶어서 보여주거나, 통합 선으로 표시
-                datasets.push({
-                    label: '모든 거래금액 (만원)',
-                    data: chartData.map(d => d.amount / 10000),
-                    borderColor: '#6366f1',
-                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                    tension: 0.2, fill: true, pointRadius: 3
-                });
+                // 매매, 전월세, 분양권 데이터를 각각 추출하여 3개의 선으로 그립니다.
+                const tradeValues = chartData.map(d => (d.type === '매매') ? d.amount / 10000 : null);
+                const rentValues = chartData.map(d => (d.type === '전세' || d.type === '월세') ? d.amount / 10000 : null);
+                const silvValues = chartData.map(d => (d.type === '분양권' || d.type === '입주권') ? d.amount / 10000 : null);
+
+                if (tradeValues.some(v => v !== null)) {
+                    datasets.push({
+                        label: '매매가 (만원)',
+                        data: tradeValues,
+                        borderColor: '#10b981', // 초록색
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.2, fill: false, pointRadius: 4, spanGaps: true
+                    });
+                }
+                if (rentValues.some(v => v !== null)) {
+                    datasets.push({
+                        label: '전월세 보증금 (만원)',
+                        data: rentValues,
+                        borderColor: '#f59e0b', // 주황/노랑색
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        tension: 0.2, fill: false, pointRadius: 4, spanGaps: true
+                    });
+                }
+                if (silvValues.some(v => v !== null)) {
+                    datasets.push({
+                        label: '분양·입주권 (만원)',
+                        data: silvValues,
+                        borderColor: '#9333ea', // 보라색
+                        backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                        tension: 0.2, fill: false, pointRadius: 4, spanGaps: true
+                    });
+                }
             } else if (viewType === 'trade') {
                 datasets.push({
                     label: '매매가 (만원)',
