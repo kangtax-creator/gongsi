@@ -15,7 +15,6 @@
 </head>
 <body class="bg-[#f3f4f6] font-sans min-h-screen">
 
-    <!-- 헤더 -->
     <div class="bg-[#0f172a] text-white pt-12 pb-24 px-4">
         <div class="max-w-6xl mx-auto">
             <p class="text-indigo-400 font-bold text-sm mb-2 tracking-wider">세무/부동산 데이터 리서치 시스템</p>
@@ -34,7 +33,6 @@
         </div>
     </div>
 
-    <!-- 메인 컨텐츠 영역 -->
     <div class="max-w-6xl mx-auto px-4 -mt-12 pb-12 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
         <!-- 왼쪽: 주소 입력 영역 -->
@@ -181,7 +179,6 @@
                         </div>
                     </div>
 
-                    <!-- 🌟 추가: 아실/호갱노노 방식의 수동 키워드 검색 기능 -->
                     <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
                         <label class="block text-xs font-bold text-indigo-800 mb-1">💡 아실/호갱노노 방식의 단지명 직접 검색 (선택사항)</label>
                         <p class="text-[11px] text-indigo-600 mb-2">지번 불일치로 거래내역이 안 나올 경우, 여기에 아파트 이름(예: 은마, 래미안)을 직접 입력하고 스캔하세요.</p>
@@ -232,9 +229,7 @@
         </div>
     </div>
 
-    <!-- 자바스크립트 영역 -->
     <script>
-        // 공통 필수 인증키 
         const VWORLD_KEY = "75321A8E-275D-32A6-82AC-B9D0D8E551FE";
         const DATA_GO_KR_KEY = "83a79624397baf59da6f5daea52c9c0478aceccf3f20b707e26f9866c85f7b8f";
         const DOMAIN = window.location.origin; 
@@ -244,18 +239,17 @@
         let currentExcelData = [];
         let currentPropType = "";
         let globalCurrentPnu = ""; 
-        let globalComplexName = ""; // 🌟 공시가격에서 추출한 단지명 보관용
+        let globalComplexName = ""; 
 
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-        // 초기화 시 기본 날짜 세팅 (최근 6개월)
         document.addEventListener("DOMContentLoaded", () => {
             const today = new Date();
             let yyyy = today.getFullYear();
             let mm = String(today.getMonth() + 1).padStart(2, '0');
             document.getElementById('searchEndMonth').value = `${yyyy}-${mm}`;
             
-            today.setMonth(today.getMonth() - 5); // 6개월 전
+            today.setMonth(today.getMonth() - 5); 
             yyyy = today.getFullYear();
             mm = String(today.getMonth() + 1).padStart(2, '0');
             document.getElementById('searchStartMonth').value = `${yyyy}-${mm}`;
@@ -346,7 +340,7 @@
 
         function matchJibun(apiJibunStr, isSan, targetBon, targetBu) {
             if (!apiJibunStr) return false;
-            const apiJibuns = apiJibunStr.replace(/\s/g, '').split(',');
+            const apiJibuns = String(apiJibunStr).replace(/\s/g, '').split(',');
             for (let j of apiJibuns) {
                 let isApiSan = j.includes("산");
                 let cleanJ = j.replace("산", ""); 
@@ -362,7 +356,76 @@
             return false;
         }
 
-        // 🌟 탭 1: 공시가격 연혁 조회 
+        // 🌟 [최강 하이브리드 파서] JSON, XML, 한글, 영문 태그 완벽 호환
+        function parseHybridData(responseText) {
+            let extractedItems = [];
+            
+            try {
+                // 1. JSON 구조 시도
+                const jsonObj = JSON.parse(responseText);
+                const findItems = (obj) => {
+                    if (Array.isArray(obj)) return obj;
+                    for (let key in obj) {
+                        if (Array.isArray(obj[key])) return obj[key];
+                        if (typeof obj[key] === 'object' && obj[key] !== null) {
+                            let result = findItems(obj[key]);
+                            if (result) return result;
+                        }
+                    }
+                    return null;
+                };
+                let items = findItems(jsonObj) || (jsonObj.items ? jsonObj.items : [jsonObj]);
+                
+                if (Array.isArray(items) && items.length > 0) {
+                    items.forEach(item => {
+                        extractedItems.push({
+                            dealAmount: String(item.dealAmount || item.거래금액 || item.deposit || item.보증금액 || "0"),
+                            monthly: String(item.monthlyRent || item.월세금액 || "0"),
+                            area: String(item.excluUseAr || item.전용면적 || "0"),
+                            year: String(item.dealYear || item.년 || ""),
+                            month: String(item.dealMonth || item.월 || ""),
+                            day: String(item.dealDay || item.일 || "1").split('~')[0].trim(),
+                            complexName: String(item.aptNm || item.mhouseNm || item.offiNm || item.단지명 || item.아파트 || item.연립다세대 || item.단지 || ""),
+                            jibun: String(item.jibun || item.지번 || ""),
+                            floor: String(item.floor || item.층 || "-")
+                        });
+                    });
+                    return extractedItems;
+                }
+            } catch (e) {
+                // Not JSON, continue to XML
+            }
+
+            // 2. XML 구조 파싱 (영문/한글 태그 동시 지원)
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(responseText, "text/xml");
+            const xmlItems = xmlDoc.getElementsByTagName("item");
+
+            const getText = (node, tagNames) => {
+                for (let tag of tagNames) {
+                    let el = node.getElementsByTagName(tag)[0];
+                    if (el && el.textContent) return el.textContent;
+                }
+                return "";
+            };
+
+            for (let item of xmlItems) {
+                extractedItems.push({
+                    dealAmount: getText(item, ["dealAmount", "거래금액", "deposit", "보증금액"]) || "0",
+                    monthly: getText(item, ["monthlyRent", "월세금액"]) || "0",
+                    area: getText(item, ["excluUseAr", "전용면적"]) || "0",
+                    year: getText(item, ["dealYear", "년"]),
+                    month: getText(item, ["dealMonth", "월"]),
+                    day: (getText(item, ["dealDay", "일"]) || "1").split('~')[0].trim(),
+                    complexName: getText(item, ["aptNm", "mhouseNm", "offiNm", "단지명", "아파트", "연립다세대", "단지"]),
+                    jibun: getText(item, ["jibun", "지번"]),
+                    floor: getText(item, ["floor", "층"]) || "-"
+                });
+            }
+            
+            return extractedItems;
+        }
+
         async function searchPriceHistory() {
             const address = document.getElementById('address').value;
             const propType = document.querySelector('input[name="propType"]:checked').value;
@@ -381,7 +444,7 @@
                 if (!pnu) throw new Error("지번 코드를 인식하지 못했습니다.");
                 
                 globalCurrentPnu = pnu; 
-                globalComplexName = ""; // 초기화
+                globalComplexName = ""; 
 
                 let apiUrl = ""; let priceField = "";
                 if (propType === "공동주택") { apiUrl = "https://api.vworld.kr/ned/data/getApartHousingPriceAttr"; priceField = "pblntfPc"; }
@@ -407,7 +470,6 @@
                             if (dong && itemDong !== dong) continue;
                             if (ho && itemHo !== ho) continue;
                             
-                            // 🌟 국토부 데이터 매칭용 단지명 추출
                             if (item.aptNm && !globalComplexName) {
                                 globalComplexName = item.aptNm.trim();
                             }
@@ -449,70 +511,6 @@
             finally { btn.innerText = "기본 정보 및 공시가격 연혁 조회"; btn.disabled = false; }
         }
 
-        // 🌟 [핵심 패치] 하이브리드 파서 (XML/JSON 둘 다 씹어먹는 괴물 파서)
-        function parseHybridData(responseData) {
-            let extractedItems = [];
-            
-            // 1. JSON 형태일 경우 (국토부가 몰래 바꿨을 경우)
-            if (typeof responseData === 'object' && responseData !== null) {
-                // response.body.items.item 혹은 response.items.item 등 다양한 깊이 탐색
-                const findItemsArray = (obj) => {
-                    if (Array.isArray(obj)) return obj;
-                    for (let key in obj) {
-                        if (Array.isArray(obj[key])) return obj[key];
-                        if (typeof obj[key] === 'object' && obj[key] !== null) {
-                            let result = findItemsArray(obj[key]);
-                            if (result) return result;
-                        }
-                    }
-                    return null;
-                };
-
-                let jsonItems = findItemsArray(responseData);
-                if (jsonItems) {
-                    jsonItems.forEach(item => {
-                        extractedItems.push({
-                            dealAmount: item.dealAmount || item.거래금액 || item.보증금액 || "0",
-                            monthly: item.monthlyRent || item.월세금액 || "0",
-                            area: item.areaForExclusiveUse || item.전용면적 || "0",
-                            year: item.dealYear || item.년 || "",
-                            month: item.dealMonth || item.월 || "",
-                            day: item.dealDay || item.일 || "1",
-                            complexName: item.aptNm || item.아파트 || item.연립다세대 || item.단지 || "",
-                            jibun: item.jibun || item.지번 || "",
-                            floor: item.floor || item.층 || "-"
-                        });
-                    });
-                    return extractedItems;
-                }
-            }
-            
-            // 2. XML 형태일 경우 (기존 방식)
-            if (typeof responseData === 'string' && responseData.includes('<item>')) {
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(responseData, "text/xml");
-                const xmlItems = xmlDoc.getElementsByTagName("item");
-                
-                for (let item of xmlItems) {
-                    extractedItems.push({
-                        dealAmount: item.getElementsByTagName("거래금액")[0]?.textContent || item.getElementsByTagName("보증금액")[0]?.textContent || "0",
-                        monthly: item.getElementsByTagName("월세금액")[0]?.textContent || "0",
-                        area: item.getElementsByTagName("전용면적")[0]?.textContent || "0",
-                        year: item.getElementsByTagName("년")[0]?.textContent || "",
-                        month: item.getElementsByTagName("월")[0]?.textContent || "",
-                        day: item.getElementsByTagName("일")[0]?.textContent || "1",
-                        complexName: item.getElementsByTagName("아파트")[0]?.textContent || item.getElementsByTagName("연립다세대")[0]?.textContent || item.getElementsByTagName("단지")[0]?.textContent || "",
-                        jibun: item.getElementsByTagName("지번")[0]?.textContent || "",
-                        floor: item.getElementsByTagName("층")[0]?.textContent || "-"
-                    });
-                }
-            }
-            
-            return extractedItems;
-        }
-
-
-        // 🌟 탭 2: 단지 내 매매/전월세 통합 스캔 (하이브리드 파서 적용)
         async function fetchComplexTransactions() {
             const startMonthInput = document.getElementById('searchStartMonth').value;
             const endMonthInput = document.getElementById('searchEndMonth').value;
@@ -523,7 +521,7 @@
             const tbody = document.getElementById('siga-table-body');
 
             if (!globalCurrentPnu) {
-                alert("먼저 좌측 주소창에서 주소를 검색하고 '공시가격 연혁 조회'를 눌러 지역(구) 연동을 완료해 주세요.");
+                alert("먼저 좌측 주소창에서 주소를 검색하고 '공시가격 연혁 조회'를 눌러 지역 연동을 완료해 주세요.");
                 return;
             }
             if (!startMonthInput || !endMonthInput) {
@@ -531,18 +529,15 @@
                 return;
             }
 
-            btn.innerText = "국토부 매매 및 임대차 데이터 동시 스캔 중...";
+            btn.innerText = "국토부 실거래가 데이터 추출 중 (영문/한글 태그 자동번역)...";
             btn.disabled = true;
 
             try {
-                // PNU에서 지역코드 분리
                 const lawdCd = globalCurrentPnu.substring(0, 5);
                 const isSan = globalCurrentPnu.substring(10, 11) === '2';
                 const bon = parseInt(globalCurrentPnu.substring(11, 15), 10);
                 const bu = parseInt(globalCurrentPnu.substring(15, 19), 10);
-                const exactTargetJibun = (isSan ? "산 " : "") + bon + (bu > 0 ? "-" + bu : "");
                 
-                // 검색 기간 생성
                 const startD = new Date(startMonthInput + "-01");
                 const endD = new Date(endMonthInput + "-01");
                 let targetMonths = [];
@@ -553,7 +548,6 @@
                     currentD.setMonth(currentD.getMonth() + 1);
                 }
 
-                // 국토부 API 설정
                 let tradeApiPath = "RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade"; 
                 let rentApiPath = "RTMSDataSvcAptRent/getRTMSDataSvcAptRent";
                 if (targetType === "RH") {
@@ -568,7 +562,7 @@
 
                 for (let i = 0; i < targetMonths.length; i++) {
                     let ym = targetMonths[i];
-                    btn.innerText = `실거래 스캔 중... (${i+1}/${targetMonths.length}개월 완료)`;
+                    btn.innerText = `스캔 진행 중... (${i+1}/${targetMonths.length}개월 완료)`;
                     
                     const tradeUrl = `/api/rtms/${tradeApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1000`;
                     const rentUrl = `/api/rent/${rentApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1000`;
@@ -579,24 +573,15 @@
                             fetch(rentUrl).catch(e => null)
                         ]);
 
-                        // --- 하이브리드 파싱 로직 적용 ---
                         const processResponse = async (res, isRent) => {
                             if (!res || !res.ok) return;
-                            
-                            // JSON인지 XML인지 판단하기 위해 text로 받음
-                            const rawData = await res.text();
-                            
-                            // 만능 파서 투입
-                            let parsedItems = [];
-                            try {
-                                const jsonObj = JSON.parse(rawData);
-                                parsedItems = parseHybridData(jsonObj);
-                            } catch (e) {
-                                parsedItems = parseHybridData(rawData); // JSON 파싱 실패시 XML로 간주
-                            }
+                            const text = await res.text();
+                            if (text.includes("SERVICE KEY IS NOT REGISTERED ERROR")) return;
+
+                            // 🌟 신형 파서 투입
+                            const parsedItems = parseHybridData(text);
 
                             parsedItems.forEach(item => {
-                                // 필터링 로직
                                 let isKeywordMatch = false;
                                 if (keywordInput && item.complexName) {
                                     let cleanApi = item.complexName.replace(/\s/g, '').toLowerCase();
@@ -620,7 +605,6 @@
                                     if (!isJibunValid && !isNameValid) return;
                                 }
 
-                                let cleanDay = item.day.split('~')[0].trim();
                                 let parsedAmount = parseInt(item.dealAmount.replace(/,/g, '').trim()) || 0;
                                 let parsedMonthly = parseInt(item.monthly.replace(/,/g, '').trim()) || 0;
 
@@ -631,10 +615,10 @@
 
                                 allTransactions.push({
                                     type: finalType,
-                                    name: item.complexName.trim(),
-                                    date: `${item.year}-${String(item.month).padStart(2, '0')}-${String(cleanDay).padStart(2, '0')}`,
+                                    name: item.complexName.trim() || "-",
+                                    date: `${item.year}-${String(item.month).padStart(2, '0')}-${String(item.day).padStart(2, '0')}`,
                                     floor: item.floor,
-                                    area: parseFloat(item.area),
+                                    area: parseFloat(item.area) || 0,
                                     amount: parsedAmount * 10000,
                                     monthlyRent: parsedMonthly * 10000
                                 });
@@ -653,10 +637,8 @@
                     await sleep(300); 
                 }
 
-                // 날짜 기준 최신순 정렬
                 allTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-                // 렌더링
                 let tradeCount = 0;
                 let rentCount = 0;
                 tbody.innerHTML = "";
@@ -666,8 +648,7 @@
                         <tr>
                             <td colspan="7" class="py-12 text-center text-slate-500 font-medium">
                                 검색된 실거래가 내역이 0건입니다.<br><br>
-                                <span class="text-sm bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg">💡 해결 팁 1. 연도를 다시 확인해 주세요. (미래 날짜는 조회가 불가능합니다)</span><br><br>
-                                <span class="text-sm bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg">💡 해결 팁 2. 국토부 데이터에 지번 누락/이름 오류가 있을 수 있습니다. 상단 <b>[단지명 직접 검색]</b>에 아파트명(예: 은마)을 입력해 보세요.</span>
+                                <span class="text-sm bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg">💡 팁: 국토부 데이터에 이름이 다르게 올라왔을 수 있습니다. 상단 <b>[단지명 직접 검색]</b>칸에 키워드를 입력해 보세요.</span>
                             </td>
                         </tr>`;
                 } else {
@@ -771,7 +752,6 @@
             XLSX.writeFile(workbook, "강승완세무사_기준시가_연혁.xlsx");
         }
 
-        // --- 대량 조회 (Bulk) 유지 ---
         async function handleBulkExcel(event) {
             const file = event.target.files[0];
             if (!file) return;
