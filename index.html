@@ -237,6 +237,7 @@
         let currentExcelData = [];
         let currentPropType = "";
         let globalCurrentPnu = ""; 
+        let globalComplexName = ""; // 🌟 공시가격에서 추출한 단지명 보관용
 
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -280,7 +281,6 @@
             }).open();
         }
 
-        // 🌟 [필수 복구 함수] 숫자 추출, 날짜 포맷 함수들
         function extractNum(text) {
             if (!text) return "";
             const nums = String(text).match(/\d+/g);
@@ -337,14 +337,12 @@
             return null;
         }
 
-        // 🌟 [핵심] VWORLD에서 찾은 지번과 국토부 API 지번이 일치하는지 수학적으로 검사
         function matchJibun(apiJibunStr, isSan, targetBon, targetBu) {
             if (!apiJibunStr) return false;
-            // 국토부가 쉼표로 여러 지번을 묶어서 주더라도 모두 해체해서 검사
             const apiJibuns = apiJibunStr.replace(/\s/g, '').split(',');
             for (let j of apiJibuns) {
                 let isApiSan = j.includes("산");
-                let cleanJ = j.replace("산", ""); // 산 글자 제거
+                let cleanJ = j.replace("산", ""); 
                 let parts = cleanJ.split('-'); 
                 
                 let aBon = parseInt(parts[0], 10);
@@ -374,7 +372,9 @@
             try {
                 const pnu = await getPnu(address);
                 if (!pnu) throw new Error("지번 코드를 인식하지 못했습니다.");
-                globalCurrentPnu = pnu; // 탭 2에서 쓸 PNU 보관
+                
+                globalCurrentPnu = pnu; 
+                globalComplexName = ""; // 초기화
 
                 let apiUrl = ""; let priceField = "";
                 if (propType === "공동주택") { apiUrl = "https://api.vworld.kr/ned/data/getApartHousingPriceAttr"; priceField = "pblntfPc"; }
@@ -399,6 +399,11 @@
                             const itemDong = extractNum(item.dongNm); const itemHo = extractNum(item.hoNm);
                             if (dong && itemDong !== dong) continue;
                             if (ho && itemHo !== ho) continue;
+                            
+                            // 🌟 국토부 데이터 매칭용 단지명 추출
+                            if (item.aptNm && !globalComplexName) {
+                                globalComplexName = item.aptNm.trim();
+                            }
                         }
                         const priceVal = item[priceField] || item.housePc || item.prc || 0;
                         const yearVal = item.stdrYear || item.pblntfYear;
@@ -437,7 +442,7 @@
             finally { btn.innerText = "기본 정보 및 공시가격 연혁 조회"; btn.disabled = false; }
         }
 
-        // 🌟 탭 2: 단지 내 매매/전월세 통합 스캔
+        // 🌟 탭 2: 단지 내 매매/전월세 통합 스캔 (클린 버전)
         async function fetchComplexTransactions() {
             const startMonthInput = document.getElementById('searchStartMonth').value;
             const endMonthInput = document.getElementById('searchEndMonth').value;
@@ -458,14 +463,14 @@
             btn.disabled = true;
 
             try {
-                // PNU에서 지번 분리 (매칭용)
+                // PNU에서 지번 분리
                 const lawdCd = globalCurrentPnu.substring(0, 5);
                 const isSan = globalCurrentPnu.substring(10, 11) === '2';
                 const bon = parseInt(globalCurrentPnu.substring(11, 15), 10);
                 const bu = parseInt(globalCurrentPnu.substring(15, 19), 10);
-                const displayTargetJibun = (isSan ? "산 " : "") + bon + (bu > 0 ? "-" + bu : "");
+                const exactTargetJibun = (isSan ? "산 " : "") + bon + (bu > 0 ? "-" + bu : "");
                 
-                // 검색할 연월 목록 생성
+                // 검색 기간 생성
                 const startD = new Date(startMonthInput + "-01");
                 const endD = new Date(endMonthInput + "-01");
                 let targetMonths = [];
@@ -476,10 +481,9 @@
                     currentD.setMonth(currentD.getMonth() + 1);
                 }
 
-                // 국토부 API 엔드포인트 세팅 (대문자 RTMS 주의)
+                // 국토부 API 설정
                 let tradeApiPath = "RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade"; 
                 let rentApiPath = "RTMSDataSvcAptRent/getRTMSDataSvcAptRent";
-                
                 if (targetType === "RH") {
                     tradeApiPath = "RTMSDataSvcRhTrade/getRTMSDataSvcRhTrade";
                     rentApiPath = "RTMSDataSvcRhRent/getRTMSDataSvcRhRent";
@@ -490,12 +494,10 @@
 
                 let allTransactions = [];
 
-                // 월별 순차적 데이터 수집 (매매, 전월세 동시 호출)
                 for (let i = 0; i < targetMonths.length; i++) {
                     let ym = targetMonths[i];
                     btn.innerText = `실거래 스캔 중... (${i+1}/${targetMonths.length}개월 완료)`;
                     
-                    // Vercel 프록시 활용
                     const tradeUrl = `/api/rtms/${tradeApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1000`;
                     const rentUrl = `/api/rent/${rentApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1000`;
                     
@@ -514,23 +516,32 @@
                             
                             for (let item of xmlItems) {
                                 let jibun = item.getElementsByTagName("지번")[0]?.textContent || "";
+                                let complexName = item.getElementsByTagName("아파트")[0]?.textContent || 
+                                                  item.getElementsByTagName("연립다세대")[0]?.textContent || 
+                                                  item.getElementsByTagName("단지")[0]?.textContent || "";
+
+                                // 🌟 필터링: 지번이 완벽히 일치하거나, 단지 이름이 포함되면 통과!
+                                let isJibunValid = matchJibun(jibun, isSan, bon, bu);
+                                let isNameValid = false;
                                 
-                                // 타겟 단지가 맞는지 1차 검증
-                                if (!matchJibun(jibun, isSan, bon, bu)) continue;
+                                if (globalComplexName && complexName) {
+                                    let cleanGlobal = globalComplexName.replace(/\s/g, '').toLowerCase();
+                                    let cleanApi = complexName.replace(/\s/g, '').toLowerCase();
+                                    if (cleanApi.includes(cleanGlobal) || cleanGlobal.includes(cleanApi)) {
+                                        isNameValid = true;
+                                    }
+                                }
+
+                                // 불일치 시 버림
+                                if (!isJibunValid && !isNameValid) continue;
 
                                 let dealAmount = item.getElementsByTagName("거래금액")[0]?.textContent || "0";
                                 let area = item.getElementsByTagName("전용면적")[0]?.textContent || "0";
                                 let year = item.getElementsByTagName("년")[0]?.textContent || "";
                                 let month = item.getElementsByTagName("월")[0]?.textContent || "";
-                                
-                                // 국토부는 거래일을 "1~10" 형태로 주므로 앞숫자만 취함
                                 let rawDay = item.getElementsByTagName("일")[0]?.textContent || "1";
                                 let cleanDay = rawDay.split('~')[0].trim();
-                                
                                 let floor = item.getElementsByTagName("층")[0]?.textContent || "-";
-                                let complexName = item.getElementsByTagName("아파트")[0]?.textContent || 
-                                                  item.getElementsByTagName("연립다세대")[0]?.textContent || 
-                                                  item.getElementsByTagName("단지")[0]?.textContent || "";
 
                                 allTransactions.push({
                                     type: '매매',
@@ -553,24 +564,31 @@
                             
                             for (let item of xmlItems) {
                                 let jibun = item.getElementsByTagName("지번")[0]?.textContent || "";
+                                let complexName = item.getElementsByTagName("아파트")[0]?.textContent || 
+                                                  item.getElementsByTagName("연립다세대")[0]?.textContent || 
+                                                  item.getElementsByTagName("단지")[0]?.textContent || "";
+
+                                let isJibunValid = matchJibun(jibun, isSan, bon, bu);
+                                let isNameValid = false;
                                 
-                                // 타겟 단지가 맞는지 1차 검증
-                                if (!matchJibun(jibun, isSan, bon, bu)) continue;
+                                if (globalComplexName && complexName) {
+                                    let cleanGlobal = globalComplexName.replace(/\s/g, '').toLowerCase();
+                                    let cleanApi = complexName.replace(/\s/g, '').toLowerCase();
+                                    if (cleanApi.includes(cleanGlobal) || cleanGlobal.includes(cleanApi)) {
+                                        isNameValid = true;
+                                    }
+                                }
+
+                                if (!isJibunValid && !isNameValid) continue;
 
                                 let deposit = item.getElementsByTagName("보증금액")[0]?.textContent || "0";
                                 let monthly = item.getElementsByTagName("월세금액")[0]?.textContent || "0";
                                 let area = item.getElementsByTagName("전용면적")[0]?.textContent || "0";
                                 let year = item.getElementsByTagName("년")[0]?.textContent || "";
                                 let month = item.getElementsByTagName("월")[0]?.textContent || "";
-                                
                                 let rawDay = item.getElementsByTagName("일")[0]?.textContent || "1";
                                 let cleanDay = rawDay.split('~')[0].trim();
-                                
                                 let floor = item.getElementsByTagName("층")[0]?.textContent || "-";
-                                let complexName = item.getElementsByTagName("아파트")[0]?.textContent || 
-                                                  item.getElementsByTagName("연립다세대")[0]?.textContent || 
-                                                  item.getElementsByTagName("단지")[0]?.textContent || "";
-
                                 let parsedMonthly = parseInt(monthly.replace(/,/g, '').trim());
 
                                 allTransactions.push({
@@ -589,19 +607,19 @@
                         console.error(`${ym}월 파싱 중 에러:`, e);
                     }
                     
-                    await sleep(300); // 국토부 서버 방어 딜레이
+                    await sleep(300); 
                 }
 
-                // 5. 날짜 기준 최신순 정렬
+                // 날짜 기준 최신순 정렬
                 allTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-                // 6. 통계 계산 및 렌더링
+                // 렌더링
                 let tradeCount = 0;
                 let rentCount = 0;
                 tbody.innerHTML = "";
 
                 if (allTransactions.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="7" class="py-12 text-center text-slate-400 font-medium">설정하신 기간 내에 해당 단지<br><b class="text-slate-600">[지번: ${displayTargetJibun}]</b> 의 거래 내역이 존재하지 않습니다.<br><span class="text-[11px] text-amber-500 mt-2 block">※ 기간을 넓게 설정하거나, 물건 유형이 맞는지 확인해 주세요.</span></td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="7" class="py-12 text-center text-slate-400 font-medium">설정하신 기간 내에 해당 단지<br><b class="text-slate-600">[지번: ${exactTargetJibun}]</b> 의 거래 내역이 존재하지 않습니다.<br><span class="text-[11px] text-amber-500 mt-2 block">※ 기간을 넓게 설정하거나, 물건 유형이 맞는지 확인해 주세요.</span></td></tr>`;
                 } else {
                     allTransactions.forEach((row) => {
                         if (row.type === '매매') tradeCount++;
@@ -619,7 +637,7 @@
                             <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0">
                                 <td class="py-3 px-4 font-medium text-slate-700">${row.date}</td>
                                 <td class="py-3 px-4">${typeBadge}</td>
-                                <td class="py-3 px-4 text-slate-600 font-medium truncate max-w-[120px]">${row.name}</td>
+                                <td class="py-3 px-4 text-slate-600 font-medium truncate max-w-[120px]" title="${row.name}">${row.name}</td>
                                 <td class="py-3 px-4 font-mono font-bold text-slate-700">${row.area.toFixed(2)}㎡</td>
                                 <td class="py-3 px-4 text-slate-500">${row.floor}층</td>
                                 <td class="py-3 px-4 font-extrabold ${row.type === '매매' ? 'text-emerald-600' : 'text-slate-800'}">${amountText}</td>
@@ -641,7 +659,6 @@
             }
         }
 
-        // --- 기타 화면 렌더링 함수 ---
         function renderChart(data) {
             const ctx = document.getElementById('priceChart').getContext('2d');
             if (priceChartInstance) { priceChartInstance.destroy(); }
