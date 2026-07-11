@@ -15,6 +15,7 @@
 </head>
 <body class="bg-[#f3f4f6] font-sans min-h-screen">
 
+    <!-- 헤더 -->
     <div class="bg-[#0f172a] text-white pt-12 pb-24 px-4">
         <div class="max-w-6xl mx-auto">
             <p class="text-indigo-400 font-bold text-sm mb-2 tracking-wider">세무/부동산 데이터 리서치 시스템</p>
@@ -33,6 +34,7 @@
         </div>
     </div>
 
+    <!-- 메인 컨텐츠 영역 -->
     <div class="max-w-6xl mx-auto px-4 -mt-12 pb-12 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
         <!-- 왼쪽: 주소 입력 영역 -->
@@ -153,7 +155,7 @@
                 </div>
             </div>
 
-            <!-- 탭 2: 유사매매사례 컨텐츠 (개편: 매매/전월세 종합 조회) -->
+            <!-- 탭 2: 단지 내 실거래 종합 조회 (매매/전월세) -->
             <div id="content-siga" class="hidden space-y-6">
                 <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200 space-y-4">
                     <h2 class="text-lg font-extrabold text-slate-800 flex items-center">
@@ -203,6 +205,7 @@
                                 <tr class="border-b border-slate-200 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
                                     <th class="py-3 px-4">계약일자</th>
                                     <th class="py-3 px-4">유형</th>
+                                    <th class="py-3 px-4">단지명</th>
                                     <th class="py-3 px-4">전용면적(㎡)</th>
                                     <th class="py-3 px-4">층수</th>
                                     <th class="py-3 px-4">거래금액(매매/보증금)</th>
@@ -211,7 +214,7 @@
                             </thead>
                             <tbody id="siga-table-body" class="text-xs divide-y divide-slate-100 text-slate-700">
                                 <tr>
-                                    <td colspan="6" class="py-12 text-center text-slate-400 font-medium">조회 기간을 설정하고 스캔 버튼을 눌러주세요. 해당 지번의 모든 거래가 조회됩니다.</td>
+                                    <td colspan="7" class="py-12 text-center text-slate-400 font-medium">조회 기간을 설정하고 스캔 버튼을 눌러주세요. 해당 지번의 모든 거래가 조회됩니다.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -222,12 +225,11 @@
         </div>
     </div>
 
+    <!-- 자바스크립트 영역 -->
     <script>
+        // 공통 필수 인증키 
         const VWORLD_KEY = "75321A8E-275D-32A6-82AC-B9D0D8E551FE";
-        
-        // 🌟 국토교통부 실거래가 오픈 API 인증키 (매매 및 전월세 공통 사용)
         const DATA_GO_KR_KEY = "83a79624397baf59da6f5daea52c9c0478aceccf3f20b707e26f9866c85f7b8f";
-        
         const DOMAIN = window.location.origin; 
         const OFFICE_PHONE = "02-XXXX-XXXX"; 
         
@@ -278,10 +280,27 @@
             }).open();
         }
 
+        // 🌟 [필수 복구 함수] 숫자 추출, 날짜 포맷 함수들
         function extractNum(text) {
             if (!text) return "";
             const nums = String(text).match(/\d+/g);
             return nums ? nums.join("") : String(text).trim();
+        }
+
+        function formatBaseDate(stdrMt) {
+            if (!stdrMt) return "01월01일";
+            const mt = String(stdrMt).padStart(2, '0');
+            return `${mt}월01일`;
+        }
+
+        function formatPubDate(rawDate) {
+            if (rawDate && String(rawDate).length >= 8) {
+                const str = String(rawDate).replace(/\D/g, '');
+                if(str.length >= 8) {
+                    return `${str.substring(0,4)}-${str.substring(4,6)}-${str.substring(6,8)}`;
+                }
+            }
+            return "";
         }
 
         function fetchJSONP(url) {
@@ -313,400 +332,32 @@
                     if (data.response && data.response.status === 'OK' && data.response.result.items.length > 0) {
                         return data.response.result.items[0].id; 
                     }
-                } catch (error) {
-                    console.error(`PNU 조회 실패:`, error);
-                }
+                } catch (error) {}
             }
             return null;
         }
 
-        function formatBaseDate(stdrMt) {
-            if (!stdrMt) return "01월01일";
-            const mt = String(stdrMt).padStart(2, '0');
-            return `${mt}월01일`;
-        }
-
-        function formatPubDate(rawDate) {
-            if (rawDate && String(rawDate).length >= 8) {
-                const str = String(rawDate).replace(/\D/g, '');
-                if(str.length >= 8) {
-                    return `${str.substring(0,4)}-${str.substring(4,6)}-${str.substring(6,8)}`;
-                }
-            }
-            return "";
-        }
-
-        // 🌟 [통합 조회 엔진] 매매 및 전월세 동시 파싱 로직
-        async function fetchComplexTransactions() {
-            const startMonthInput = document.getElementById('searchStartMonth').value;
-            const endMonthInput = document.getElementById('searchEndMonth').value;
-            const targetType = document.getElementById('sigaTargetType').value;
-            const btn = document.getElementById('sigaBtn');
-            const tbody = document.getElementById('siga-table-body');
-
-            if (!globalCurrentPnu) {
-                alert("먼저 좌측 주소창에서 주소를 검색하고 공시가격을 조회하여 단지(PNU) 연동을 완료해 주세요.");
-                return;
-            }
-            if (!startMonthInput || !endMonthInput) {
-                alert("조회 시작 월과 종료 월을 모두 입력해 주세요.");
-                return;
-            }
-
-            btn.innerText = "국토부 실거래가 인프라 스캔 중... 잠시만 기다려주세요.";
-            btn.disabled = true;
-
-            try {
-                // 1. PNU 해독 (타겟 지번 확정)
-                const lawdCd = globalCurrentPnu.substring(0, 5);
-                const isSan = globalCurrentPnu.substring(10, 11) === '2';
-                const bon = parseInt(globalCurrentPnu.substring(11, 15));
-                const bu = parseInt(globalCurrentPnu.substring(15, 19));
-                const exactTargetJibun = (isSan ? "산" : "") + (bu === 0 ? String(bon) : `${bon}-${bu}`);
+        // 🌟 [핵심] VWORLD에서 찾은 지번과 국토부 API 지번이 일치하는지 수학적으로 검사
+        function matchJibun(apiJibunStr, isSan, targetBon, targetBu) {
+            if (!apiJibunStr) return false;
+            // 국토부가 쉼표로 여러 지번을 묶어서 주더라도 모두 해체해서 검사
+            const apiJibuns = apiJibunStr.replace(/\s/g, '').split(',');
+            for (let j of apiJibuns) {
+                let isApiSan = j.includes("산");
+                let cleanJ = j.replace("산", ""); // 산 글자 제거
+                let parts = cleanJ.split('-'); 
                 
-                // 2. 조회 기간 월 배열 생성
-                const startD = new Date(startMonthInput + "-01");
-                const endD = new Date(endMonthInput + "-01");
-                let targetMonths = [];
-                let currentD = new Date(startD);
+                let aBon = parseInt(parts[0], 10);
+                let aBu = parts.length > 1 ? parseInt(parts[1], 10) : 0; 
                 
-                while (currentD <= endD) {
-                    targetMonths.push(`${currentD.getFullYear()}${String(currentD.getMonth() + 1).padStart(2, '0')}`);
-                    currentD.setMonth(currentD.getMonth() + 1);
+                if (isSan === isApiSan && targetBon === aBon && targetBu === aBu) {
+                    return true;
                 }
-
-                // 3. API 엔드포인트 세팅 (매매 / 전월세)
-                let tradeApiPath = "RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade"; 
-                let rentApiPath = "RTMSDataSvcAptRent/getRTMSDataSvcAptRent";
-                
-                if (targetType === "RH") {
-                    tradeApiPath = "RTMSDataSvcRhTrade/getRTMSDataSvcRhTrade";
-                    rentApiPath = "RTMSDataSvcRhRent/getRTMSDataSvcRhRent";
-                } else if (targetType === "OFFI") {
-                    tradeApiPath = "RTMSDataSvcOffiTrade/getRTMSDataSvcOffiTrade";
-                    rentApiPath = "RTMSDataSvcOffiRent/getRTMSDataSvcOffiRent";
-                }
-
-                let allTransactions = [];
-
-                // 4. 월별 데이터 순차 수집 (과부하 방지)
-                for (let i = 0; i < targetMonths.length; i++) {
-                    let ym = targetMonths[i];
-                    btn.innerText = `데이터 수집 중... (${i+1}/${targetMonths.length}개월 완료)`;
-                    
-                    // Vercel 프록시 경로 활용 (매매는 /api/rtms, 전월세는 /api/rent)
-                    const tradeUrl = `/api/rtms/${tradeApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=3000`;
-                    const rentUrl = `/api/rent/${rentApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=3000`;
-                    
-                    try {
-                        // 🌟 매매와 전월세를 병렬로 찔러서 대기시간 단축
-                        const [tradeRes, rentRes] = await Promise.all([
-                            fetch(tradeUrl).catch(e => null),
-                            fetch(rentUrl).catch(e => null)
-                        ]);
-
-                        // --- 매매 파싱 ---
-                        if (tradeRes && tradeRes.ok) {
-                            const xmlText = await tradeRes.text();
-                            const parser = new DOMParser();
-                            const xmlDoc = parser.parseFromString(xmlText, "text/xml");
-                            const xmlItems = xmlDoc.getElementsByTagName("item");
-                            
-                            for (let item of xmlItems) {
-                                let jibun = item.getElementsByTagName("지번")[0]?.textContent || "";
-                                // 타겟 지번이 일치하는지 먼저 검사 (속도 최적화)
-                                const cleanTargetJibun = exactTargetJibun.replace(/\s/g, '');
-                                const apiJibunList = jibun.replace(/\s/g, '').split(',');
-                                if (!apiJibunList.includes(cleanTargetJibun)) continue;
-
-                                let dealAmount = item.getElementsByTagName("거래금액")[0]?.textContent || "0";
-                                let area = item.getElementsByTagName("전용면적")[0]?.textContent || "0";
-                                let year = item.getElementsByTagName("년")[0]?.textContent || "";
-                                let month = item.getElementsByTagName("월")[0]?.textContent || "";
-                                let rawDay = item.getElementsByTagName("일")[0]?.textContent || "1";
-                                let cleanDay = rawDay.split('~')[0].trim();
-                                let floor = item.getElementsByTagName("층")[0]?.textContent || "-";
-
-                                allTransactions.push({
-                                    type: '매매',
-                                    date: `${year}-${String(month).padStart(2, '0')}-${String(cleanDay).padStart(2, '0')}`,
-                                    floor: floor,
-                                    area: parseFloat(area),
-                                    amount: parseInt(dealAmount.replace(/,/g, '').trim()) * 10000,
-                                    monthlyRent: 0
-                                });
-                            }
-                        }
-
-                        // --- 전월세 파싱 ---
-                        if (rentRes && rentRes.ok) {
-                            const xmlText = await rentRes.text();
-                            const parser = new DOMParser();
-                            const xmlDoc = parser.parseFromString(xmlText, "text/xml");
-                            const xmlItems = xmlDoc.getElementsByTagName("item");
-                            
-                            for (let item of xmlItems) {
-                                let jibun = item.getElementsByTagName("지번")[0]?.textContent || "";
-                                const cleanTargetJibun = exactTargetJibun.replace(/\s/g, '');
-                                const apiJibunList = jibun.replace(/\s/g, '').split(',');
-                                if (!apiJibunList.includes(cleanTargetJibun)) continue;
-
-                                let deposit = item.getElementsByTagName("보증금액")[0]?.textContent || "0";
-                                let monthly = item.getElementsByTagName("월세금액")[0]?.textContent || "0";
-                                let area = item.getElementsByTagName("전용면적")[0]?.textContent || "0";
-                                let year = item.getElementsByTagName("년")[0]?.textContent || "";
-                                let month = item.getElementsByTagName("월")[0]?.textContent || "";
-                                let rawDay = item.getElementsByTagName("일")[0]?.textContent || "1";
-                                let cleanDay = rawDay.split('~')[0].trim();
-                                let floor = item.getElementsByTagName("층")[0]?.textContent || "-";
-
-                                let parsedMonthly = parseInt(monthly.replace(/,/g, '').trim());
-
-                                allTransactions.push({
-                                    type: parsedMonthly > 0 ? '월세' : '전세',
-                                    date: `${year}-${String(month).padStart(2, '0')}-${String(cleanDay).padStart(2, '0')}`,
-                                    floor: floor,
-                                    area: parseFloat(area),
-                                    amount: parseInt(deposit.replace(/,/g, '').trim()) * 10000,
-                                    monthlyRent: parsedMonthly * 10000
-                                });
-                            }
-                        }
-
-                    } catch (e) {
-                        console.error(`${ym}월 파싱 중 에러:`, e);
-                    }
-                    
-                    await sleep(300); // 딜레이
-                }
-
-                // 5. 날짜 기준 최신순 정렬
-                allTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-                // 6. 통계 계산 및 렌더링
-                let tradeCount = 0;
-                let rentCount = 0;
-                tbody.innerHTML = "";
-
-                if (allTransactions.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-slate-400 font-medium">설정하신 기간 내에 해당 단지(지번)의 거래 내역이 존재하지 않습니다.</td></tr>`;
-                } else {
-                    allTransactions.forEach((row) => {
-                        if (row.type === '매매') tradeCount++;
-                        else rentCount++;
-
-                        let typeBadge = '';
-                        if (row.type === '매매') typeBadge = '<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded">매매</span>';
-                        else if (row.type === '전세') typeBadge = '<span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded">전세</span>';
-                        else typeBadge = '<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded">월세</span>';
-
-                        let amountText = row.amount.toLocaleString() + '원';
-                        let monthlyText = row.monthlyRent > 0 ? row.monthlyRent.toLocaleString() + '원' : '-';
-
-                        tbody.innerHTML += `
-                            <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0">
-                                <td class="py-3 px-4 font-medium text-slate-700">${row.date}</td>
-                                <td class="py-3 px-4">${typeBadge}</td>
-                                <td class="py-3 px-4 font-mono font-bold text-slate-700">${row.area.toFixed(2)}㎡</td>
-                                <td class="py-3 px-4 text-slate-500">${row.floor}층</td>
-                                <td class="py-3 px-4 font-extrabold ${row.type === '매매' ? 'text-emerald-600' : 'text-slate-800'}">${amountText}</td>
-                                <td class="py-3 px-4 font-bold text-amber-600">${monthlyText}</td>
-                            </tr>`;
-                    });
-                }
-
-                document.getElementById('siga-count-badge').innerText = `총 ${allTransactions.length}건`;
-                document.getElementById('trade-count-badge').innerText = `매매 ${tradeCount}건`;
-                document.getElementById('rent-count-badge').innerText = `전월세 ${rentCount}건`;
-
-            } catch (err) {
-                alert("조회 중 문제가 발생했습니다.");
-            } finally {
-                btn.innerText = "선택 기간 내 단지 전체 매매/전월세 데이터 스캔";
-                btn.disabled = false;
             }
+            return false;
         }
 
-        // --- 이하 Bulk 함수 및 공시가격 단건 조회 기존 함수 유지 ---
-        async function handleBulkExcel(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const propType = document.getElementById('bulkPropType').value;
-            const progressContainer = document.getElementById('bulk-progress-container');
-            const progressBar = document.getElementById('bulk-progress-bar');
-            const statusText = document.getElementById('bulk-status-text');
-            const percentageText = document.getElementById('bulk-percentage');
-
-            progressContainer.classList.remove('hidden');
-            statusText.innerText = "데이터 스마트 분석 중...";
-            progressBar.style.width = "0%";
-            percentageText.innerText = "0%";
-
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                    
-                    const validRows = [];
-
-                    for (let i = 0; i < rows.length; i++) {
-                        if (i === 0 && (rows[i][0] === "주소" || rows[i][0] === "대상 주소")) continue;
-                        
-                        let rawAddr = rows[i][0] ? String(rows[i][0]).trim() : "";
-                        if (!rawAddr) continue;
-                        
-                        let dong = rows[i][1] ? String(rows[i][1]).replace(/\D/g, '') : "";
-                        let ho = rows[i][2] ? String(rows[i][2]).replace(/\D/g, '') : "";
-                        let baseAddr = rawAddr;
-
-                        let hasDong = rawAddr.includes("동");
-                        let hasHo = rawAddr.includes("호");
-                        let isRoadAddr = rawAddr.includes("로") || rawAddr.includes("길");
-
-                        if ((propType === "auto" || propType === "공동주택") && !dong && !ho) {
-                            if (isRoadAddr || hasDong || hasHo) {
-                                let matchCommaDongHo = rawAddr.match(/,\s*(\d+)\s*(?:동|-)\s*(\d+)\s*(?:호)?\s*$/);
-                                let matchCommaHoOnly = rawAddr.match(/,\s*(?:제)?(\d+)\s*(?:호)?\s*$/);
-                                let matchTextDongHo = rawAddr.match(/(\d+)\s*동\s*(\d+)\s*(?:호)?\s*$/);
-                                let matchTextHoOnly = rawAddr.match(/\s+(?:제)?(\d+)\s*호\s*$/);
-
-                                if (matchCommaDongHo) {
-                                    dong = matchCommaDongHo[1]; ho = matchCommaDongHo[2];
-                                    baseAddr = rawAddr.split(',')[0].trim();
-                                } else if (matchCommaHoOnly) {
-                                    ho = matchCommaHoOnly[1];
-                                    baseAddr = rawAddr.split(',')[0].trim();
-                                } else if (matchTextDongHo) {
-                                    dong = matchTextDongHo[1]; ho = matchTextDongHo[2];
-                                    baseAddr = rawAddr.replace(matchTextDongHo[0], '').trim();
-                                } else if (matchTextHoOnly) {
-                                    ho = matchTextHoOnly[1];
-                                    baseAddr = rawAddr.replace(matchTextHoOnly[0], '').trim();
-                                }
-                            }
-                        }
-                        validRows.push({ rawAddr, baseAddr, dong, ho });
-                    }
-
-                    if (validRows.length === 0) {
-                        alert("유효한 주소를 식별하지 못했습니다.");
-                        progressContainer.classList.add('hidden');
-                        return;
-                    }
-
-                    const totalCount = validRows.length;
-                    const finalBulkRows = [];
-                    const typesToTry = propType === "auto" ? ["공동주택", "단독주택", "토지"] : [propType];
-
-                    for (let i = 0; i < totalCount; i++) {
-                        const { rawAddr, baseAddr, dong, ho } = validRows[i];
-                        const percent = Math.round(((i + 1) / totalCount) * 100);
-                        statusText.innerText = `대량 전수 스캔 중... (${i + 1}/${totalCount})`;
-                        progressBar.style.width = `${percent}%`;
-                        percentageText.innerText = `${percent}%`;
-
-                        const pnu = await getPnu(baseAddr);
-                        if (!pnu) {
-                            finalBulkRows.push({ "대상 주소": rawAddr, "물건 구분": "오류", "가격기준연도": "오류", "기준시가(원)": "주소 인식 불가능" });
-                            continue;
-                        }
-
-                        let bestHistory = [];
-                        let maxYearBest = 0;
-                        let finalPropType = "없음";
-
-                        for (let probeType of typesToTry) {
-                            let apiUrl = ""; let priceField = "";
-                            if (probeType === "공동주택") { apiUrl = "https://api.vworld.kr/ned/data/getApartHousingPriceAttr"; priceField = "pblntfPc"; }
-                            else if (probeType === "단독주택") { apiUrl = "https://api.vworld.kr/ned/data/getIndvdHousingPriceAttr"; priceField = "pblntfPc"; }
-                            else { apiUrl = "https://api.vworld.kr/ned/data/getIndvdLandPriceAttr"; priceField = "pblntfPclnd"; }
-
-                            try {
-                                let pageNo = 1; let keepFetching = true;
-                                const seenKeys = new Set(); const tempHistory = [];
-
-                                while (keepFetching) {
-                                    const params = new URLSearchParams({ key: VWORLD_KEY, pnu: pnu, format: "json", numOfRows: "1000", pageNo: String(pageNo), domain: DOMAIN });
-                                    const resData = await fetchJSONP(`${apiUrl}?${params.toString()}`);
-                                    let items = [];
-                                    for (const key in resData) {
-                                        if (resData[key] && resData[key].field) {
-                                            items = Array.isArray(resData[key].field) ? resData[key].field : [resData[key].field];
-                                            break;
-                                        }
-                                    }
-                                    if (items.length === 0) break;
-
-                                    for (const item of items) {
-                                        if (probeType === "공동주택") {
-                                            const itemDong = extractNum(item.dongNm);
-                                            const itemHo = extractNum(item.hoNm);
-                                            if (dong && itemDong !== dong) continue;
-                                            if (ho && itemHo !== ho) continue;
-                                        }
-
-                                        const priceVal = item[priceField] || item.housePc || item.prc || 0;
-                                        const yearVal = item.stdrYear || item.pblntfYear;
-                                        const baseDate = formatBaseDate(item.stdrMt);
-                                        let pubDate = formatPubDate(item.pblntfDe || item.pblntfDate || item.pblntfYmd || item.pblntfDay);
-
-                                        if (priceVal && yearVal) {
-                                            const uniqueKey = `${yearVal}_${priceVal}_${baseDate}_${pubDate}`;
-                                            if (!seenKeys.has(uniqueKey)) {
-                                                seenKeys.add(uniqueKey);
-                                                tempHistory.push({
-                                                    "대상 주소": rawAddr, "물건 구분": probeType, "가격기준연도": `${yearVal}년`, "기준일자": baseDate, "공시일자": pubDate, "기준시가(원)": parseInt(priceVal),
-                                                    "전용면적(㎡)": probeType === "공동주택" ? (item.prvuseAr || item.totArea || "-") : "-",
-                                                    "대지면적_전체(㎡)": probeType === "단독주택" ? (item.ladRegstrAr || item.totPlotAr || "-") : "-",
-                                                    "대지면적_산정(㎡)": probeType === "단독주택" ? (item.calcPlotAr || item.ladRegstrAr || "-") : "-",
-                                                    "건물연면적_전체(㎡)": probeType === "단독주택" ? (item.buldAllTotAr || "-") : "-",
-                                                    "건물연면적_산정(㎡)": probeType === "단독주택" ? (item.calcBuldTotAr || item.buldAllTotAr || "-") : "-"
-                                                });
-                                            }
-                                        }
-                                    }
-                                    if (items.length < 1000) keepFetching = false;
-                                    pageNo++;
-                                }
-
-                                if (tempHistory.length > 0) {
-                                    let maxYearThisType = Math.max(...tempHistory.map(h => parseInt(h["가격기준연도"])));
-                                    if (maxYearThisType > maxYearBest) {
-                                        maxYearBest = maxYearThisType;
-                                        tempHistory.sort((a, b) => parseInt(b["가격기준연도"]) - parseInt(a["가격기준연도"]));
-                                        bestHistory = tempHistory; finalPropType = probeType;
-                                    }
-                                    if (maxYearThisType >= 2025) break;
-                                }
-                            } catch (err) { console.error(err); }
-                        }
-
-                        if (bestHistory.length > 0) {
-                            bestHistory = bestHistory.map(row => ({...row, "물건 구분": finalPropType}));
-                            finalBulkRows.push(...bestHistory);
-                        } else {
-                            finalBulkRows.push({ "대상 주소": rawAddr, "물건 구분": "없음", "가격기준연도": "정보 없음" });
-                        }
-                        await sleep(150); 
-                    }
-
-                    finalBulkRows.push({});
-                    finalBulkRows.push({ "대상 주소": "💡 양도세/상속세/증여세 및 부동산 절세 상담:", "물건 구분": "강승완 세무사", "가격기준연도": OFFICE_PHONE, "기준일자": "www.micro-tax.com" });
-
-                    const bulkWorksheet = XLSX.utils.json_to_sheet(finalBulkRows);
-                    const bulkWorkbook = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(bulkWorkbook, bulkWorksheet, "대량조회_통합결과");
-                    XLSX.writeFile(bulkWorkbook, "강승완세무사_대량_공시가격_추출결과.xlsx");
-                    statusText.innerText = "✅ 대량 전수조사 취합 다운로드 완료!";
-                } catch (err) { alert("엑셀 빌드 실패"); progressContainer.classList.add('hidden'); }
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
+        // 🌟 탭 1: 공시가격 연혁 조회 
         async function searchPriceHistory() {
             const address = document.getElementById('address').value;
             const propType = document.querySelector('input[name="propType"]:checked').value;
@@ -723,7 +374,7 @@
             try {
                 const pnu = await getPnu(address);
                 if (!pnu) throw new Error("지번 코드를 인식하지 못했습니다.");
-                globalCurrentPnu = pnu; 
+                globalCurrentPnu = pnu; // 탭 2에서 쓸 PNU 보관
 
                 let apiUrl = ""; let priceField = "";
                 if (propType === "공동주택") { apiUrl = "https://api.vworld.kr/ned/data/getApartHousingPriceAttr"; priceField = "pblntfPc"; }
@@ -786,27 +437,211 @@
             finally { btn.innerText = "기본 정보 및 공시가격 연혁 조회"; btn.disabled = false; }
         }
 
-        function downloadExcel() {
-            if (currentExcelData.length === 0) return;
-            const fullAddress = document.getElementById('address').value;
-            const formattedData = currentExcelData.map(row => {
-                let excelRow = { "대상 주소": fullAddress, "가격기준연도": row.year, "기준일자": row.baseDate, "공시일자": row.pubDate, "기준시가(원)": row.price };
-                if (currentPropType === "공동주택") { excelRow["전용면적(㎡)"] = row.area; } 
-                else if (currentPropType === "단독주택") {
-                    excelRow["대지면적_전체(㎡)"] = row.landTotal; excelRow["대지면적_산정(㎡)"] = row.landCalc;
-                    excelRow["건물연면적_전체(㎡)"] = row.bldTotal; excelRow["건물연면적_산정(㎡)"] = row.bldCalc;
-                }
-                return excelRow;
-            });
-            formattedData.push({});
-            formattedData.push({ "대상 주소": "💡 양도세/상속세/증여세 및 부동산 절세 상담:", "가격기준연도": "강승완 세무사", "기준일자": OFFICE_PHONE, "공시일자": "www.micro-tax.com" });
+        // 🌟 탭 2: 단지 내 매매/전월세 통합 스캔
+        async function fetchComplexTransactions() {
+            const startMonthInput = document.getElementById('searchStartMonth').value;
+            const endMonthInput = document.getElementById('searchEndMonth').value;
+            const targetType = document.getElementById('sigaTargetType').value;
+            const btn = document.getElementById('sigaBtn');
+            const tbody = document.getElementById('siga-table-body');
 
-            const worksheet = XLSX.utils.json_to_sheet(formattedData);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "기준시가 연혁");
-            XLSX.writeFile(workbook, "강승완세무사_기준시가_연혁.xlsx");
+            if (!globalCurrentPnu) {
+                alert("먼저 좌측 주소창에서 주소를 검색하고 '공시가격 연혁 조회'를 눌러 단지 연결을 완료해 주세요.");
+                return;
+            }
+            if (!startMonthInput || !endMonthInput) {
+                alert("조회 시작 월과 종료 월을 모두 입력해 주세요.");
+                return;
+            }
+
+            btn.innerText = "국토부 매매 및 임대차 데이터 동시 스캔 중...";
+            btn.disabled = true;
+
+            try {
+                // PNU에서 지번 분리 (매칭용)
+                const lawdCd = globalCurrentPnu.substring(0, 5);
+                const isSan = globalCurrentPnu.substring(10, 11) === '2';
+                const bon = parseInt(globalCurrentPnu.substring(11, 15), 10);
+                const bu = parseInt(globalCurrentPnu.substring(15, 19), 10);
+                const displayTargetJibun = (isSan ? "산 " : "") + bon + (bu > 0 ? "-" + bu : "");
+                
+                // 검색할 연월 목록 생성
+                const startD = new Date(startMonthInput + "-01");
+                const endD = new Date(endMonthInput + "-01");
+                let targetMonths = [];
+                let currentD = new Date(startD);
+                
+                while (currentD <= endD) {
+                    targetMonths.push(`${currentD.getFullYear()}${String(currentD.getMonth() + 1).padStart(2, '0')}`);
+                    currentD.setMonth(currentD.getMonth() + 1);
+                }
+
+                // 국토부 API 엔드포인트 세팅 (대문자 RTMS 주의)
+                let tradeApiPath = "RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade"; 
+                let rentApiPath = "RTMSDataSvcAptRent/getRTMSDataSvcAptRent";
+                
+                if (targetType === "RH") {
+                    tradeApiPath = "RTMSDataSvcRhTrade/getRTMSDataSvcRhTrade";
+                    rentApiPath = "RTMSDataSvcRhRent/getRTMSDataSvcRhRent";
+                } else if (targetType === "OFFI") {
+                    tradeApiPath = "RTMSDataSvcOffiTrade/getRTMSDataSvcOffiTrade";
+                    rentApiPath = "RTMSDataSvcOffiRent/getRTMSDataSvcOffiRent";
+                }
+
+                let allTransactions = [];
+
+                // 월별 순차적 데이터 수집 (매매, 전월세 동시 호출)
+                for (let i = 0; i < targetMonths.length; i++) {
+                    let ym = targetMonths[i];
+                    btn.innerText = `실거래 스캔 중... (${i+1}/${targetMonths.length}개월 완료)`;
+                    
+                    // Vercel 프록시 활용
+                    const tradeUrl = `/api/rtms/${tradeApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1000`;
+                    const rentUrl = `/api/rent/${rentApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1000`;
+                    
+                    try {
+                        const [tradeRes, rentRes] = await Promise.all([
+                            fetch(tradeUrl).catch(e => null),
+                            fetch(rentUrl).catch(e => null)
+                        ]);
+
+                        // --- 매매 파싱 ---
+                        if (tradeRes && tradeRes.ok) {
+                            const xmlText = await tradeRes.text();
+                            const parser = new DOMParser();
+                            const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+                            const xmlItems = xmlDoc.getElementsByTagName("item");
+                            
+                            for (let item of xmlItems) {
+                                let jibun = item.getElementsByTagName("지번")[0]?.textContent || "";
+                                
+                                // 타겟 단지가 맞는지 1차 검증
+                                if (!matchJibun(jibun, isSan, bon, bu)) continue;
+
+                                let dealAmount = item.getElementsByTagName("거래금액")[0]?.textContent || "0";
+                                let area = item.getElementsByTagName("전용면적")[0]?.textContent || "0";
+                                let year = item.getElementsByTagName("년")[0]?.textContent || "";
+                                let month = item.getElementsByTagName("월")[0]?.textContent || "";
+                                
+                                // 국토부는 거래일을 "1~10" 형태로 주므로 앞숫자만 취함
+                                let rawDay = item.getElementsByTagName("일")[0]?.textContent || "1";
+                                let cleanDay = rawDay.split('~')[0].trim();
+                                
+                                let floor = item.getElementsByTagName("층")[0]?.textContent || "-";
+                                let complexName = item.getElementsByTagName("아파트")[0]?.textContent || 
+                                                  item.getElementsByTagName("연립다세대")[0]?.textContent || 
+                                                  item.getElementsByTagName("단지")[0]?.textContent || "";
+
+                                allTransactions.push({
+                                    type: '매매',
+                                    name: complexName.trim(),
+                                    date: `${year}-${String(month).padStart(2, '0')}-${String(cleanDay).padStart(2, '0')}`,
+                                    floor: floor,
+                                    area: parseFloat(area),
+                                    amount: parseInt(dealAmount.replace(/,/g, '').trim()) * 10000,
+                                    monthlyRent: 0
+                                });
+                            }
+                        }
+
+                        // --- 전월세 파싱 ---
+                        if (rentRes && rentRes.ok) {
+                            const xmlText = await rentRes.text();
+                            const parser = new DOMParser();
+                            const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+                            const xmlItems = xmlDoc.getElementsByTagName("item");
+                            
+                            for (let item of xmlItems) {
+                                let jibun = item.getElementsByTagName("지번")[0]?.textContent || "";
+                                
+                                // 타겟 단지가 맞는지 1차 검증
+                                if (!matchJibun(jibun, isSan, bon, bu)) continue;
+
+                                let deposit = item.getElementsByTagName("보증금액")[0]?.textContent || "0";
+                                let monthly = item.getElementsByTagName("월세금액")[0]?.textContent || "0";
+                                let area = item.getElementsByTagName("전용면적")[0]?.textContent || "0";
+                                let year = item.getElementsByTagName("년")[0]?.textContent || "";
+                                let month = item.getElementsByTagName("월")[0]?.textContent || "";
+                                
+                                let rawDay = item.getElementsByTagName("일")[0]?.textContent || "1";
+                                let cleanDay = rawDay.split('~')[0].trim();
+                                
+                                let floor = item.getElementsByTagName("층")[0]?.textContent || "-";
+                                let complexName = item.getElementsByTagName("아파트")[0]?.textContent || 
+                                                  item.getElementsByTagName("연립다세대")[0]?.textContent || 
+                                                  item.getElementsByTagName("단지")[0]?.textContent || "";
+
+                                let parsedMonthly = parseInt(monthly.replace(/,/g, '').trim());
+
+                                allTransactions.push({
+                                    type: parsedMonthly > 0 ? '월세' : '전세',
+                                    name: complexName.trim(),
+                                    date: `${year}-${String(month).padStart(2, '0')}-${String(cleanDay).padStart(2, '0')}`,
+                                    floor: floor,
+                                    area: parseFloat(area),
+                                    amount: parseInt(deposit.replace(/,/g, '').trim()) * 10000,
+                                    monthlyRent: parsedMonthly * 10000
+                                });
+                            }
+                        }
+
+                    } catch (e) {
+                        console.error(`${ym}월 파싱 중 에러:`, e);
+                    }
+                    
+                    await sleep(300); // 국토부 서버 방어 딜레이
+                }
+
+                // 5. 날짜 기준 최신순 정렬
+                allTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                // 6. 통계 계산 및 렌더링
+                let tradeCount = 0;
+                let rentCount = 0;
+                tbody.innerHTML = "";
+
+                if (allTransactions.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" class="py-12 text-center text-slate-400 font-medium">설정하신 기간 내에 해당 단지<br><b class="text-slate-600">[지번: ${displayTargetJibun}]</b> 의 거래 내역이 존재하지 않습니다.<br><span class="text-[11px] text-amber-500 mt-2 block">※ 기간을 넓게 설정하거나, 물건 유형이 맞는지 확인해 주세요.</span></td></tr>`;
+                } else {
+                    allTransactions.forEach((row) => {
+                        if (row.type === '매매') tradeCount++;
+                        else rentCount++;
+
+                        let typeBadge = '';
+                        if (row.type === '매매') typeBadge = '<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded">매매</span>';
+                        else if (row.type === '전세') typeBadge = '<span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded">전세</span>';
+                        else typeBadge = '<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded">월세</span>';
+
+                        let amountText = row.amount.toLocaleString() + '원';
+                        let monthlyText = row.monthlyRent > 0 ? row.monthlyRent.toLocaleString() + '원' : '-';
+
+                        tbody.innerHTML += `
+                            <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0">
+                                <td class="py-3 px-4 font-medium text-slate-700">${row.date}</td>
+                                <td class="py-3 px-4">${typeBadge}</td>
+                                <td class="py-3 px-4 text-slate-600 font-medium truncate max-w-[120px]">${row.name}</td>
+                                <td class="py-3 px-4 font-mono font-bold text-slate-700">${row.area.toFixed(2)}㎡</td>
+                                <td class="py-3 px-4 text-slate-500">${row.floor}층</td>
+                                <td class="py-3 px-4 font-extrabold ${row.type === '매매' ? 'text-emerald-600' : 'text-slate-800'}">${amountText}</td>
+                                <td class="py-3 px-4 font-bold text-amber-600">${monthlyText}</td>
+                            </tr>`;
+                    });
+                }
+
+                document.getElementById('siga-count-badge').innerText = `총 ${allTransactions.length}건`;
+                document.getElementById('trade-count-badge').innerText = `매매 ${tradeCount}건`;
+                document.getElementById('rent-count-badge').innerText = `전월세 ${rentCount}건`;
+
+            } catch (err) {
+                alert("조회 중 오류가 발생했습니다.");
+                console.error(err);
+            } finally {
+                btn.innerText = "선택 기간 내 단지 전체 매매/전월세 데이터 스캔";
+                btn.disabled = false;
+            }
         }
 
+        // --- 기타 화면 렌더링 함수 ---
         function renderChart(data) {
             const ctx = document.getElementById('priceChart').getContext('2d');
             if (priceChartInstance) { priceChartInstance.destroy(); }
@@ -846,6 +681,191 @@
                         ${extraInfo ? `<span class="text-xs text-slate-400 font-normal mt-1">${extraInfo}</span>` : ""}
                     </div>`;
             });
+        }
+
+        function downloadExcel() {
+            if (currentExcelData.length === 0) return;
+            const fullAddress = document.getElementById('address').value;
+            const formattedData = currentExcelData.map(row => {
+                let excelRow = { "대상 주소": fullAddress, "가격기준연도": row.year, "기준일자": row.baseDate, "공시일자": row.pubDate, "기준시가(원)": row.price };
+                if (currentPropType === "공동주택") { excelRow["전용면적(㎡)"] = row.area; } 
+                else if (currentPropType === "단독주택") {
+                    excelRow["대지면적_전체(㎡)"] = row.landTotal; excelRow["대지면적_산정(㎡)"] = row.landCalc;
+                    excelRow["건물연면적_전체(㎡)"] = row.bldTotal; excelRow["건물연면적_산정(㎡)"] = row.bldCalc;
+                }
+                return excelRow;
+            });
+            formattedData.push({});
+            formattedData.push({ "대상 주소": "💡 양도세/상속세/증여세 및 부동산 절세 상담:", "가격기준연도": "강승완 세무사", "기준일자": OFFICE_PHONE, "공시일자": "www.micro-tax.com" });
+
+            const worksheet = XLSX.utils.json_to_sheet(formattedData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "기준시가 연혁");
+            XLSX.writeFile(workbook, "강승완세무사_기준시가_연혁.xlsx");
+        }
+
+        // --- 대량 조회 (Bulk) 유지 ---
+        async function handleBulkExcel(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const propType = document.getElementById('bulkPropType').value;
+            const progressContainer = document.getElementById('bulk-progress-container');
+            const progressBar = document.getElementById('bulk-progress-bar');
+            const statusText = document.getElementById('bulk-status-text');
+            const percentageText = document.getElementById('bulk-percentage');
+
+            progressContainer.classList.remove('hidden');
+            statusText.innerText = "데이터 스마트 분석 중...";
+            progressBar.style.width = "0%";
+            percentageText.innerText = "0%";
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    const validRows = [];
+
+                    for (let i = 0; i < rows.length; i++) {
+                        if (i === 0 && (rows[i][0] === "주소" || rows[i][0] === "대상 주소")) continue;
+                        let rawAddr = rows[i][0] ? String(rows[i][0]).trim() : "";
+                        if (!rawAddr) continue;
+                        let dong = rows[i][1] ? String(rows[i][1]).replace(/\D/g, '') : "";
+                        let ho = rows[i][2] ? String(rows[i][2]).replace(/\D/g, '') : "";
+                        let baseAddr = rawAddr;
+                        let hasDong = rawAddr.includes("동");
+                        let hasHo = rawAddr.includes("호");
+                        let isRoadAddr = rawAddr.includes("로") || rawAddr.includes("길");
+
+                        if ((propType === "auto" || propType === "공동주택") && !dong && !ho) {
+                            if (isRoadAddr || hasDong || hasHo) {
+                                let matchCommaDongHo = rawAddr.match(/,\s*(\d+)\s*(?:동|-)\s*(\d+)\s*(?:호)?\s*$/);
+                                let matchCommaHoOnly = rawAddr.match(/,\s*(?:제)?(\d+)\s*(?:호)?\s*$/);
+                                let matchTextDongHo = rawAddr.match(/(\d+)\s*동\s*(\d+)\s*(?:호)?\s*$/);
+                                let matchTextHoOnly = rawAddr.match(/\s+(?:제)?(\d+)\s*호\s*$/);
+                                if (matchCommaDongHo) { dong = matchCommaDongHo[1]; ho = matchCommaDongHo[2]; baseAddr = rawAddr.split(',')[0].trim(); }
+                                else if (matchCommaHoOnly) { ho = matchCommaHoOnly[1]; baseAddr = rawAddr.split(',')[0].trim(); }
+                                else if (matchTextDongHo) { dong = matchTextDongHo[1]; ho = matchTextDongHo[2]; baseAddr = rawAddr.replace(matchTextDongHo[0], '').trim(); }
+                                else if (matchTextHoOnly) { ho = matchTextHoOnly[1]; baseAddr = rawAddr.replace(matchTextHoOnly[0], '').trim(); }
+                            }
+                        }
+                        validRows.push({ rawAddr, baseAddr, dong, ho });
+                    }
+
+                    if (validRows.length === 0) {
+                        alert("유효한 주소를 식별하지 못했습니다.");
+                        progressContainer.classList.add('hidden');
+                        return;
+                    }
+
+                    const totalCount = validRows.length;
+                    const finalBulkRows = [];
+                    const typesToTry = propType === "auto" ? ["공동주택", "단독주택", "토지"] : [propType];
+
+                    for (let i = 0; i < totalCount; i++) {
+                        const { rawAddr, baseAddr, dong, ho } = validRows[i];
+                        const percent = Math.round(((i + 1) / totalCount) * 100);
+                        statusText.innerText = `대량 전수 스캔 중... (${i + 1}/${totalCount})`;
+                        progressBar.style.width = `${percent}%`;
+                        percentageText.innerText = `${percent}%`;
+
+                        const pnu = await getPnu(baseAddr);
+                        if (!pnu) {
+                            finalBulkRows.push({ "대상 주소": rawAddr, "물건 구분": "오류", "가격기준연도": "오류", "기준시가(원)": "주소 인식 불가능" });
+                            continue;
+                        }
+
+                        let bestHistory = [];
+                        let maxYearBest = 0;
+                        let finalPropType = "없음";
+
+                        for (let probeType of typesToTry) {
+                            let apiUrl = ""; let priceField = "";
+                            if (probeType === "공동주택") { apiUrl = "https://api.vworld.kr/ned/data/getApartHousingPriceAttr"; priceField = "pblntfPc"; }
+                            else if (probeType === "단독주택") { apiUrl = "https://api.vworld.kr/ned/data/getIndvdHousingPriceAttr"; priceField = "pblntfPc"; }
+                            else { apiUrl = "https://api.vworld.kr/ned/data/getIndvdLandPriceAttr"; priceField = "pblntfPclnd"; }
+
+                            try {
+                                let pageNo = 1; let keepFetching = true;
+                                const seenKeys = new Set(); const tempHistory = [];
+
+                                while (keepFetching) {
+                                    const params = new URLSearchParams({ key: VWORLD_KEY, pnu: pnu, format: "json", numOfRows: "1000", pageNo: String(pageNo), domain: DOMAIN });
+                                    const resData = await fetchJSONP(`${apiUrl}?${params.toString()}`);
+                                    let items = [];
+                                    for (const key in resData) {
+                                        if (resData[key] && resData[key].field) {
+                                            items = Array.isArray(resData[key].field) ? resData[key].field : [resData[key].field];
+                                            break;
+                                        }
+                                    }
+                                    if (items.length === 0) break;
+
+                                    for (const item of items) {
+                                        if (probeType === "공동주택") {
+                                            const itemDong = extractNum(item.dongNm);
+                                            const itemHo = extractNum(item.hoNm);
+                                            if (dong && itemDong !== dong) continue;
+                                            if (ho && itemHo !== ho) continue;
+                                        }
+                                        const priceVal = item[priceField] || item.housePc || item.prc || 0;
+                                        const yearVal = item.stdrYear || item.pblntfYear;
+                                        const baseDate = formatBaseDate(item.stdrMt);
+                                        let pubDate = formatPubDate(item.pblntfDe || item.pblntfDate || item.pblntfYmd || item.pblntfDay);
+
+                                        if (priceVal && yearVal) {
+                                            const uniqueKey = `${yearVal}_${priceVal}_${baseDate}_${pubDate}`;
+                                            if (!seenKeys.has(uniqueKey)) {
+                                                seenKeys.add(uniqueKey);
+                                                tempHistory.push({
+                                                    "대상 주소": rawAddr, "물건 구분": probeType, "가격기준연도": `${yearVal}년`, "기준일자": baseDate, "공시일자": pubDate, "기준시가(원)": parseInt(priceVal),
+                                                    "전용면적(㎡)": probeType === "공동주택" ? (item.prvuseAr || item.totArea || "-") : "-",
+                                                    "대지면적_전체(㎡)": probeType === "단독주택" ? (item.ladRegstrAr || item.totPlotAr || "-") : "-",
+                                                    "대지면적_산정(㎡)": probeType === "단독주택" ? (item.calcPlotAr || item.ladRegstrAr || "-") : "-",
+                                                    "건물연면적_전체(㎡)": probeType === "단독주택" ? (item.buldAllTotAr || "-") : "-",
+                                                    "건물연면적_산정(㎡)": probeType === "단독주택" ? (item.calcBuldTotAr || item.buldAllTotAr || "-") : "-"
+                                                });
+                                            }
+                                        }
+                                    }
+                                    if (items.length < 1000) keepFetching = false;
+                                    pageNo++;
+                                }
+                                if (tempHistory.length > 0) {
+                                    let maxYearThisType = Math.max(...tempHistory.map(h => parseInt(h["가격기준연도"])));
+                                    if (maxYearThisType > maxYearBest) {
+                                        maxYearBest = maxYearThisType;
+                                        tempHistory.sort((a, b) => parseInt(b["가격기준연도"]) - parseInt(a["가격기준연도"]));
+                                        bestHistory = tempHistory; finalPropType = probeType;
+                                    }
+                                    if (maxYearThisType >= 2025) break;
+                                }
+                            } catch (err) { console.error(err); }
+                        }
+                        if (bestHistory.length > 0) {
+                            bestHistory = bestHistory.map(row => ({...row, "물건 구분": finalPropType}));
+                            finalBulkRows.push(...bestHistory);
+                        } else {
+                            finalBulkRows.push({ "대상 주소": rawAddr, "물건 구분": "없음", "가격기준연도": "정보 없음" });
+                        }
+                        await sleep(150); 
+                    }
+
+                    finalBulkRows.push({});
+                    finalBulkRows.push({ "대상 주소": "💡 양도세/상속세/증여세 및 부동산 절세 상담:", "물건 구분": "강승완 세무사", "가격기준연도": OFFICE_PHONE, "기준일자": "www.micro-tax.com" });
+
+                    const bulkWorksheet = XLSX.utils.json_to_sheet(finalBulkRows);
+                    const bulkWorkbook = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(bulkWorkbook, bulkWorksheet, "대량조회_통합결과");
+                    XLSX.writeFile(bulkWorkbook, "강승완세무사_대량_공시가격_추출결과.xlsx");
+                    statusText.innerText = "✅ 대량 전수조사 취합 다운로드 완료!";
+                } catch (err) { alert("엑셀 빌드 실패"); progressContainer.classList.add('hidden'); }
+            };
+            reader.readAsArrayBuffer(file);
         }
     </script>
 </body>
