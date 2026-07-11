@@ -15,6 +15,7 @@
 </head>
 <body class="bg-[#f3f4f6] font-sans min-h-screen">
 
+    <!-- 헤더 -->
     <div class="bg-[#0f172a] text-white pt-12 pb-24 px-4">
         <div class="max-w-6xl mx-auto">
             <p class="text-indigo-400 font-bold text-sm mb-2 tracking-wider">세무/부동산 데이터 리서치 시스템</p>
@@ -33,6 +34,7 @@
         </div>
     </div>
 
+    <!-- 메인 컨텐츠 영역 -->
     <div class="max-w-6xl mx-auto px-4 -mt-12 pb-12 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
         <!-- 왼쪽: 주소 입력 영역 -->
@@ -85,8 +87,9 @@
                 <div class="mb-4 bg-amber-50 border-l-4 border-amber-400 p-3 text-amber-800 text-xs rounded-r-lg leading-relaxed">
                     <p class="font-bold mb-1">📢 주소 입력 유의사항</p>
                     <ul class="list-disc ml-4 space-y-0.5">
-                        <li><b>공동주택:</b> 주소 뒤에 쉼표(,) 후 동-호수 입력 (예: 주소, 101-102)</li>
-                        <li><b>단독/토지:</b> 동/호수 표기 없이 순수 지번만 입력 (예: 율현동 325-8)</li>
+                        <li><b>공동주택:</b> 주소 뒤에 쉼표(,) 후 동-호수 입력 <br><span class="text-amber-600/80">(예: 서울특별시 강남구 압구정로 309, 11-102)</span></li>
+                        <li><b>단독/토지:</b> 도로명 또는 지번주소 입력 <br><span class="text-amber-600/80">(예: 서울특별시 종로구 세종대로 209 또는 서울특별시 종로구 세종로 1-58)</span></li>
+                        <li><b>🌟 자동 분류:</b> 시스템이 주소 형태를 분석하여 스스로 물건 구분을 판별합니다. 단, 주소 형식이 불명확할 경우 전용 분류를 직접 선택해 주세요.</li>
                     </ul>
                 </div>
 
@@ -98,9 +101,19 @@
                         <option value="토지">개별공시지가 전용</option>
                     </select>
 
-                    <div class="border-2 border-dashed border-slate-200 hover:border-emerald-500 rounded-2xl p-4 text-center bg-slate-50/50 cursor-pointer relative group">
-                        <input type="file" id="excelFileInput" accept=".xlsx, .xls" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="handleBulkExcel(event)">
-                        <p class="text-xs font-bold text-slate-600 group-hover:text-emerald-600">엑셀 파일 업로드</p>
+                    <div class="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-8 text-center bg-slate-50/50 cursor-pointer relative group transition-colors">
+                        <input type="file" id="excelFileInput" accept=".xlsx, .xls" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="handleBulkExcel(event)">
+                        <div class="flex flex-col items-center justify-center space-y-3">
+                            <div class="bg-emerald-100 text-emerald-600 p-3 rounded-full group-hover:scale-110 transition-transform">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-slate-700 group-hover:text-emerald-600">클릭하거나 엑셀 파일을 여기에 드롭하세요</p>
+                                <p class="text-xs text-slate-400 mt-1">.xls, .xlsx 파일만 업로드 가능</p>
+                            </div>
+                        </div>
                     </div>
 
                     <div id="bulk-progress-container" class="hidden space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-100">
@@ -180,7 +193,7 @@
                     </div>
 
                     <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
-                        <label class="block text-xs font-bold text-indigo-800 mb-1">💡 아실/호갱노노 방식의 단지명 직접 검색 (선택사항)</label>
+                        <label class="block text-xs font-bold text-indigo-800 mb-1">💡 단지명 직접 검색 (선택사항)</label>
                         <p class="text-[11px] text-indigo-600 mb-2">지번 불일치로 거래내역이 안 나올 경우, 여기에 아파트 이름(예: 은마, 래미안)을 직접 입력하고 스캔하세요.</p>
                         <input type="text" id="searchKeyword" placeholder="단지명 키워드 입력..." class="w-full bg-white border border-indigo-200 rounded-lg px-4 py-2 text-sm font-bold focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all">
                     </div>
@@ -194,12 +207,18 @@
 
                 <!-- 실거래 결과 테이블 -->
                 <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200 space-y-4">
-                    <div class="flex justify-between items-center">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <h3 class="text-base font-extrabold text-slate-800">조회 기간 내 전체 거래 내역</h3>
-                        <div class="flex space-x-2 items-center">
-                            <span id="siga-count-badge" class="bg-indigo-50 text-indigo-700 text-xs px-2.5 py-1 rounded-full font-bold border border-indigo-200">총 0건</span>
-                            <span id="trade-count-badge" class="bg-emerald-50 text-emerald-700 text-xs px-2.5 py-1 rounded-full font-bold border border-emerald-200">매매 0건</span>
-                            <span id="rent-count-badge" class="bg-amber-50 text-amber-700 text-xs px-2.5 py-1 rounded-full font-bold border border-amber-200">전월세 0건</span>
+                        <div class="flex space-x-2 items-center flex-wrap">
+                            <!-- 스마트 원클릭 필터 버튼 -->
+                            <button onclick="filterTransactions('all')" id="btn-filter-all" class="bg-indigo-600 text-white text-xs px-3 py-1.5 rounded-full font-bold border border-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm focus:outline-none">총 0건</button>
+                            <button onclick="filterTransactions('trade')" id="btn-filter-trade" class="bg-white text-emerald-700 text-xs px-3 py-1.5 rounded-full font-bold border border-emerald-200 hover:bg-emerald-50 transition-colors shadow-sm focus:outline-none">매매 0건</button>
+                            <button onclick="filterTransactions('rent')" id="btn-filter-rent" class="bg-white text-amber-700 text-xs px-3 py-1.5 rounded-full font-bold border border-amber-200 hover:bg-amber-50 transition-colors shadow-sm focus:outline-none">전월세 0건</button>
+                            <!-- 엑셀 다운로드 버튼 -->
+                            <button onclick="downloadSigaExcel()" class="ml-2 bg-slate-800 hover:bg-slate-700 text-white text-xs px-3 py-1.5 rounded-md font-bold shadow-sm transition-colors flex items-center focus:outline-none">
+                                <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                다운로드
+                            </button>
                         </div>
                     </div>
                     
@@ -207,13 +226,13 @@
                         <table class="w-full text-left border-collapse relative">
                             <thead class="sticky top-0 bg-slate-50 shadow-sm z-10">
                                 <tr class="border-b border-slate-200 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
-                                    <th class="py-3 px-4">계약일자</th>
+                                    <th class="py-3 px-4 min-w-[90px]">계약일자</th>
                                     <th class="py-3 px-4">유형</th>
-                                    <th class="py-3 px-4">단지명</th>
+                                    <th class="py-3 px-4 min-w-[120px]">단지명</th>
                                     <th class="py-3 px-4">전용면적(㎡)</th>
                                     <th class="py-3 px-4">층수</th>
-                                    <th class="py-3 px-4">거래금액(매매/보증금)</th>
-                                    <th class="py-3 px-4">월세</th>
+                                    <th class="py-3 px-4 text-right">거래금액(매매/보증금)</th>
+                                    <th class="py-3 px-4 text-right">월세</th>
                                 </tr>
                             </thead>
                             <tbody id="siga-table-body" class="text-xs divide-y divide-slate-100 text-slate-700">
@@ -229,17 +248,23 @@
         </div>
     </div>
 
+    <!-- 자바스크립트 영역 -->
     <script>
+        // 공통 필수 인증키 
         const VWORLD_KEY = "75321A8E-275D-32A6-82AC-B9D0D8E551FE";
         const DATA_GO_KR_KEY = "83a79624397baf59da6f5daea52c9c0478aceccf3f20b707e26f9866c85f7b8f";
         const DOMAIN = window.location.origin; 
-        const OFFICE_PHONE = "02-XXXX-XXXX"; 
+        const OFFICE_PHONE = "02-2679-0679"; // 변경된 오피스 번호
         
         let priceChartInstance = null;
         let currentExcelData = [];
         let currentPropType = "";
         let globalCurrentPnu = ""; 
         let globalComplexName = ""; 
+        
+        // 🌟 실거래가 데이터 캐싱 및 필터링용 변수
+        let globalTransactions = [];
+        let currentTransactionFilter = 'all';
 
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -356,12 +381,11 @@
             return false;
         }
 
-        // 🌟 [최강 하이브리드 파서] JSON, XML, 한글, 영문 태그 완벽 호환
+        // JSON, XML, 한글, 영문 태그 완벽 호환 파서
         function parseHybridData(responseText) {
             let extractedItems = [];
             
             try {
-                // 1. JSON 구조 시도
                 const jsonObj = JSON.parse(responseText);
                 const findItems = (obj) => {
                     if (Array.isArray(obj)) return obj;
@@ -396,7 +420,6 @@
                 // Not JSON, continue to XML
             }
 
-            // 2. XML 구조 파싱 (영문/한글 태그 동시 지원)
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(responseText, "text/xml");
             const xmlItems = xmlDoc.getElementsByTagName("item");
@@ -531,6 +554,9 @@
 
             btn.innerText = "국토부 실거래가 데이터 추출 중 (영문/한글 태그 자동번역)...";
             btn.disabled = true;
+            
+            // 데이터 초기화
+            globalTransactions = [];
 
             try {
                 const lawdCd = globalCurrentPnu.substring(0, 5);
@@ -558,8 +584,6 @@
                     rentApiPath = "RTMSDataSvcOffiRent/getRTMSDataSvcOffiRent";
                 }
 
-                let allTransactions = [];
-
                 for (let i = 0; i < targetMonths.length; i++) {
                     let ym = targetMonths[i];
                     btn.innerText = `스캔 진행 중... (${i+1}/${targetMonths.length}개월 완료)`;
@@ -578,7 +602,6 @@
                             const text = await res.text();
                             if (text.includes("SERVICE KEY IS NOT REGISTERED ERROR")) return;
 
-                            // 🌟 신형 파서 투입
                             const parsedItems = parseHybridData(text);
 
                             parsedItems.forEach(item => {
@@ -613,7 +636,7 @@
                                     finalType = parsedMonthly > 0 ? '월세' : '전세';
                                 }
 
-                                allTransactions.push({
+                                globalTransactions.push({
                                     type: finalType,
                                     name: item.complexName.trim() || "-",
                                     date: `${item.year}-${String(item.month).padStart(2, '0')}-${String(item.day).padStart(2, '0')}`,
@@ -637,49 +660,9 @@
                     await sleep(300); 
                 }
 
-                allTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-                let tradeCount = 0;
-                let rentCount = 0;
-                tbody.innerHTML = "";
-
-                if (allTransactions.length === 0) {
-                    tbody.innerHTML = `
-                        <tr>
-                            <td colspan="7" class="py-12 text-center text-slate-500 font-medium">
-                                검색된 실거래가 내역이 0건입니다.<br><br>
-                                <span class="text-sm bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg">💡 팁: 국토부 데이터에 이름이 다르게 올라왔을 수 있습니다. 상단 <b>[단지명 직접 검색]</b>칸에 키워드를 입력해 보세요.</span>
-                            </td>
-                        </tr>`;
-                } else {
-                    allTransactions.forEach((row) => {
-                        if (row.type === '매매') tradeCount++;
-                        else rentCount++;
-
-                        let typeBadge = '';
-                        if (row.type === '매매') typeBadge = '<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded">매매</span>';
-                        else if (row.type === '전세') typeBadge = '<span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded">전세</span>';
-                        else typeBadge = '<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded">월세</span>';
-
-                        let amountText = row.amount.toLocaleString() + '원';
-                        let monthlyText = row.monthlyRent > 0 ? row.monthlyRent.toLocaleString() + '원' : '-';
-
-                        tbody.innerHTML += `
-                            <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0">
-                                <td class="py-3 px-4 font-medium text-slate-700">${row.date}</td>
-                                <td class="py-3 px-4">${typeBadge}</td>
-                                <td class="py-3 px-4 text-slate-600 font-medium truncate max-w-[120px]" title="${row.name}">${row.name}</td>
-                                <td class="py-3 px-4 font-mono font-bold text-slate-700">${row.area.toFixed(2)}㎡</td>
-                                <td class="py-3 px-4 text-slate-500">${row.floor}층</td>
-                                <td class="py-3 px-4 font-extrabold ${row.type === '매매' ? 'text-emerald-600' : 'text-slate-800'}">${amountText}</td>
-                                <td class="py-3 px-4 font-bold text-amber-600">${monthlyText}</td>
-                            </tr>`;
-                    });
-                }
-
-                document.getElementById('siga-count-badge').innerText = `총 ${allTransactions.length}건`;
-                document.getElementById('trade-count-badge').innerText = `매매 ${tradeCount}건`;
-                document.getElementById('rent-count-badge').innerText = `전월세 ${rentCount}건`;
+                globalTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+                updateFilterCounts();
+                filterTransactions('all');
 
             } catch (err) {
                 alert("조회 중 오류가 발생했습니다.");
@@ -688,6 +671,117 @@
                 btn.innerText = "선택 기간 내 단지 전체 매매/전월세 데이터 스캔";
                 btn.disabled = false;
             }
+        }
+
+        // 🌟 실거래가 버튼 카운트 업데이트
+        function updateFilterCounts() {
+            let tradeCount = globalTransactions.filter(r => r.type === '매매').length;
+            let rentCount = globalTransactions.length - tradeCount;
+            
+            document.getElementById('btn-filter-all').innerText = `총 ${globalTransactions.length}건`;
+            document.getElementById('btn-filter-trade').innerText = `매매 ${tradeCount}건`;
+            document.getElementById('btn-filter-rent').innerText = `전월세 ${rentCount}건`;
+        }
+
+        // 🌟 실거래가 스마트 필터링 및 화면 렌더링
+        function filterTransactions(type) {
+            currentTransactionFilter = type;
+            
+            const btnAll = document.getElementById('btn-filter-all');
+            const btnTrade = document.getElementById('btn-filter-trade');
+            const btnRent = document.getElementById('btn-filter-rent');
+
+            // 버튼 색상 초기화 (비활성 상태)
+            btnAll.className = "bg-white text-indigo-700 text-xs px-3 py-1.5 rounded-full font-bold border border-indigo-200 hover:bg-indigo-50 transition-colors shadow-sm focus:outline-none";
+            btnTrade.className = "bg-white text-emerald-700 text-xs px-3 py-1.5 rounded-full font-bold border border-emerald-200 hover:bg-emerald-50 transition-colors shadow-sm focus:outline-none";
+            btnRent.className = "bg-white text-amber-700 text-xs px-3 py-1.5 rounded-full font-bold border border-amber-200 hover:bg-amber-50 transition-colors shadow-sm focus:outline-none";
+
+            // 클릭된 버튼 강조 (활성 상태)
+            if (type === 'all') {
+                btnAll.className = "bg-indigo-600 text-white text-xs px-3 py-1.5 rounded-full font-bold border border-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm focus:outline-none";
+            } else if (type === 'trade') {
+                btnTrade.className = "bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-full font-bold border border-emerald-600 hover:bg-emerald-700 transition-colors shadow-sm focus:outline-none";
+            } else if (type === 'rent') {
+                btnRent.className = "bg-amber-500 text-white text-xs px-3 py-1.5 rounded-full font-bold border border-amber-500 hover:bg-amber-600 transition-colors shadow-sm focus:outline-none";
+            }
+
+            const tbody = document.getElementById('siga-table-body');
+            tbody.innerHTML = "";
+
+            let filtered = globalTransactions;
+            if (type === 'trade') {
+                filtered = globalTransactions.filter(r => r.type === '매매');
+            } else if (type === 'rent') {
+                filtered = globalTransactions.filter(r => r.type === '전세' || r.type === '월세');
+            }
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="py-12 text-center text-slate-500 font-medium">
+                            ${globalTransactions.length === 0 ? "검색된 실거래가 내역이 0건입니다.<br><br><span class='text-sm bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg'>💡 팁: 국토부 데이터에 이름이 다르게 올라왔을 수 있습니다. 상단 <b>[단지명 직접 검색]</b>칸에 키워드를 입력해 보세요.</span>" : "선택하신 유형의 거래 내역이 존재하지 않습니다."}
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            filtered.forEach((row) => {
+                let typeBadge = '';
+                if (row.type === '매매') typeBadge = '<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded">매매</span>';
+                else if (row.type === '전세') typeBadge = '<span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded">전세</span>';
+                else typeBadge = '<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded">월세</span>';
+
+                let amountText = row.amount.toLocaleString() + '원';
+                let monthlyText = row.monthlyRent > 0 ? row.monthlyRent.toLocaleString() + '원' : '-';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0">
+                        <td class="py-3 px-4 font-medium text-slate-700">${row.date}</td>
+                        <td class="py-3 px-4">${typeBadge}</td>
+                        <td class="py-3 px-4 text-slate-600 font-medium truncate max-w-[120px]" title="${row.name}">${row.name}</td>
+                        <td class="py-3 px-4 font-mono font-bold text-slate-700">${row.area.toFixed(2)}㎡</td>
+                        <td class="py-3 px-4 text-slate-500">${row.floor}층</td>
+                        <td class="py-3 px-4 font-extrabold text-right ${row.type === '매매' ? 'text-emerald-600' : 'text-slate-800'}">${amountText}</td>
+                        <td class="py-3 px-4 font-bold text-amber-600 text-right">${monthlyText}</td>
+                    </tr>`;
+            });
+        }
+
+        // 🌟 실거래가 엑셀 다운로드 (현재 필터링된 상태를 기준)
+        function downloadSigaExcel() {
+            if (globalTransactions.length === 0) {
+                alert("다운로드할 실거래가 데이터가 없습니다.");
+                return;
+            }
+            const fullAddress = document.getElementById('address').value;
+            
+            let filtered = globalTransactions;
+            if (currentTransactionFilter === 'trade') {
+                filtered = globalTransactions.filter(r => r.type === '매매');
+            } else if (currentTransactionFilter === 'rent') {
+                filtered = globalTransactions.filter(r => r.type === '전세' || r.type === '월세');
+            }
+
+            const formattedData = filtered.map(row => {
+                return {
+                    "대상 주소": fullAddress,
+                    "계약일자": row.date,
+                    "유형": row.type,
+                    "단지명": row.name,
+                    "전용면적(㎡)": row.area,
+                    "층수": row.floor,
+                    "거래금액(매매/보증금)": row.amount,
+                    "월세금액": row.monthlyRent > 0 ? row.monthlyRent : "-"
+                };
+            });
+            
+            formattedData.push({});
+            formattedData.push({ "대상 주소": "💡 양도세/상속세/증여세 및 부동산 절세 상담:", "계약일자": "강승완 세무사", "유형": OFFICE_PHONE, "단지명": "www.micro-tax.com" });
+
+            const worksheet = XLSX.utils.json_to_sheet(formattedData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "단지 실거래 내역");
+            XLSX.writeFile(workbook, "강승완세무사_단지_실거래가.xlsx");
         }
 
         function renderChart(data) {
