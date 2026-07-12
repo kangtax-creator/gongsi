@@ -555,6 +555,7 @@
             }
         }
 
+        // 🌟 초고속 병렬(Parallel) 처리 적용 함수
         async function fetchComplexTransactions() {
             const startMonthInput = document.getElementById('searchStartMonth').value;
             const endMonthInput = document.getElementById('searchEndMonth').value;
@@ -572,7 +573,8 @@
                 return;
             }
 
-            btn.innerText = "데이터 초고속 추출 중 (매매/전월세/분양권 동시 스캔)...";
+            // 🌟 UI: 병렬 스캔 안내 문구
+            btn.innerText = "데이터 초고속 병렬 추출 중 (전체 기간 동시 스캔)...";
             btn.disabled = true;
             globalTransactions = [];
 
@@ -606,26 +608,24 @@
                     rentApiPath = "RTMSDataSvcOffiRent/getRTMSDataSvcOffiRent";
                 }
 
-                for (let i = 0; i < targetMonths.length; i++) {
-                    let ym = targetMonths[i];
-                    btn.innerText = `스캔 진행 중... (${i+1}/${targetMonths.length}개월 완료)`;
-                    
+                // 🌟 핵심 병렬 로직: 모든 달에 대한 fetch 작업을 배열로 생성
+                const fetchTasks = targetMonths.map(async (ym) => {
                     const tradeUrl = `/api/rtms/${tradeApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`;
                     const rentUrl = `/api/rent/${rentApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`;
                     const silvUrl = `/api/rtms/${silvApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`;
                     
                     try {
                         const fetchPromises = [
-                            fetch(tradeUrl).catch(e => null),
-                            fetch(rentUrl).catch(e => null)
+                            fetch(tradeUrl).then(res => ({res, dataType: 'trade'})).catch(e => ({res: null, dataType: 'trade'})),
+                            fetch(rentUrl).then(res => ({res, dataType: 'rent'})).catch(e => ({res: null, dataType: 'rent'}))
                         ];
-                        if (includeSilv) fetchPromises.push(fetch(silvUrl).catch(e => null));
+                        if (includeSilv) fetchPromises.push(fetch(silvUrl).then(res => ({res, dataType: 'silv'})).catch(e => ({res: null, dataType: 'silv'})));
                         
                         const responses = await Promise.all(fetchPromises);
 
-                        const processResponse = async (res, dataType) => {
-                            if (!res || !res.ok) return;
-                            const text = await res.text();
+                        const processResponse = async (resultObj) => {
+                            if (!resultObj.res || !resultObj.res.ok) return;
+                            const text = await resultObj.res.text();
                             if (text.includes("SERVICE KEY IS NOT REGISTERED ERROR")) return;
 
                             const parsedItems = parseHybridData(text);
@@ -648,7 +648,7 @@
                                     }
                                 }
 
-                                if (dataType === 'silv') {
+                                if (resultObj.dataType === 'silv') {
                                     if (!isKeywordMatch && !isNameValid) return; 
                                 } else {
                                     if (keywordInput) {
@@ -662,9 +662,9 @@
                                 let parsedMonthly = parseInt(item.monthly.replace(/,/g, '').trim()) || 0;
 
                                 let finalType = '매매';
-                                if (dataType === 'rent') {
+                                if (resultObj.dataType === 'rent') {
                                     finalType = parsedMonthly > 0 ? '월세' : '전세';
-                                } else if (dataType === 'silv') {
+                                } else if (resultObj.dataType === 'silv') {
                                     finalType = item.ownershipGbn === '입' ? '입주권' : '분양권';
                                 }
 
@@ -680,19 +680,16 @@
                             });
                         };
 
-                        await processResponse(responses[0], 'trade');
-                        await processResponse(responses[1], 'rent');
-                        if (includeSilv && responses[2]) {
-                            await processResponse(responses[2], 'silv');
-                        }
+                        // 각 월별 API 데이터 파싱
+                        await Promise.all(responses.map(resObj => processResponse(resObj)));
 
                     } catch (e) {
                         console.error(`${ym}월 파싱 중 에러:`, e);
                     }
-                    
-                    // 🌟 스캔 속도 초고속화: 300ms 딜레이를 30ms로 대폭 단축
-                    await sleep(30); 
-                }
+                });
+
+                // 🌟 한 번에 수십 개의 달의 API를 전부 동시에 쏘고 다 끝날 때까지 대기
+                await Promise.all(fetchTasks);
 
                 globalTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
                 updateFilterCounts();
@@ -1107,7 +1104,7 @@
                             finalBulkRows.push({ "대상 주소": rawAddr, "물건 구분": "없음", "가격기준연도": "정보 없음" });
                         }
                         
-                        // 🌟 대량 조회 스캔 속도 초고속화
+                        // 🌟 대량 조회 스캔 속도 초고속화 유지
                         await sleep(30); 
                     }
 
