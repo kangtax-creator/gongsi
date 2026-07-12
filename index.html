@@ -393,7 +393,6 @@
             return false;
         }
 
-        // JSON, XML, 한글, 영문 태그 완벽 호환 파서 (+ 분양권 ownershipGbn 추출)
         function parseHybridData(responseText) {
             let extractedItems = [];
             
@@ -430,7 +429,7 @@
                     return extractedItems;
                 }
             } catch (e) {
-                // Not JSON, fallback to XML
+                // XML fallback
             }
 
             const parser = new DOMParser();
@@ -463,7 +462,6 @@
             return extractedItems;
         }
 
-        // 🌟 탭 1: 공시가격 연혁 조회 
         async function searchPriceHistory() {
             const address = document.getElementById('address').value;
             const propType = document.querySelector('input[name="propType"]:checked').value;
@@ -557,7 +555,6 @@
             }
         }
 
-        // 🌟 탭 2: 단지 내 매매/전월세/분양권 통합 스캔
         async function fetchComplexTransactions() {
             const startMonthInput = document.getElementById('searchStartMonth').value;
             const endMonthInput = document.getElementById('searchEndMonth').value;
@@ -575,7 +572,7 @@
                 return;
             }
 
-            btn.innerText = "데이터 추출 중 (매매/전월세/분양권 동시 스캔)...";
+            btn.innerText = "데이터 초고속 추출 중 (매매/전월세/분양권 동시 스캔)...";
             btn.disabled = true;
             globalTransactions = [];
 
@@ -595,10 +592,9 @@
                     currentD.setMonth(currentD.getMonth() + 1);
                 }
 
-                // API 경로 설정 (아파트의 경우 분양권 API 포함)
                 let tradeApiPath = "RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade"; 
                 let rentApiPath = "RTMSDataSvcAptRent/getRTMSDataSvcAptRent";
-                let silvApiPath = "RTMSDataSvcSilvTrade/getRTMSDataSvcSilvTrade"; // 🌟 분양권 API
+                let silvApiPath = "RTMSDataSvcSilvTrade/getRTMSDataSvcSilvTrade"; 
                 
                 let includeSilv = (targetType === "APT");
 
@@ -635,7 +631,6 @@
                             const parsedItems = parseHybridData(text);
 
                             parsedItems.forEach(item => {
-                                // 🌟 스마트 필터링 로직
                                 let isKeywordMatch = false;
                                 if (keywordInput && item.complexName) {
                                     let cleanApi = item.complexName.replace(/\s/g, '').toLowerCase();
@@ -653,9 +648,7 @@
                                     }
                                 }
 
-                                // 🌟 분양권(dataType=='silv')은 지번 검증 완전히 무시 (Bypass)
                                 if (dataType === 'silv') {
-                                    // 분양권인데 키워드나 기존 단지명 일치가 안되면 버림
                                     if (!isKeywordMatch && !isNameValid) return; 
                                 } else {
                                     if (keywordInput) {
@@ -672,7 +665,6 @@
                                 if (dataType === 'rent') {
                                     finalType = parsedMonthly > 0 ? '월세' : '전세';
                                 } else if (dataType === 'silv') {
-                                    // 🌟 입주권 / 분양권 명확한 구분
                                     finalType = item.ownershipGbn === '입' ? '입주권' : '분양권';
                                 }
 
@@ -698,7 +690,8 @@
                         console.error(`${ym}월 파싱 중 에러:`, e);
                     }
                     
-                    await sleep(300); 
+                    // 🌟 스캔 속도 초고속화: 300ms 딜레이를 30ms로 대폭 단축
+                    await sleep(30); 
                 }
 
                 globalTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -714,7 +707,6 @@
             }
         }
 
-        // 🌟 실거래가 버튼 카운트 업데이트
         function updateFilterCounts() {
             let tradeCount = globalTransactions.filter(r => r.type === '매매').length;
             let rentCount = globalTransactions.filter(r => r.type === '전세' || r.type === '월세').length;
@@ -726,7 +718,6 @@
             document.getElementById('btn-filter-silv').innerText = `분양·입주권 ${silvCount}건`;
         }
 
-        // 🌟 실거래가 스마트 필터링 및 화면 렌더링
         function filterTransactions(type) {
             currentTransactionFilter = type;
             
@@ -735,13 +726,11 @@
             const btnRent = document.getElementById('btn-filter-rent');
             const btnSilv = document.getElementById('btn-filter-silv');
 
-            // 버튼 색상 초기화 
             btnAll.className = "bg-white text-indigo-700 text-xs px-3 py-1.5 rounded-full font-bold border border-indigo-200 hover:bg-indigo-50 transition-colors shadow-sm focus:outline-none";
             btnTrade.className = "bg-white text-emerald-700 text-xs px-3 py-1.5 rounded-full font-bold border border-emerald-200 hover:bg-emerald-50 transition-colors shadow-sm focus:outline-none";
             btnRent.className = "bg-white text-amber-700 text-xs px-3 py-1.5 rounded-full font-bold border border-amber-200 hover:bg-amber-50 transition-colors shadow-sm focus:outline-none";
             btnSilv.className = "bg-white text-purple-700 text-xs px-3 py-1.5 rounded-full font-bold border border-purple-200 hover:bg-purple-50 transition-colors shadow-sm focus:outline-none";
 
-            // 클릭된 버튼 활성화
             if (type === 'all') btnAll.className = "bg-indigo-600 text-white text-xs px-3 py-1.5 rounded-full font-bold border border-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm focus:outline-none";
             else if (type === 'trade') btnTrade.className = "bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-full font-bold border border-emerald-600 hover:bg-emerald-700 transition-colors shadow-sm focus:outline-none";
             else if (type === 'rent') btnRent.className = "bg-amber-500 text-white text-xs px-3 py-1.5 rounded-full font-bold border border-amber-500 hover:bg-amber-600 transition-colors shadow-sm focus:outline-none";
@@ -752,7 +741,6 @@
             else if (type === 'rent') filtered = globalTransactions.filter(r => r.type === '전세' || r.type === '월세');
             else if (type === 'silv') filtered = globalTransactions.filter(r => r.type === '분양권' || r.type === '입주권');
 
-            // 🌟 테이블 업데이트
             const tbody = document.getElementById('siga-table-body');
             tbody.innerHTML = "";
 
@@ -783,11 +771,9 @@
                 });
             }
 
-            // 🌟 차트 업데이트
             updateSigaChart(filtered, type);
         }
 
-        // 🌟 실거래가 차트 초기화 및 업데이트 함수
         function initSigaChart(data) {
             const ctx = document.getElementById('sigaChart').getContext('2d');
             sigaChartInstance = new Chart(ctx, {
@@ -808,32 +794,31 @@
         function updateSigaChart(filteredData, viewType) {
             if (!sigaChartInstance) return;
             
-            // 차트 표시를 위해 날짜 오름차순(과거->최신) 정렬
             const chartData = [...filteredData].reverse();
             sigaChartInstance.data.labels = chartData.map(d => d.date);
 
             let datasets = [];
             
             if (viewType === 'all') {
-                // 매매, 전월세, 분양권 데이터를 각각 추출하여 3개의 선으로 그립니다.
+                // 🌟 월세 왜곡 방지: 월세(monthlyRent > 0)가 아닌 순수 전세 거래만 추출
                 const tradeValues = chartData.map(d => (d.type === '매매') ? d.amount / 10000 : null);
-                const rentValues = chartData.map(d => (d.type === '전세' || d.type === '월세') ? d.amount / 10000 : null);
+                const rentOnlyValues = chartData.map(d => (d.type === '전세' && d.monthlyRent === 0) ? d.amount / 10000 : null);
                 const silvValues = chartData.map(d => (d.type === '분양권' || d.type === '입주권') ? d.amount / 10000 : null);
 
                 if (tradeValues.some(v => v !== null)) {
                     datasets.push({
                         label: '매매가 (만원)',
                         data: tradeValues,
-                        borderColor: '#10b981', // 초록색
+                        borderColor: '#10b981',
                         backgroundColor: 'rgba(16, 185, 129, 0.1)',
                         tension: 0.2, fill: false, pointRadius: 4, spanGaps: true
                     });
                 }
-                if (rentValues.some(v => v !== null)) {
+                if (rentOnlyValues.some(v => v !== null)) {
                     datasets.push({
-                        label: '전월세 보증금 (만원)',
-                        data: rentValues,
-                        borderColor: '#f59e0b', // 주황/노랑색
+                        label: '순수 전세 보증금 (만원)',
+                        data: rentOnlyValues,
+                        borderColor: '#f59e0b',
                         backgroundColor: 'rgba(245, 158, 11, 0.1)',
                         tension: 0.2, fill: false, pointRadius: 4, spanGaps: true
                     });
@@ -842,7 +827,7 @@
                     datasets.push({
                         label: '분양·입주권 (만원)',
                         data: silvValues,
-                        borderColor: '#9333ea', // 보라색
+                        borderColor: '#9333ea',
                         backgroundColor: 'rgba(147, 51, 234, 0.1)',
                         tension: 0.2, fill: false, pointRadius: 4, spanGaps: true
                     });
@@ -856,12 +841,13 @@
                     tension: 0.2, fill: true, pointRadius: 4
                 });
             } else if (viewType === 'rent') {
+                // 🌟 월세 왜곡 방지: 필터 뷰에서도 월세 제외하고 순수 전세만 표시
                 datasets.push({
-                    label: '전월세 보증금 (만원)',
-                    data: chartData.map(d => d.amount / 10000),
+                    label: '순수 전세 보증금 (만원)',
+                    data: chartData.map(d => (d.type === '전세' && d.monthlyRent === 0) ? d.amount / 10000 : null),
                     borderColor: '#f59e0b',
                     backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                    tension: 0.2, fill: true, pointRadius: 4
+                    tension: 0.2, fill: true, pointRadius: 4, spanGaps: true
                 });
             } else if (viewType === 'silv') {
                 datasets.push({
@@ -877,7 +863,6 @@
             sigaChartInstance.update();
         }
 
-        // 🌟 엑셀 다운로드 (필터링 뷰 기준)
         function downloadSigaExcel() {
             if (globalTransactions.length === 0) {
                 alert("다운로드할 실거래가 데이터가 없습니다.");
@@ -912,7 +897,6 @@
             XLSX.writeFile(workbook, "강승완세무사_단지_실거래가.xlsx");
         }
 
-        // 공시가격 차트 (기존 1번 탭용)
         function renderChart(data) {
             const ctx = document.getElementById('priceChart').getContext('2d');
             if (priceChartInstance) { priceChartInstance.destroy(); }
@@ -1122,7 +1106,9 @@
                         } else {
                             finalBulkRows.push({ "대상 주소": rawAddr, "물건 구분": "없음", "가격기준연도": "정보 없음" });
                         }
-                        await sleep(150); 
+                        
+                        // 🌟 대량 조회 스캔 속도 초고속화
+                        await sleep(30); 
                     }
 
                     finalBulkRows.push({});
