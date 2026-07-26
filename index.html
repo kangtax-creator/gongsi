@@ -589,7 +589,7 @@
             }
         }
 
-        // 🌟 수정된 대장 정보 조회 로직 (대단지 초정밀 매칭 & 10000건 한방 추출)
+        // 🌟 수정된 대장 정보 조회 로직 (숫자 자료형 충돌 버그 완벽 차단)
         async function fetchDaejangInfo(pnu) {
             if (!pnu || pnu.length !== 19) return;
             
@@ -653,20 +653,24 @@
                 }
             }
 
-            // 🌟 초정밀 동/호수 매칭 함수 (숫자 블록 완벽 분리)
+            // 🌟 초정밀 동/호수 매칭 함수 (숫자 에러 완벽 차단)
             function isMatch(apiStr, targetStr) {
                 if (!targetStr) return true; 
-                if (!apiStr) return false;
+                if (apiStr === null || apiStr === undefined) return false;
                 
-                const numTarget = targetStr.replace(/[^0-9]/g, '');
+                // [핵심 해결] API가 문자가 아닌 '숫자'로 반환할 때 생기는 에러를 방지하기 위해 강제로 문자로 변환
+                const safeApiStr = String(apiStr);
+                const safeTargetStr = String(targetStr);
+                
+                const numTarget = safeTargetStr.replace(/[^0-9]/g, '');
                 if (numTarget) {
-                    const apiNumbers = apiStr.match(/\d+/g) || [];
+                    const apiNumbers = safeApiStr.match(/\d+/g) || [];
                     if (apiNumbers.includes(numTarget)) {
                         return true;
                     }
                 } else {
-                    const cleanApi = apiStr.replace(/[^a-zA-Z가-힣]/g, '').toLowerCase();
-                    const cleanTarget = targetStr.replace(/[^a-zA-Z가-힣]/g, '').toLowerCase();
+                    const cleanApi = safeApiStr.replace(/[^a-zA-Z가-힣]/g, '').toLowerCase();
+                    const cleanTarget = safeTargetStr.replace(/[^a-zA-Z가-힣]/g, '').toLowerCase();
                     if (cleanApi && cleanTarget && cleanApi.includes(cleanTarget)) return true;
                 }
                 return false;
@@ -705,7 +709,11 @@
                             if (titleJson?.response?.header?.resultCode !== "00") isApiError = true;
                             break;
                         }
-                    } catch(e) { isApiError = true; break; }
+                    } catch(e) { 
+                        console.error("표제부 에러:", e);
+                        isApiError = true; 
+                        break; 
+                    }
                 }
 
                 let bldgHtml = `<div class="p-4 bg-slate-50 rounded-xl text-center col-span-full text-slate-500">건축물대장 정보가 없습니다.</div>`;
@@ -749,7 +757,10 @@
                             } else {
                                 break;
                             }
-                        } catch(e) { break; }
+                        } catch(e) { 
+                            console.error("전유부 에러:", e);
+                            break; 
+                        }
                     }
 
                     let isFallbackUsed = false;
