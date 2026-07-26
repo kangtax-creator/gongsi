@@ -589,7 +589,7 @@
             }
         }
 
-        // 🌟 수정된 대장 정보 조회 로직 (대단지 아파트 전 페이지 끝장 병렬 스캔 적용)
+        // 🌟 수정된 대장 정보 조회 로직 (정부24 '핀셋 조회' 방식 완벽 이식)
         async function fetchDaejangInfo(pnu) {
             if (!pnu || pnu.length !== 19) return;
             
@@ -600,10 +600,11 @@
             const ji = pnu.substring(15, 19);
 
             const propType = document.querySelector('input[name="propType"]:checked').value;
-            const rawDongVal = document.getElementById('dong').value.trim();
-            const rawHoVal = document.getElementById('ho').value.trim();
+            // 🌟 문자를 제외한 순수 숫자만 추출 (예: 112, 503)
+            const rawDongVal = extractNum(document.getElementById('dong').value);
+            const rawHoVal = extractNum(document.getElementById('ho').value);
 
-            // 1. 토지대장 정보 (VWORLD)
+            // 1. 토지대장 정보 (VWORLD) - 기존과 동일
             try {
                 const LAND_KEY = "0F6B55A5-3A01-34CF-9C24-AF454E09531E";
                 const landUrl = `https://api.vworld.kr/ned/data/getLandCharacteristics?key=${LAND_KEY}&pnu=${pnu}&format=json&domain=${DOMAIN}`;
@@ -653,118 +654,115 @@
                 }
             }
 
-            // 🌟 [핵심] API 1000건 제한 돌파! 전체 페이지 병렬 수집 로직
-            async function fetchAllPages(baseUrl) {
-                let allItems = [];
-                let isError = false;
-                try {
-                    const firstUrl = `${baseUrl}&numOfRows=1000&pageNo=1`;
-                    const firstJson = await fetchWithProxy(firstUrl);
-                    const body = firstJson?.response?.body;
-
-                    if (!body) {
-                        if (firstJson?.response?.header?.resultCode !== "00") isError = true;
-                        return { items: [], isError };
-                    }
-
-                    if (body.items && body.items.item) {
-                        allItems = allItems.concat(Array.isArray(body.items.item) ? body.items.item : [body.items.item]);
-                    }
-
-                    const totalCount = Number(body.totalCount) || 0;
-                    const actualRows = Number(body.numOfRows) || 1000;
-                    const totalPages = Math.ceil(totalCount / actualRows);
-
-                    // 2페이지부터 마지막 페이지까지 한 번에(병렬) 전부 요청!
-                    if (totalPages > 1) {
-                        const maxPages = Math.min(totalPages, 20); // 최대 2만건
-                        const promises = [];
-                        for (let p = 2; p <= maxPages; p++) {
-                            promises.push(fetchWithProxy(`${baseUrl}&numOfRows=${actualRows}&pageNo=${p}`));
-                        }
-                        const results = await Promise.all(promises);
-                        results.forEach(res => {
-                            const pBody = res?.response?.body;
-                            if (pBody && pBody.items && pBody.items.item) {
-                                allItems = allItems.concat(Array.isArray(pBody.items.item) ? pBody.items.item : [pBody.items.item]);
-                            }
-                        });
-                    }
-                } catch (e) { isError = true; }
-                return { items: allItems, isError };
-            }
-
-            // 🌟 초정밀 동/호수 매칭 함수
-            function isMatch(apiStr, targetStr) {
-                if (!targetStr) return true; 
-                if (apiStr === null || apiStr === undefined) return false;
-                
-                const safeApiStr = String(apiStr);
-                const safeTargetStr = String(targetStr);
-                
-                const numTarget = safeTargetStr.replace(/[^0-9]/g, '');
-                if (numTarget) {
-                    const apiNumbers = safeApiStr.match(/\d+/g) || [];
-                    if (apiNumbers.includes(numTarget)) return true;
-                } else {
-                    const cleanApi = safeApiStr.replace(/[^a-zA-Z가-힣]/g, '').toLowerCase();
-                    const cleanTarget = safeTargetStr.replace(/[^a-zA-Z가-힣]/g, '').toLowerCase();
-                    if (cleanApi && cleanTarget && cleanApi.includes(cleanTarget)) return true;
-                }
-                return false;
-            }
-
             // 2. 건축물대장 정보
             try {
-                // UI: 스캔 안내 메시지
-                document.getElementById('bldg-info').innerHTML = `<div class="p-4 bg-indigo-50 text-indigo-600 rounded-xl text-center col-span-full font-bold animate-pulse">대단지 세대 데이터 전수 스캔 중...</div>`;
-
-                // [표제부] 전체 페이지 수집
-                const titleBaseUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&_type=json`;
-                const { items: titleItems, isError: titleErr } = await fetchAllPages(titleBaseUrl);
-
+                let isApiError = false;
+                
+                // =========================================================
+                // [표제부] 정부24 핀셋 조회 방식 (사용승인일 획득용)
+                // =========================================================
                 let titleItem = null;
-                if (titleItems.length > 0) {
-                    if (propType === "공동주택" && rawDongVal) {
-                        titleItem = titleItems.find(i => isMatch(i.dongNm, rawDongVal) || isMatch(i.bldNm, rawDongVal));
-                    }
-                    if (!titleItem) titleItem = titleItems[0];
+                let titleQueries = [""];
+                
+                // 검색할 동 번호가 있으면, 다양한 표기법으로 서버에 직접 질문합니다.
+                if (propType === "공동주택" && rawDongVal) {
+                    titleQueries = [
+                        `&dongNm=${encodeURIComponent(rawDongVal + "동")}`,   // 예: 112동
+                        `&dongNm=${encodeURIComponent("제" + rawDongVal + "동")}`, // 예: 제112동
+                        `&dongNm=${encodeURIComponent(rawDongVal)}`             // 예: 112
+                    ];
+                }
+
+                for (let tq of titleQueries) {
+                    const titleUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=10&pageNo=1&_type=json${tq}`;
+                    try {
+                        const titleJson = await fetchWithProxy(titleUrl);
+                        if (titleJson?.response?.body?.items?.item) {
+                            const arr = Array.isArray(titleJson.response.body.items.item) ? titleJson.response.body.items.item : [titleJson.response.body.items.item];
+                            titleItem = arr[0];
+                            break; // 🎯 찾았으면 즉시 루프 탈출!
+                        }
+                    } catch(e) {}
+                }
+
+                // 핀셋 조회 실패 시 기본 조회 (에러 체크용)
+                if (!titleItem) {
+                    const fallbackUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=1&pageNo=1&_type=json`;
+                    try {
+                        const fbJson = await fetchWithProxy(fallbackUrl);
+                        if (fbJson?.response?.body?.items?.item) {
+                            const arr = Array.isArray(fbJson.response.body.items.item) ? fbJson.response.body.items.item : [fbJson.response.body.items.item];
+                            titleItem = arr[0];
+                        } else if (fbJson?.response?.header?.resultCode !== "00") {
+                            isApiError = true;
+                        }
+                    } catch(e) { isApiError = true; }
                 }
 
                 let bldgHtml = `<div class="p-4 bg-slate-50 rounded-xl text-center col-span-full text-slate-500">건축물대장 정보가 없습니다.</div>`;
 
-                if (titleErr) {
+                if (isApiError) {
                     bldgHtml = `<div class="p-4 bg-amber-50 border border-amber-200 rounded-xl text-center col-span-full text-amber-700 font-medium">건축물대장 API 오류가 발생했습니다. (키 동기화 대기 중)</div>`;
                 } else if (propType === "공동주택") {
                     
-                    // [전유부] 전체 페이지 수집 (서버가 주는 1000건 한계를 돌파!)
-                    const exposBaseUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrExposPubuseAreaInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&_type=json`;
-                    const { items: exposItems, isError: exposErr } = await fetchAllPages(exposBaseUrl);
-
+                    // =========================================================
+                    // [전유부] 정부24 핀셋 조회 방식 (전용면적 획득용)
+                    // =========================================================
                     let exposItem = null;
-                    let fallbackItem = null;
+                    let exposQueries = [""];
+                    
+                    // 🌟 동/호수를 API 서버 주소에 직접 박아서 요청합니다! (1만건 다운로드 불필요)
+                    if (rawDongVal && rawHoVal) {
+                        const d1 = encodeURIComponent(rawDongVal + "동");
+                        const d2 = encodeURIComponent("제" + rawDongVal + "동");
+                        const h1 = encodeURIComponent(rawHoVal + "호");
+                        const h2 = encodeURIComponent("제" + rawHoVal + "호");
+
+                        exposQueries = [
+                            `&dongNm=${d1}&hoNm=${h1}`, // 112동 503호
+                            `&dongNm=${d2}&hoNm=${h2}`, // 제112동 제503호
+                            `&dongNm=${d1}&hoNm=${h2}`, // 112동 제503호
+                            `&dongNm=${d2}&hoNm=${h1}`  // 제112동 503호
+                        ];
+                    }
+
+                    for (let eq of exposQueries) {
+                        const exposUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrExposPubuseAreaInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=10&pageNo=1&_type=json${eq}`;
+                        try {
+                            const exposJson = await fetchWithProxy(exposUrl);
+                            if (exposJson?.response?.body?.items?.item) {
+                                const arr = Array.isArray(exposJson.response.body.items.item) ? exposJson.response.body.items.item : [exposJson.response.body.items.item];
+                                // 공용면적 제외하고 순수 주거(전유부)만 추출
+                                const validExpos = arr.filter(i => i.exposPubuseGbCd === '1' || !(i.exposPubuseGbCdNm || '').includes('공용'));
+                                if (validExpos.length > 0) {
+                                    exposItem = validExpos[0];
+                                    break; // 🎯 정확한 녀석 하나 찾으면 즉시 루프 탈출!
+                                }
+                            }
+                        } catch(e) {}
+                        
+                        if (eq === "") break; // 입력값이 없으면 1번만 돌고 탈출
+                    }
+
                     let isFallbackUsed = false;
-
-                    if (exposItems.length > 0) {
-                        // 공용면적 제외 순수 전유부만 필터링
-                        const validExpos = exposItems.filter(i => i.exposPubuseGbCd === '1' || !(i.exposPubuseGbCdNm || '').includes('공용'));
-                        if (validExpos.length > 0) fallbackItem = validExpos[0];
-
-                        // 수천 건의 데이터 중에서 완벽 일치하는 녀석 찾기
-                        const match = validExpos.find(i => {
-                            let dOk = isMatch(i.dongNm, rawDongVal) || isMatch(i.bldNm, rawDongVal);
-                            let hOk = isMatch(i.hoNm, rawHoVal);
-                            return dOk && hOk;
-                        });
-
-                        if (match) exposItem = match;
-                    }
-
+                    
+                    // 핀셋 조회로도 못 찾았다면 (주소가 잘못되었거나 다른 이유) 1번 호수를 가져옵니다.
                     if (!exposItem) {
-                        exposItem = fallbackItem;
                         isFallbackUsed = true;
+                        const fbUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrExposPubuseAreaInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=10&pageNo=1&_type=json`;
+                        try {
+                            const fbJson = await fetchWithProxy(fbUrl);
+                            if (fbJson?.response?.body?.items?.item) {
+                                const arr = Array.isArray(fbJson.response.body.items.item) ? fbJson.response.body.items.item : [fbJson.response.body.items.item];
+                                const validExpos = arr.filter(i => i.exposPubuseGbCd === '1' || !(i.exposPubuseGbCdNm || '').includes('공용'));
+                                exposItem = validExpos.length > 0 ? validExpos[0] : arr[0];
+                            }
+                        } catch(e) {}
                     }
 
+                    // =========================================================
+                    // 데이터 화면 출력 병합
+                    // =========================================================
                     if (titleItem || exposItem) {
                         const useAprDay = titleItem ? formatPubDate(titleItem.useAprDay) : '-';
                         const bldNm = titleItem ? (titleItem.bldNm || '-') : '-';
