@@ -591,7 +591,7 @@
             }
         }
 
-        // 🌟 수정된 건축물대장 및 토지대장 초고속/안정화 조회 로직
+        // 🌟 수정된 대장 정보 조회 로직 (토지 전용키 강제 주입 + 건축물 CORS 우회)
         async function fetchDaejangInfo(pnu) {
             if (!pnu || pnu.length !== 19) return;
             
@@ -601,11 +601,13 @@
             const bun = pnu.substring(11, 15);
             const ji = pnu.substring(15, 19);
 
-            // 1. 토지대장 정보 (VWORLD 이용 - JSONP)
+            // 1. 토지대장 정보 (VWORLD 토지 전용키 강제 주입!)
             try {
-                const landUrl = `https://api.vworld.kr/ned/data/getLandCharacteristics?key=${VWORLD_KEY}&pnu=${pnu}&format=json&domain=${DOMAIN}`;
+                const LAND_KEY = "0F6B55A5-3A01-34CF-9C24-AF454E09531E"; // 세무사님의 토지 전용키
+                const landUrl = `https://api.vworld.kr/ned/data/getLandCharacteristics?key=${LAND_KEY}&pnu=${pnu}&format=json&domain=${DOMAIN}`;
                 const landData = await fetchJSONP(landUrl);
-                let landHtml = `<div class="p-4 bg-slate-50 rounded-xl text-center col-span-full text-slate-500">토지대장 정보가 없습니다.</div>`;
+                
+                let landHtml = `<div class="p-4 bg-slate-50 rounded-xl text-center col-span-full text-slate-500">조회된 토지대장 정보가 없습니다.</div>`;
                 
                 let field = null;
                 if (landData && landData.landCharacteristics && landData.landCharacteristics.field) {
@@ -617,34 +619,36 @@
                 if (field) {
                     landHtml = `
                         <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">지목</p><p class="text-sm font-extrabold text-slate-800">${field.lndcgrCodeNm || field.lndcgrCode || '-'}</p></div>
-                        <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">토지면적</p><p class="text-sm font-extrabold text-slate-800">${field.lndpclAr ? field.lndpclAr + ' ㎡' : '-'}</p></div>
+                        <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">토지면적</p><p class="text-sm font-extrabold text-slate-800">${field.lndpclAr ? Number(field.lndpclAr).toLocaleString() + ' ㎡' : '-'}</p></div>
                         <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">용도지역</p><p class="text-sm font-extrabold text-slate-800">${field.prposArea1Nm || '-'}</p></div>
                         <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">이용상황</p><p class="text-sm font-extrabold text-slate-800">${field.landUseSittnNm || '-'}</p></div>
                     `;
                 }
                 document.getElementById('land-info').innerHTML = landHtml;
             } catch(e) { 
-                console.error("토지대장 파싱 에러:", e);
-                document.getElementById('land-info').innerHTML = `<div class="p-4 bg-slate-50 rounded-xl text-center col-span-full text-slate-500">토지대장 정보를 불러올 수 없습니다.</div>`;
+                console.error("토지대장 에러:", e); 
             }
 
-            // 2. 건축물대장 정보 (공공데이터포털 JSONP 방식 우회)
+            // 2. 건축물대장 정보 (공공데이터포털 CORS 우회 적용)
             try {
-                // 브라우저 CORS 회피용 외부 프록시/JSONP 백업
                 const bldgUrl = `https://apis.data.go.kr/1613000/BldRgstService_2.0/getBrTitleInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=1&pageNo=1&_type=json`;
                 
-                const response = await fetch(bldgUrl).catch(() => null);
+                // CORS 블록을 피하기 위해 외부 브릿지(Proxy)를 경유하여 안전하게 호출
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(bldgUrl)}`;
+                const response = await fetch(proxyUrl);
                 let item = null;
 
                 if (response && response.ok) {
-                    const bldgJson = await response.json();
+                    const proxyJson = await response.json();
+                    const bldgJson = JSON.parse(proxyJson.contents); // 원본 데이터 추출
+                    
                     if (bldgJson && bldgJson.response && bldgJson.response.body && bldgJson.response.body.items && bldgJson.response.body.items.item) {
                         const items = bldgJson.response.body.items.item;
                         item = Array.isArray(items) ? items[0] : items;
                     }
                 }
 
-                let bldgHtml = `<div class="p-4 bg-slate-50 rounded-xl text-center col-span-full text-slate-500">건축물대장 정보가 없습니다. (미건축 토지이거나, 분양권 상태일 수 있습니다.)</div>`;
+                let bldgHtml = `<div class="p-4 bg-slate-50 rounded-xl text-center col-span-full text-slate-500">건축물대장 정보가 없습니다. (분양권이거나 데이터 미등록 상태)</div>`;
 
                 if (item) {
                     bldgHtml = `
@@ -656,8 +660,7 @@
                 }
                 document.getElementById('bldg-info').innerHTML = bldgHtml;
             } catch(e) { 
-                console.error("건축물대장 파싱 에러:", e);
-                document.getElementById('bldg-info').innerHTML = `<div class="p-4 bg-slate-50 rounded-xl text-center col-span-full text-slate-500">건축물대장 정보를 불러올 수 없습니다.</div>`;
+                console.error("건축물대장 에러:", e); 
             }
         }
 
