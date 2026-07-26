@@ -591,7 +591,7 @@
             }
         }
 
-        // 🌟 수정된 대장 정보 조회 로직 (표제부 + 전유부 결합 및 동호수 9999건 정밀 탐색)
+        // 🌟 수정된 대장 정보 조회 로직 (대단지 아파트 페이지 끝까지 샅샅이 뒤지는 정밀 추적 적용)
         async function fetchDaejangInfo(pnu) {
             if (!pnu || pnu.length !== 19) return;
             
@@ -601,19 +601,17 @@
             const bun = pnu.substring(11, 15);
             const ji = pnu.substring(15, 19);
 
-            // 현재 선택된 물건 유형 및 동/호수 입력값 가져오기
             const propType = document.querySelector('input[name="propType"]:checked').value;
             const dongVal = extractNum(document.getElementById('dong').value);
             const hoVal = extractNum(document.getElementById('ho').value);
 
-            // 1. 토지대장 정보 (VWORLD)
+            // 1. 토지대장 정보
             try {
                 const LAND_KEY = "0F6B55A5-3A01-34CF-9C24-AF454E09531E";
                 const landUrl = `https://api.vworld.kr/ned/data/getLandCharacteristics?key=${LAND_KEY}&pnu=${pnu}&format=json&domain=${DOMAIN}`;
                 const landData = await fetchJSONP(landUrl);
                 
                 let landHtml = `<div class="p-4 bg-slate-50 rounded-xl text-center col-span-full text-slate-500">조회된 토지대장 정보가 없습니다.</div>`;
-                
                 let field = null;
                 const rootNode = landData.landCharacteristics || landData.landCharacteristicss || landData;
                 if (rootNode && rootNode.field) {
@@ -643,62 +641,90 @@
                 }
             }
 
-            // 2. 건축물대장 정보 (공공데이터포털 건축HUB)
+            // 2. 건축물대장 정보
             try {
                 let isApiError = false;
                 
-                // [표제부] 공통 조회 (사용승인일, 건물명 획득용)
-                const titleUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=1000&pageNo=1&_type=json`;
-                
+                // 🌟 [표제부 탐색] - 사용승인일 획득용 (원하는 동을 찾을 때까지 페이지 순회)
                 let titleItem = null;
-                try {
-                    const titleJson = await fetchWithProxy(titleUrl);
-                    if (titleJson && titleJson.response && titleJson.response.body && titleJson.response.body.items && titleJson.response.body.items.item) {
-                        const itemsArr = Array.isArray(titleJson.response.body.items.item) ? titleJson.response.body.items.item : [titleJson.response.body.items.item];
-                        
-                        // 동(Dong) 번호가 있으면 해당 동의 표제부 찾기
-                        if (propType === "공동주택" && dongVal) {
-                            titleItem = itemsArr.find(i => extractNum(i.dongNm) === dongVal) || itemsArr[0];
+                let tPage = 1;
+                while (tPage <= 10) { // 최대 10페이지 탐색
+                    const titleUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=1000&pageNo=${tPage}&_type=json`;
+                    
+                    try {
+                        const titleJson = await fetchWithProxy(titleUrl);
+                        if (titleJson?.response?.body?.items?.item) {
+                            const itemsArr = Array.isArray(titleJson.response.body.items.item) ? titleJson.response.body.items.item : [titleJson.response.body.items.item];
+                            
+                            if (propType === "공동주택" && dongVal) {
+                                // dongNm 뿐만 아니라 bldNm(건물명)에 동 번호가 적힌 경우도 완벽하게 필터링
+                                titleItem = itemsArr.find(i => (extractNum(i.dongNm) === dongVal) || (extractNum(i.bldNm) === dongVal));
+                                if (titleItem) break; // 찾았으면 즉시 탈출
+                            } else {
+                                titleItem = itemsArr[0]; break;
+                            }
+                            if (itemsArr.length < 1000) {
+                                if (!titleItem && tPage === 1) titleItem = itemsArr[0]; // 끝까지 못 찾으면 1번 임시할당
+                                break;
+                            }
+                            tPage++;
                         } else {
-                            titleItem = itemsArr[0];
+                            if (titleJson?.response?.header?.resultCode !== "00") isApiError = true;
+                            break;
                         }
-                    } else if (titleJson && titleJson.response && titleJson.response.header && titleJson.response.header.resultCode !== "00") {
-                        isApiError = true;
-                    }
-                } catch(e) { isApiError = true; }
+                    } catch(e) { isApiError = true; break; }
+                }
 
                 let bldgHtml = `<div class="p-4 bg-slate-50 rounded-xl text-center col-span-full text-slate-500">건축물대장 정보가 없습니다.</div>`;
 
                 if (isApiError) {
                     bldgHtml = `<div class="p-4 bg-amber-50 border border-amber-200 rounded-xl text-center col-span-full text-amber-700 font-medium">건축물대장 API 오류가 발생했습니다. (키 동기화 대기 중일 수 있습니다)</div>`;
                 } else if (propType === "공동주택") {
-                    // [전유부] 아파트일 경우 전용면적 조회를 위해 추가 호출 (9999건 스캔!)
-                    const exposUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrExposPubuseAreaInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=9999&pageNo=1&_type=json`;
                     
+                    // 🌟 [전유부 탐색] - 전용면적 획득용 (동/호수 정확히 찾을 때까지 끝까지 순회)
                     let exposItem = null;
-                    try {
-                        const exposJson = await fetchWithProxy(exposUrl);
-                        if (exposJson && exposJson.response && exposJson.response.body && exposJson.response.body.items && exposJson.response.body.items.item) {
-                            const exposArr = Array.isArray(exposJson.response.body.items.item) ? exposJson.response.body.items.item : [exposJson.response.body.items.item];
-                            
-                            // 🌟 동/호수 정밀 매칭 (수천 세대 중에서 필터링)
-                            const candidates = exposArr.filter(i => {
-                                let match = true;
-                                if (dongVal && extractNum(i.dongNm) !== dongVal) match = false;
-                                if (hoVal && extractNum(i.hoNm) !== hoVal) match = false;
-                                return match;
-                            });
-                            
-                            // 전유부(1) 우선 필터링 (계단/복도 등 공용면적 제외)
-                            if (candidates.length > 0) {
-                                exposItem = candidates.find(i => i.exposPubuseGbCd === '1') || candidates.find(i => !(i.exposPubuseGbCdNm || '').includes('공용')) || candidates[0];
-                            } else {
-                                exposItem = exposArr[0]; // 매칭 실패 시 1번째 데이터 반환
-                            }
-                        }
-                    } catch(e) { console.error(e); }
+                    let ePage = 1;
+                    let fallbackItem = null;
 
-                    // 데이터 융합 (표제부 + 전유부)
+                    while (ePage <= 15) { // 대단지를 위해 최대 15,000 세대까지 탐색
+                        const exposUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrExposPubuseAreaInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=1000&pageNo=${ePage}&_type=json`;
+                        
+                        try {
+                            const exposJson = await fetchWithProxy(exposUrl);
+                            if (exposJson?.response?.body?.items?.item) {
+                                const exposArr = Array.isArray(exposJson.response.body.items.item) ? exposJson.response.body.items.item : [exposJson.response.body.items.item];
+                                
+                                if (ePage === 1 && exposArr.length > 0) fallbackItem = exposArr[0];
+
+                                const candidates = exposArr.filter(i => {
+                                    let dMatch = true, hMatch = true;
+                                    if (dongVal) {
+                                        const apiDong = extractNum(i.dongNm) || extractNum(i.bldNm) || "";
+                                        if (apiDong !== dongVal) dMatch = false;
+                                    }
+                                    if (hoVal) {
+                                        const apiHo = extractNum(i.hoNm) || "";
+                                        if (apiHo !== hoVal) hMatch = false;
+                                    }
+                                    return dMatch && hMatch;
+                                });
+
+                                if (candidates.length > 0) {
+                                    exposItem = candidates.find(i => i.exposPubuseGbCd === '1') || candidates.find(i => !(i.exposPubuseGbCdNm || '').includes('공용')) || candidates[0];
+                                    if (exposItem) break; // 정확히 일치하는 녀석 찾으면 바로 루프 종료!
+                                }
+                                
+                                if (exposArr.length < 1000) break; // 더 이상 다음 페이지가 없으면 종료
+                                ePage++;
+                            } else {
+                                break;
+                            }
+                        } catch(e) { console.error(e); break; }
+                    }
+
+                    if (!exposItem) exposItem = fallbackItem;
+
+                    // 🌟 데이터 융합 (표제부의 '사용승인일' + 전유부의 '전용면적')
                     if (titleItem || exposItem) {
                         const useAprDay = titleItem ? formatPubDate(titleItem.useAprDay) : '-';
                         const bldNm = titleItem ? (titleItem.bldNm || '-') : '-';
@@ -724,7 +750,7 @@
                         `;
                     }
                 } else if (titleItem) { 
-                    // 단독주택일 경우 (표제부 뷰)
+                    // 단독주택일 경우 (표제부만 출력)
                     bldgHtml = `
                         <div class="bg-emerald-50 p-3 rounded-lg"><p class="text-xs text-emerald-800 font-bold mb-1">주용도</p><p class="text-sm font-extrabold text-slate-800">${titleItem.mainPurpsCdNm || '-'}</p></div>
                         <div class="bg-emerald-50 p-3 rounded-lg"><p class="text-xs text-emerald-800 font-bold mb-1">주구조</p><p class="text-sm font-extrabold text-slate-800">${titleItem.strctCdNm || '-'}</p></div>
