@@ -632,18 +632,19 @@
 
             // 2. 건축물대장 정보 (공공데이터포털)
             try {
-                // 세무사님의 원래 키(DATA_GO_KR_KEY)로 원상 복구!
-                const bldgUrl = `https://apis.data.go.kr/1613000/BldRgstService_2.0/getBrTitleInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=1&pageNo=1&_type=json`;
+                // 👇👇 여기에 공공데이터포털에서 복사한 진짜 인증키를 붙여넣어 주세요! 👇👇
+                const REAL_BLDG_KEY = "83a79624397baf59da6f5daea52c9c0478aceccf3f20b707e26f9866c85f7b8f";
+                
+                // 기존 DATA_GO_KR_KEY 대신 REAL_BLDG_KEY를 사용하도록 수정!
+                const bldgUrl = `https://apis.data.go.kr/1613000/BldRgstService_2.0/getBrTitleInfo?serviceKey=${REAL_BLDG_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=1&pageNo=1&_type=json`;
                 
                 let bldgJson = null;
                 let isApiError = false;
 
                 try {
-                    // 1차 시도: 직접 호출 (요즘 공공데이터포털은 직접 호출을 허용하는 경우가 있습니다)
                     const directRes = await fetch(bldgUrl);
                     bldgJson = await directRes.json();
                 } catch(err1) {
-                    // 2차 시도: 직접 호출 실패 시(CORS 에러), 다른 우회 프록시 사용
                     try {
                         const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(bldgUrl)}`;
                         const proxyRes = await fetch(proxyUrl);
