@@ -589,7 +589,7 @@
             }
         }
 
-        // 🌟 수정된 대장 정보 조회 로직 (정부24 데이터 형태 완벽 대응 및 숫자 족집게 추출)
+        // 🌟 수정된 대장 정보 조회 로직 (호수 역추적 핀셋 기법 도입)
         async function fetchDaejangInfo(pnu) {
             if (!pnu || pnu.length !== 19) return;
             
@@ -600,7 +600,6 @@
             const ji = pnu.substring(15, 19);
 
             const propType = document.querySelector('input[name="propType"]:checked').value;
-            // 입력값에서 순수 숫자만 추출 (예: '7201', '503')
             const rawDongVal = extractNum(document.getElementById('dong').value);
             const rawHoVal = extractNum(document.getElementById('ho').value);
 
@@ -645,6 +644,7 @@
                     try {
                         const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
                         const res2 = await fetch(proxyUrl);
+                        if (!res2.ok) throw new Error();
                         return await res2.json();
                     } catch(e2) {
                         const proxyUrl2 = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
@@ -654,27 +654,39 @@
                 }
             }
 
+            // 🌟 초정밀 동/호수 매칭 함수
+            function isMatch(apiStr, targetStr) {
+                if (!targetStr) return true; 
+                if (apiStr === null || apiStr === undefined) return false;
+                
+                const safeApiStr = String(apiStr);
+                const safeTargetStr = String(targetStr);
+                
+                const numTarget = safeTargetStr.replace(/[^0-9]/g, '');
+                if (numTarget) {
+                    const apiNumbers = safeApiStr.match(/\d+/g) || [];
+                    return apiNumbers.includes(numTarget);
+                } else {
+                    const cleanApi = safeApiStr.replace(/[^a-zA-Z가-힣]/g, '').toLowerCase();
+                    const cleanTarget = safeTargetStr.replace(/[^a-zA-Z가-힣]/g, '').toLowerCase();
+                    return cleanApi && cleanTarget && cleanApi.includes(cleanTarget);
+                }
+            }
+
             // 2. 건축물대장 정보
             try {
-                // UI: 스캔 안내 메시지 띄우기
-                document.getElementById('bldg-info').innerHTML = `<div class="p-4 bg-indigo-50 text-indigo-600 rounded-xl text-center col-span-full font-bold animate-pulse">대단지 세대 데이터 전수 스캔 및 정밀 매칭 중...</div>`;
-                
+                document.getElementById('bldg-info').innerHTML = `<div class="p-4 bg-indigo-50 text-indigo-600 rounded-xl text-center col-span-full font-bold animate-pulse">호수 역추적 기법으로 정밀 매칭 중...</div>`;
                 let isApiError = false;
                 
                 // [표제부] (사용승인일 획득용)
                 let titleItem = null;
-                const titleUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=1000&pageNo=1&_type=json`;
+                const titleUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=500&pageNo=1&_type=json`;
                 try {
                     const titleJson = await fetchWithProxy(titleUrl);
                     if (titleJson?.response?.body?.items?.item) {
                         const arr = Array.isArray(titleJson.response.body.items.item) ? titleJson.response.body.items.item : [titleJson.response.body.items.item];
-                        
                         if (propType === "공동주택" && rawDongVal) {
-                            titleItem = arr.find(i => {
-                                const str = String(i.dongNm || '') + " " + String(i.bldNm || '');
-                                const nums = (str.match(/\d+/g) || []).map(String);
-                                return nums.includes(String(rawDongVal));
-                            });
+                            titleItem = arr.find(i => isMatch(i.dongNm, rawDongVal) || isMatch(i.bldNm, rawDongVal));
                         }
                         if (!titleItem) titleItem = arr[0];
                     } else if (titleJson?.response?.header?.resultCode !== "00") {
@@ -685,58 +697,59 @@
                 let bldgHtml = `<div class="p-4 bg-slate-50 rounded-xl text-center col-span-full text-slate-500">건축물대장 정보가 없습니다.</div>`;
 
                 if (isApiError) {
-                    bldgHtml = `<div class="p-4 bg-amber-50 border border-amber-200 rounded-xl text-center col-span-full text-amber-700 font-medium">건축물대장 API 오류가 발생했습니다. (키 동기화 대기 중)</div>`;
+                    bldgHtml = `<div class="p-4 bg-amber-50 border border-amber-200 rounded-xl text-center col-span-full text-amber-700 font-medium">건축물대장 API 오류가 발생했습니다.</div>`;
                 } else if (propType === "공동주택") {
                     
-                    // [전유부] (전용면적 획득용 - 전체 페이지 순회)
+                    // 🌟 [전유부] 호수 역추적 핀셋 조회!
                     let exposItem = null;
                     let fallbackItem = null;
                     let isFallbackUsed = false;
-                    let pageNo = 1;
-                    let keepFetching = true;
 
-                    while (keepFetching && pageNo <= 20) { // 최대 2만건(20페이지)까지 스캔
-                        const exposUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrExposPubuseAreaInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=1000&pageNo=${pageNo}&_type=json`;
+                    const hoQueries = [];
+                    if (rawHoVal) {
+                        hoQueries.push(`&hoNm=${encodeURIComponent(rawHoVal + "호")}`);
+                        hoQueries.push(`&hoNm=${encodeURIComponent("제" + rawHoVal + "호")}`);
+                        hoQueries.push(`&hoNm=${encodeURIComponent(rawHoVal)}`);
+                    } else {
+                        hoQueries.push("");
+                    }
+
+                    for (let hq of hoQueries) {
+                        const exposUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrExposPubuseAreaInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=500&pageNo=1&_type=json${hq}`;
                         
                         try {
                             const exposJson = await fetchWithProxy(exposUrl);
-                            const body = exposJson?.response?.body;
-                            
-                            if (body && body.items && body.items.item) {
-                                const arr = Array.isArray(body.items.item) ? body.items.item : [body.items.item];
+                            if (exposJson?.response?.body?.items?.item) {
+                                const arr = Array.isArray(exposJson.response.body.items.item) ? exposJson.response.body.items.item : [exposJson.response.body.items.item];
                                 
-                                // 공용면적 제외
                                 const validExpos = arr.filter(i => i.exposPubuseGbCd === '1' || !(i.exposPubuseGbCdNm || '').includes('공용'));
-                                if (pageNo === 1 && validExpos.length > 0) fallbackItem = validExpos[0];
-
-                                // 🌟 정부24 데이터 형태를 파훼하는 족집게 알고리즘
-                                const match = validExpos.find(i => {
-                                    const dongStr = String(i.dongNm || '') + " " + String(i.bldNm || '');
-                                    const hoStr = String(i.hoNm || '');
+                                if (validExpos.length > 0) {
+                                    if (!fallbackItem) fallbackItem = validExpos[0];
                                     
-                                    // 문자열 속에서 숫자만 분리하여 배열로 저장 (예: "힐스테이트 위례 7201동" -> ["7201"])
-                                    const dongNums = (dongStr.match(/\d+/g) || []).map(String);
-                                    const hoNums = (hoStr.match(/\d+/g) || []).map(String);
-                                    
-                                    const dOk = rawDongVal ? dongNums.includes(String(rawDongVal)) : true;
-                                    const hOk = rawHoVal ? hoNums.includes(String(rawHoVal)) : true;
-                                    
-                                    return dOk && hOk;
-                                });
-
-                                if (match) {
-                                    exposItem = match;
-                                    keepFetching = false; // 🎯 찾았으면 즉시 다음 페이지 검색 중단!
+                                    const match = validExpos.find(i => isMatch(i.dongNm, rawDongVal) || isMatch(i.bldNm, rawDongVal));
+                                    if (match) {
+                                        exposItem = match;
+                                        break; 
+                                    }
                                 }
-                                
-                                const totalCount = Number(body.totalCount) || 0;
-                                const actualRows = Number(body.numOfRows) || 1000;
-                                if (pageNo * actualRows >= totalCount) keepFetching = false; // 끝 페이지 도달 시 중단
-                            } else {
-                                keepFetching = false;
                             }
-                        } catch(e) { keepFetching = false; }
-                        pageNo++;
+                        } catch(e) {}
+                    }
+
+                    // 역추적 실패 시 기본 폴백
+                    if (!exposItem && rawHoVal) {
+                        const fbUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrExposPubuseAreaInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=500&pageNo=1&_type=json`;
+                        try {
+                            const fbJson = await fetchWithProxy(fbUrl);
+                            if (fbJson?.response?.body?.items?.item) {
+                                const arr = Array.isArray(fbJson.response.body.items.item) ? fbJson.response.body.items.item : [fbJson.response.body.items.item];
+                                const validExpos = arr.filter(i => i.exposPubuseGbCd === '1' || !(i.exposPubuseGbCdNm || '').includes('공용'));
+                                if (validExpos.length > 0 && !fallbackItem) fallbackItem = validExpos[0];
+                                
+                                const match = validExpos.find(i => (isMatch(i.dongNm, rawDongVal) || isMatch(i.bldNm, rawDongVal)) && isMatch(i.hoNm, rawHoVal));
+                                if (match) exposItem = match;
+                            }
+                        } catch(e) {}
                     }
 
                     if (!exposItem) {
@@ -744,7 +757,6 @@
                         isFallbackUsed = true;
                     }
 
-                    // 데이터 병합 출력
                     if (titleItem || exposItem) {
                         const useAprDay = titleItem ? formatPubDate(titleItem.useAprDay) : '-';
                         const bldNm = titleItem ? (titleItem.bldNm || '-') : '-';
