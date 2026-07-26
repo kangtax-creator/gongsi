@@ -591,7 +591,7 @@
             }
         }
 
-        // 🌟 수정된 대장 정보 조회 로직 (동·호수 정밀 매칭 알고리즘 고도화)
+        // 🌟 수정된 대장 정보 조회 로직 (대단지 끝장 추적 및 동호수 정밀 매칭 알고리즘)
         async function fetchDaejangInfo(pnu) {
             if (!pnu || pnu.length !== 19) return;
             
@@ -602,8 +602,10 @@
             const ji = pnu.substring(15, 19);
 
             const propType = document.querySelector('input[name="propType"]:checked').value;
-            const dongVal = extractNum(document.getElementById('dong').value);
-            const hoVal = extractNum(document.getElementById('ho').value);
+            
+            // 🌟 뭉뚱그려진 숫자가 아닌, 사용자가 입력한 순수 텍스트 값 자체를 가져옵니다.
+            const rawDongVal = document.getElementById('dong').value.trim();
+            const rawHoVal = document.getElementById('ho').value.trim();
 
             // 1. 토지대장 정보 (VWORLD)
             try {
@@ -648,6 +650,23 @@
                 }
             }
 
+            // 🌟 정밀 동/호수 매칭 함수
+            function isMatch(apiStr, targetStr) {
+                if (!targetStr) return true;
+                if (!apiStr) return false;
+                
+                // 1. 공백 및 '동', '호' 제거 후 완전 일치
+                const cleanApi = apiStr.replace(/[동호\s]/g, '');
+                const cleanTarget = targetStr.replace(/[동호\s]/g, '');
+                if (cleanApi === cleanTarget) return true;
+                
+                // 2. 문자열 내에 독립된 단어/숫자로 존재하는지 (예: '힐스테이트 7201동' 에서 '7201' 찾기)
+                const regex = new RegExp(`(^|\\D)${cleanTarget}(\\D|$)`, 'i');
+                if (regex.test(apiStr)) return true;
+                
+                return false;
+            }
+
             // 2. 건축물대장 정보
             try {
                 let isApiError = false;
@@ -655,24 +674,28 @@
                 // [표제부 탐색] - 사용승인일 획득용
                 let titleItem = null;
                 let tPage = 1;
-                while (tPage <= 10) { 
+                while (tPage <= 15) { 
                     const titleUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=1000&pageNo=${tPage}&_type=json`;
                     
                     try {
                         const titleJson = await fetchWithProxy(titleUrl);
-                        if (titleJson?.response?.body?.items?.item) {
-                            const itemsArr = Array.isArray(titleJson.response.body.items.item) ? titleJson.response.body.items.item : [titleJson.response.body.items.item];
+                        const body = titleJson?.response?.body;
+
+                        if (body && body.items && body.items.item) {
+                            const itemsArr = Array.isArray(body.items.item) ? body.items.item : [body.items.item];
                             
-                            if (propType === "공동주택" && dongVal) {
-                                titleItem = itemsArr.find(i => (extractNum(i.dongNm) === dongVal) || (extractNum(i.bldNm) === dongVal));
+                            if (propType === "공동주택" && rawDongVal) {
+                                titleItem = itemsArr.find(i => isMatch(i.dongNm, rawDongVal) || isMatch(i.bldNm, rawDongVal));
                                 if (titleItem) break;
                             } else {
                                 titleItem = itemsArr[0]; break;
                             }
-                            if (itemsArr.length < 1000) {
-                                if (!titleItem && tPage === 1) titleItem = itemsArr[0];
-                                break;
-                            }
+                            
+                            if (!titleItem && tPage === 1) titleItem = itemsArr[0]; // fallback
+                            
+                            const totalCount = body.totalCount || 0;
+                            const actualRows = body.numOfRows || 1000;
+                            if (tPage * actualRows >= totalCount) break; // 끝까지 다 찾았으면 탈출
                             tPage++;
                         } else {
                             if (titleJson?.response?.header?.resultCode !== "00") isApiError = true;
@@ -687,38 +710,38 @@
                     bldgHtml = `<div class="p-4 bg-amber-50 border border-amber-200 rounded-xl text-center col-span-full text-amber-700 font-medium">건축물대장 API 오류가 발생했습니다.</div>`;
                 } else if (propType === "공동주택") {
                     
-                    // [전유부 탐색] - 강력한 동/호수 정밀 매칭 알고리즘 적용
+                    // [전유부 탐색] - 끝장 추적 루프
                     let exposItem = null;
                     let ePage = 1;
                     let fallbackItem = null;
 
-                    while (ePage <= 15) { 
+                    while (ePage <= 50) { // 대단지 공용면적 찌꺼기까지 고려해 최대 50페이지(5만 건) 스캔
                         const exposUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrExposPubuseAreaInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=1000&pageNo=${ePage}&_type=json`;
                         
                         try {
                             const exposJson = await fetchWithProxy(exposUrl);
-                            if (exposJson?.response?.body?.items?.item) {
-                                const exposArr = Array.isArray(exposJson.response.body.items.item) ? exposJson.response.body.items.item : [exposJson.response.body.items.item];
+                            const body = exposJson?.response?.body;
+
+                            if (body && body.items && body.items.item) {
+                                const exposArr = Array.isArray(body.items.item) ? body.items.item : [body.items.item];
                                 
                                 const validExpos = exposArr.filter(i => i.exposPubuseGbCd === '1' || !(i.exposPubuseGbCdNm || '').includes('공용'));
                                 if (ePage === 1 && validExpos.length > 0) fallbackItem = validExpos[0];
 
-                                // 🌟 동/호수를 완벽하게 정밀 대조하는 필터링 조건
                                 const match = validExpos.find(i => {
-                                    const apiDong = extractNum(i.dongNm) || extractNum(i.bldNm) || "";
-                                    const apiHo = extractNum(i.hoNm) || "";
-                                    
-                                    let dOk = dongVal ? (apiDong === dongVal) : true;
-                                    let hOk = hoVal ? (apiHo === hoVal) : true;
+                                    let dOk = isMatch(i.dongNm, rawDongVal) || isMatch(i.bldNm, rawDongVal);
+                                    let hOk = isMatch(i.hoNm, rawHoVal);
                                     return dOk && hOk;
                                 });
 
                                 if (match) {
                                     exposItem = match;
-                                    break; // 정확한 동/호수를 찾으면 즉시 루프 탈출!
+                                    break; // 🌟 정확한 동/호수를 찾으면 즉시 루프 탈출!
                                 }
                                 
-                                if (exposArr.length < 1000) break;
+                                const totalCount = body.totalCount || 0;
+                                const actualRows = body.numOfRows || 1000;
+                                if (ePage * actualRows >= totalCount) break; // 페이지 끝에 도달하면 탈출
                                 ePage++;
                             } else {
                                 break;
@@ -747,14 +770,14 @@
                             area = exposItem.area ? exposItem.area + ' ㎡' : '-';
                         }
                         
-                        if (!dongHoStr.trim()) dongHoStr = (dongVal ? dongVal+"동 " : "") + (hoVal ? hoVal+"호" : "해당 호수");
+                        if (!dongHoStr.trim()) dongHoStr = (rawDongVal ? rawDongVal+"동 " : "") + (rawHoVal ? rawHoVal+"호" : "해당 호수");
 
                         let warningHtml = "";
-                        if (isFallbackUsed && (dongVal || hoVal)) {
+                        if (isFallbackUsed && (rawDongVal || rawHoVal)) {
                             warningHtml = `
                                 <div class="bg-red-50 border border-red-200 p-2.5 rounded-lg col-span-full mb-1">
                                     <p class="text-xs text-red-700 font-bold">⚠️ 입력하신 동·호수를 찾지 못했습니다</p>
-                                    <p class="text-[10px] text-red-600 mt-0.5 leading-relaxed">입력하신 <b>[${dongVal ? dongVal+'동' : ''} ${hoVal ? hoVal+'호' : ''}]</b>가 해당 건축물대장에 등록되어 있지 않거나 표기 방식이 다를 수 있습니다. (아래는 임시 참고용 세대 정보입니다.)</p>
+                                    <p class="text-[10px] text-red-600 mt-0.5 leading-relaxed">입력하신 <b>[${rawDongVal ? rawDongVal+'동' : ''} ${rawHoVal ? rawHoVal+'호' : ''}]</b>가 해당 건축물대장에 등록되어 있지 않거나 표기 방식이 다를 수 있습니다. (아래는 임시 참고용 세대 정보입니다.)</p>
                                 </div>
                             `;
                         }
