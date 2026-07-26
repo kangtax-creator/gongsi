@@ -591,7 +591,7 @@
             }
         }
 
-        // 🌟 수정된 대장 정보 조회 로직 (VWORLD 오타 대응 + 공공데이터 에러 안전망)
+        // 🌟 수정된 대장 정보 조회 로직 (건축HUB 신규 엔드포인트 적용)
         async function fetchDaejangInfo(pnu) {
             if (!pnu || pnu.length !== 19) return;
             
@@ -601,7 +601,7 @@
             const bun = pnu.substring(11, 15);
             const ji = pnu.substring(15, 19);
 
-            // 1. 토지대장 정보 (VWORLD 토지 전용키 강제 주입!)
+            // 1. 토지대장 정보 (VWORLD 토지 전용키)
             try {
                 const LAND_KEY = "0F6B55A5-3A01-34CF-9C24-AF454E09531E";
                 const landUrl = `https://api.vworld.kr/ned/data/getLandCharacteristics?key=${LAND_KEY}&pnu=${pnu}&format=json&domain=${DOMAIN}`;
@@ -610,7 +610,6 @@
                 let landHtml = `<div class="p-4 bg-slate-50 rounded-xl text-center col-span-full text-slate-500">조회된 토지대장 정보가 없습니다.</div>`;
                 
                 let field = null;
-                // 🌟 브이월드 API 개발자 오타(landCharacteristicss) 완벽 대응!
                 const rootNode = landData.landCharacteristics || landData.landCharacteristicss || landData;
                 
                 if (rootNode && rootNode.field) {
@@ -630,13 +629,10 @@
                 console.error("❌ 토지대장 에러:", e); 
             }
 
-            // 2. 건축물대장 정보 (공공데이터포털)
+            // 2. 건축물대장 정보 (공공데이터포털 건축HUB 반영)
             try {
-                // 👇👇 여기에 공공데이터포털에서 복사한 진짜 인증키를 붙여넣어 주세요! 👇👇
-                const REAL_BLDG_KEY = "83a79624397baf59da6f5daea52c9c0478aceccf3f20b707e26f9866c85f7b8f";
-                
-                // 기존 DATA_GO_KR_KEY 대신 REAL_BLDG_KEY를 사용하도록 수정!
-                const bldgUrl = `https://apis.data.go.kr/1613000/BldRgstService_2.0/getBrTitleInfo?serviceKey=${REAL_BLDG_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=1&pageNo=1&_type=json`;
+                // 🌟 BldRgstService_2.0 -> BldRgstHubService 로 변경!
+                const bldgUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=1&pageNo=1&_type=json`;
                 
                 let bldgJson = null;
                 let isApiError = false;
@@ -659,13 +655,13 @@
                     const items = bldgJson.response.body.items.item;
                     item = Array.isArray(items) ? items[0] : items;
                 } else if (bldgJson && bldgJson.response && bldgJson.response.header && bldgJson.response.header.resultCode !== "00") {
-                     isApiError = true; // 서비스 키 미등록(동기화 중) 에러
+                     isApiError = true;
                 }
 
                 let bldgHtml = `<div class="p-4 bg-slate-50 rounded-xl text-center col-span-full text-slate-500">건축물대장 정보가 없습니다. (분양권이거나 데이터 미등록 상태)</div>`;
 
                 if (isApiError) {
-                    bldgHtml = `<div class="p-4 bg-amber-50 border border-amber-200 rounded-xl text-center col-span-full text-amber-700 font-medium">건축물대장 API 권한 동기화 대기 중입니다. (1~2시간 소요)</div>`;
+                    bldgHtml = `<div class="p-4 bg-amber-50 border border-amber-200 rounded-xl text-center col-span-full text-amber-700 font-medium">건축물대장 API 오류가 발생했습니다. (키 동기화 대기 중일 수 있습니다)</div>`;
                 } else if (item) {
                     bldgHtml = `
                         <div class="bg-emerald-50 p-3 rounded-lg"><p class="text-xs text-emerald-800 font-bold mb-1">주용도</p><p class="text-sm font-extrabold text-slate-800">${item.mainPurpsCdNm || '-'}</p></div>
@@ -678,7 +674,7 @@
             } catch(e) { 
                 console.error("❌ 건축물대장 에러:", e); 
             }
-        }    
+        }
             
         // 🌟 초고속 병렬(Parallel) 처리 적용 함수
         async function fetchComplexTransactions() {
