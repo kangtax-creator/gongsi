@@ -1,1253 +1,2261 @@
 <!DOCTYPE html>
+
 <html lang="ko">
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>부동산 공시가격 & 단지 내 실거래(매매/임대/분양권) 통합 조회 | 강승완 세무사</title>
+
     
+
     <meta name="keywords" content="부동산 공시가격, 연도별 기준시가, 실거래가, 매매가, 전세가, 월세, 분양권, 상속세, 증여세, 양도소득세, 강승완 세무사, micro-tax">
+
     <!-- 카카오톡/SNS 공유용 미리보기 (Open Graph) -->
+
     <meta property="og:type" content="website">
+
     <meta property="og:title" content="부동산 가격 대량 추출 엔진">
+
     <meta property="og:description" content="여러 물건지를 한번에! - 부동산 공시가격(매매가격) 통합 조회 시스템">
+
     <meta property="og:image" content="thumbnail.jpg">
+
     <meta property="og:url" content="https://www.micro-tax.com">
+
     
+
     <script src="https://cdn.tailwindcss.com"></script>
+
     <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
 </head>
+
 <body class="bg-[#f3f4f6] font-sans min-h-screen">
 
+
+
     <!-- 헤더 -->
+
     <div class="bg-[#0f172a] text-white pt-12 pb-24 px-4">
+
         <div class="max-w-6xl mx-auto">
+
             <p class="text-indigo-400 font-bold text-sm mb-2 tracking-wider">세무/부동산 데이터 리서치 시스템</p>
+
             <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight mb-4">부동산 기준시가 & 실거래가(매매/임대/분양권) 종합 조회</h1>
+
             <p class="text-slate-400 text-sm md:text-base">
+
                 출처: 국토교통부 실거래가 시스템 및 공동주택가격 공시시스템 (VWORLD) · 자동 동기화
+
             </p>
+
             
+
             <a href="https://www.micro-tax.com" target="_blank" class="mt-8 border border-slate-700 bg-slate-800/50 hover:bg-slate-700 rounded-xl p-4 flex justify-between items-center max-w-md transition-all cursor-pointer group no-underline">
+
                 <div>
+
                     <p class="text-xs text-slate-400 mb-1 group-hover:text-slate-300">양도·상속·증여 및 부동산 절세 전문</p>
+
                     <p class="text-emerald-400 font-bold text-lg group-hover:text-emerald-300">강승완 세무사 상담 홈페이지 &rarr;</p>
+
                 </div>
+
                 <div class="text-slate-600 group-hover:text-slate-400 text-2xl font-bold transition-colors">🏢</div>
+
             </a>
+
         </div>
+
     </div>
+
+
 
     <!-- 메인 컨텐츠 영역 -->
+
     <div class="max-w-6xl mx-auto px-4 -mt-12 pb-12 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+
         
+
         <!-- 왼쪽: 주소 입력 영역 -->
+
         <div class="space-y-6">
+
             <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
+
                 <h2 class="text-lg font-extrabold text-slate-800 mb-4 flex items-center">
+
                     <span class="w-2 h-2 bg-indigo-600 rounded-full mr-2"></span> 대상 부동산 주소 설정
+
                 </h2>
+
                 
+
                 <div class="space-y-4">
+
                     <div>
+
                         <div class="flex flex-wrap gap-2">
+
                             <label class="cursor-pointer">
+
                                 <input type="radio" name="propType" value="공동주택" checked class="peer sr-only">
+
                                 <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">공동주택</div>
+
                             </label>
+
                             <label class="cursor-pointer">
+
                                 <input type="radio" name="propType" value="단독주택" class="peer sr-only">
+
                                 <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">단독주택</div>
+
                             </label>
+
                             <label class="cursor-pointer">
+
                                 <input type="radio" name="propType" value="토지" class="peer sr-only">
+
                                 <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">토지(지가)</div>
+
                             </label>
+
                         </div>
+
                     </div>
+
+
 
                     <div class="flex space-x-2">
+
                         <input type="text" id="address" readonly placeholder="주소 검색 버튼을 클릭하세요" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none">
+
                         <button onclick="execDaumPostcode()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap">주소 검색</button>
+
                     </div>
+
+
 
                     <div class="grid grid-cols-2 gap-4">
+
                         <input type="text" id="dong" placeholder="동 (선택) ex: 101" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none">
+
                         <input type="text" id="ho" placeholder="호 (선택) ex: 502" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none">
+
                     </div>
+
+
 
                     <button onclick="searchPriceHistory()" id="searchBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition-all">
+
                         기본 정보 및 공시가격 연혁 조회
+
                     </button>
+
                 </div>
+
             </div>
+
+
 
             <!-- 대량 조회 섹션 -->
+
             <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
+
                 <h2 class="text-lg font-extrabold text-slate-800 mb-2 flex items-center">
+
                     <span class="w-2 h-2 bg-emerald-600 rounded-full mr-2"></span> 엑셀 대량 조회 (Batch)
+
                 </h2>
+
                 
+
                 <div class="mb-4 bg-amber-50 border-l-4 border-amber-400 p-3 text-amber-800 text-xs rounded-r-lg leading-relaxed">
+
                     <p class="font-bold mb-1">📢 주소 입력 유의사항</p>
+
                     <ul class="list-disc ml-4 space-y-1">
+
                         <li><b>공동주택:</b> 주소 뒤에 쉼표(,) 후 동-호수 입력 <br><span class="text-amber-600/80 font-medium">(예: 서울 강남구 압구정로 309, 11-102)</span></li>
+
                         <li><b>단독/토지:</b> 도로명 또는 지번주소 입력 (동호수 제외) <br><span class="text-amber-600/80 font-medium">(예: 서울 종로구 세종대로 209 또는 세종로 1-58)</span></li>
+
                         <li><b>🌟 자동 분류:</b> 시스템이 주소 형태를 분석하여 스스로 물건 구분을 판별합니다. 단, 주소 형식이 불명확할 경우 전용 분류를 직접 선택해 주세요.</li>
+
                     </ul>
+
                 </div>
+
+
 
                 <div class="space-y-4">
+
                     <select id="bulkPropType" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none font-bold text-indigo-700">
+
                         <option value="auto">🌟 자동 분류 (아파트·주택·토지 통합검색)</option>
+
                         <option value="공동주택">공동주택 전용</option>
+
                         <option value="단독주택">단독/개별주택 전용</option>
+
                         <option value="토지">개별공시지가 전용</option>
+
                     </select>
 
+
+
                     <div class="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-8 text-center bg-slate-50/50 cursor-pointer relative group transition-colors">
+
                         <input type="file" id="excelFileInput" accept=".xlsx, .xls" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="handleBulkExcel(event)">
+
                         <div class="flex flex-col items-center justify-center space-y-3">
+
                             <div class="bg-emerald-100 text-emerald-600 p-4 rounded-full group-hover:scale-110 transition-transform">
+
                                 <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+
                                 </svg>
+
                             </div>
+
                             <div>
+
                                 <p class="text-sm font-bold text-slate-700 group-hover:text-emerald-600">클릭하거나 엑셀 파일을 여기에 드롭하세요</p>
+
                                 <p class="text-xs text-slate-400 mt-1">.xls, .xlsx 파일만 업로드 가능</p>
+
                             </div>
+
                         </div>
+
                     </div>
+
+
 
                     <div id="bulk-progress-container" class="hidden space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-100">
+
                         <div class="flex justify-between text-xs font-bold">
+
                             <span id="bulk-status-text" class="text-indigo-600">준비 중...</span>
+
                             <span id="bulk-percentage">0%</span>
+
                         </div>
+
                         <div class="w-full bg-slate-200 rounded-full h-1.5">
+
                             <div id="bulk-progress-bar" class="bg-indigo-600 h-1.5 rounded-full" style="width: 0%"></div>
+
                         </div>
+
                     </div>
+
                 </div>
+
             </div>
+
         </div>
+
+
 
         <!-- 오른쪽: 결과 출력 영역 -->
+
         <div class="lg:col-span-2 space-y-6">
+
             
-            <div class="flex space-x-1 sm:space-x-2 border-b border-slate-200 overflow-x-auto">
-                <button onclick="switchTab('gongsi')" id="tab-gongsi" class="px-4 sm:px-5 py-3 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 focus:outline-none whitespace-nowrap">
-                    1. 공시가격 연혁
+
+            <div class="flex space-x-2 border-b border-slate-200">
+
+                <button onclick="switchTab('gongsi')" id="tab-gongsi" class="px-5 py-3 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 focus:outline-none">
+
+                    1. 공시가격 연혁 데이터
+
                 </button>
-                <button onclick="switchTab('siga')" id="tab-siga" class="px-4 sm:px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap">
-                    2. 실거래가 조회
+
+                <button onclick="switchTab('siga')" id="tab-siga" class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none">
+
+                    2. 단지 내 매매/전월세 조회
+
                 </button>
-                <!-- 🌟 신규 추가된 3번 탭 -->
-                <button onclick="switchTab('daejang')" id="tab-daejang" class="px-4 sm:px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap">
-                    3. 건축물/토지 대장
-                </button>
+
             </div>
+
+
 
             <!-- 탭 1: 공시가격 컨텐츠 -->
-            <div id="content-gongsi" class="space-y-6 block">
+
+            <div id="content-gongsi" class="space-y-6">
+
                 <div id="result-container" class="hidden space-y-6">
-                    <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
-                        <h2 class="text-lg font-extrabold text-slate-800 mb-4">기준시가 변동 추이</h2>
-                        <div class="relative h-64 w-full">
-                            <canvas id="priceChart"></canvas>
-                        </div>
-                    </div>
 
                     <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
-                        <div class="flex justify-between items-center mb-6">
-                            <h2 class="text-lg font-extrabold text-slate-800">연도별 상세 고시 데이터</h2>
-                            <button onclick="downloadExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors">
-                                공시연혁 엑셀 다운로드
-                            </button>
+
+                        <h2 class="text-lg font-extrabold text-slate-800 mb-4">기준시가 변동 추이</h2>
+
+                        <div class="relative h-64 w-full">
+
+                            <canvas id="priceChart"></canvas>
+
                         </div>
-                        <div id="tag-container" class="flex flex-col gap-3"></div>
+
                     </div>
+
+
+
+                    <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
+
+                        <div class="flex justify-between items-center mb-6">
+
+                            <h2 class="text-lg font-extrabold text-slate-800">연도별 상세 고시 데이터</h2>
+
+                            <button onclick="downloadExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors">
+
+                                공시연혁 엑셀 다운로드
+
+                            </button>
+
+                        </div>
+
+                        <div id="tag-container" class="flex flex-col gap-3"></div>
+
+                    </div>
+
                 </div>
+
                 <div id="gongsi-placeholder" class="bg-white p-12 rounded-2xl text-center text-slate-400 border border-slate-200">
+
                     좌측 주소를 검색한 후 [기본 정보 및 공시가격 연혁 조회] 버튼을 눌러주세요.
+
                 </div>
+
             </div>
+
+
 
             <!-- 탭 2: 단지 내 실거래 종합 조회 -->
+
             <div id="content-siga" class="hidden space-y-6">
+
                 
+
                 <!-- 검색 조건 -->
+
                 <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200 space-y-4">
+
                     <h2 class="text-lg font-extrabold text-slate-800 flex items-center">
+
                         <span class="w-2 h-2 bg-indigo-600 rounded-full mr-2"></span> 선택 단지 실거래 종합 분석
+
                     </h2>
+
                     
+
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+
                         <div>
+
                             <label class="block text-xs font-bold text-slate-600 mb-1">조회 시작 월</label>
+
                             <input type="month" id="searchStartMonth" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none font-medium">
+
                         </div>
+
                         <div>
+
                             <label class="block text-xs font-bold text-slate-600 mb-1">조회 종료 월</label>
+
                             <input type="month" id="searchEndMonth" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none font-medium">
+
                         </div>
+
                         <div>
+
                             <label class="block text-xs font-bold text-slate-600 mb-1">기본 물건 유형</label>
+
                             <select id="sigaTargetType" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none font-bold text-slate-700">
+
                                 <option value="APT">아파트 (분양권 포함)</option>
+
                                 <option value="RH">연립다세대</option>
+
                                 <option value="OFFI">오피스텔</option>
+
                             </select>
+
                         </div>
+
                     </div>
+
+
 
                     <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+
                         <label class="block text-xs font-bold text-indigo-800 mb-1">💡 단지명 직접 검색 (선택사항 / 분양·입주권은 필수!)</label>
+
                         <p class="text-[11px] text-indigo-600 mb-2">지번 불일치로 거래가 안 나오거나, 지번이 아직 없는 <b class="text-indigo-800">분양권/입주권</b>을 조회하시려면 여기에 단지명(예: 올림픽파크포레온)을 입력하세요.</p>
+
                         <input type="text" id="searchKeyword" placeholder="단지명 키워드 입력..." class="w-full bg-white border border-indigo-200 rounded-lg px-4 py-2 text-sm font-bold focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all">
+
                     </div>
+
+
 
                     <div class="pt-2">
+
                         <button onclick="fetchComplexTransactions()" id="sigaBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition-all">
+
                             선택 기간 내 매매 / 전월세 / 분양·입주권 데이터 동시 스캔
+
                         </button>
+
                     </div>
+
                 </div>
+
+
 
                 <!-- 실거래가 그래프 -->
+
                 <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
+
                     <h2 class="text-base font-extrabold text-slate-800 mb-4">거래 금액(추이) 시각화 분석</h2>
+
                     <div class="relative h-64 w-full">
+
                         <canvas id="sigaChart"></canvas>
+
                     </div>
+
                 </div>
+
+
 
                 <!-- 실거래 결과 테이블 및 필터 -->
+
                 <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200 space-y-4">
+
                     <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
+
                         <h3 class="text-base font-extrabold text-slate-800">상세 거래 내역</h3>
+
                         
+
                         <!-- 스마트 필터 & 엑셀 버튼 -->
+
                         <div class="flex flex-wrap gap-2 items-center">
-                            <button onclick="filterTransactions('all')" id="btn-filter-all" class="bg-indigo-600 text-white text-xs px-3 py-1.5 rounded-full font-bold border border-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm focus:outline-none">총 0건</button>
-                            <button onclick="filterTransactions('trade')" id="btn-filter-trade" class="bg-white text-emerald-700 text-xs px-3 py-1.5 rounded-full font-bold border border-emerald-200 hover:bg-emerald-50 transition-colors shadow-sm focus:outline-none">매매 0건</button>
-                            <button onclick="filterTransactions('rent')" id="btn-filter-rent" class="bg-white text-amber-700 text-xs px-3 py-1.5 rounded-full font-bold border border-amber-200 hover:bg-amber-50 transition-colors shadow-sm focus:outline-none">전월세 0건</button>
-                            <button onclick="filterTransactions('silv')" id="btn-filter-silv" class="bg-white text-purple-700 text-xs px-3 py-1.5 rounded-full font-bold border border-purple-200 hover:bg-purple-50 transition-colors shadow-sm focus:outline-none">분양·입주권 0건</button>
+
+                            <button onclick="filterTransactions('all')" id="btn-filter-all" class="bg-indigo-600 text-white text-xs px-3 py-1.5 rounded-full font-bold border border-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm">총 0건</button>
+
+                            <button onclick="filterTransactions('trade')" id="btn-filter-trade" class="bg-white text-emerald-700 text-xs px-3 py-1.5 rounded-full font-bold border border-emerald-200 hover:bg-emerald-50 transition-colors shadow-sm">매매 0건</button>
+
+                            <button onclick="filterTransactions('rent')" id="btn-filter-rent" class="bg-white text-amber-700 text-xs px-3 py-1.5 rounded-full font-bold border border-amber-200 hover:bg-amber-50 transition-colors shadow-sm">전월세 0건</button>
+
+                            <button onclick="filterTransactions('silv')" id="btn-filter-silv" class="bg-white text-purple-700 text-xs px-3 py-1.5 rounded-full font-bold border border-purple-200 hover:bg-purple-50 transition-colors shadow-sm">분양·입주권 0건</button>
+
                             
-                            <button onclick="downloadSigaExcel()" class="ml-auto xl:ml-2 bg-slate-800 hover:bg-slate-700 text-white text-xs px-3 py-1.5 rounded-md font-bold shadow-sm transition-colors flex items-center focus:outline-none">
+
+                            <button onclick="downloadSigaExcel()" class="ml-auto xl:ml-2 bg-slate-800 hover:bg-slate-700 text-white text-xs px-3 py-1.5 rounded-md font-bold shadow-sm transition-colors flex items-center">
+
                                 <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+
                                 엑셀 다운로드
+
                             </button>
+
                         </div>
+
                     </div>
+
                     
+
                     <div class="overflow-x-auto max-h-[600px] border border-slate-100 rounded-lg">
+
                         <table class="w-full text-left border-collapse relative">
+
                             <thead class="sticky top-0 bg-slate-50 shadow-sm z-10">
+
                                 <tr class="border-b border-slate-200 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
+
                                     <th class="py-3 px-4 min-w-[90px]">계약일자</th>
+
                                     <th class="py-3 px-4">유형</th>
+
                                     <th class="py-3 px-4 min-w-[120px]">단지명</th>
+
                                     <th class="py-3 px-4">전용면적(㎡)</th>
+
                                     <th class="py-3 px-4">층수</th>
+
                                     <th class="py-3 px-4 text-right">거래금액(매매/보증금)</th>
+
                                     <th class="py-3 px-4 text-right">월세</th>
+
                                 </tr>
+
                             </thead>
+
                             <tbody id="siga-table-body" class="text-xs divide-y divide-slate-100 text-slate-700">
+
                                 <tr>
+
                                     <td colspan="7" class="py-12 text-center text-slate-400 font-medium">조회 기간을 설정하고 스캔 버튼을 눌러주세요. 해당 지번의 모든 거래가 조회됩니다.</td>
+
                                 </tr>
+
                             </tbody>
+
                         </table>
-                    </div>
-                </div>
-            </div>
 
-            <!-- 🌟 탭 3: 건축물/토지 대장 정보 -->
-            <div id="content-daejang" class="hidden space-y-6">
-                
-                <div id="daejang-container" class="hidden space-y-6">
-                    
-                    <!-- 건축물대장 카드 -->
-                    <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200 relative overflow-hidden">
-                        <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
-                        <h2 class="text-lg font-extrabold text-slate-800 mb-4 flex items-center">
-                            <svg class="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-                            건축물대장 정보 요약
-                        </h2>
-                        
-                        <div id="building-info-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <!-- JS에서 내용 동적으로 주입 -->
-                        </div>
                     </div>
 
-                    <!-- 토지대장 카드 -->
-                    <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200 relative overflow-hidden">
-                        <div class="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
-                        <h2 class="text-lg font-extrabold text-slate-800 mb-4 flex items-center">
-                            <svg class="w-5 h-5 text-emerald-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            토지(임야)대장 정보 요약
-                        </h2>
-                        
-                        <div id="land-info-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <!-- JS에서 내용 동적으로 주입 -->
-                        </div>
-                    </div>
                 </div>
 
-                <div id="daejang-placeholder" class="bg-white p-12 rounded-2xl text-center text-slate-400 border border-slate-200 flex flex-col items-center">
-                    <svg class="w-12 h-12 text-slate-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    <span>좌측 주소를 검색한 후 [기본 정보 및 공시가격 연혁 조회] 버튼을 누르시면,<br>여기에 대장 정보가 자동으로 연동되어 표시됩니다.</span>
-                </div>
             </div>
 
         </div>
+
     </div>
 
+
+
     <!-- 자바스크립트 영역 -->
+
     <script>
-        const VWORLD_KEY = "0F6B55A5-3A01-34CF-9C24-AF454E09531E"; // 세무사님의 VWORLD 키
-        const DATA_GO_KR_KEY = "83a79624397baf59da6f5daea52c9c0478aceccf3f20b707e26f9866c85f7b8f"; // 공공데이터포털 키
+
+        const VWORLD_KEY = "75321A8E-275D-32A6-82AC-B9D0D8E551FE";
+
+        const DATA_GO_KR_KEY = "83a79624397baf59da6f5daea52c9c0478aceccf3f20b707e26f9866c85f7b8f";
+
         const DOMAIN = window.location.origin; 
+
         const OFFICE_PHONE = "02-2679-0679"; 
+
         
+
         let priceChartInstance = null;
+
         let sigaChartInstance = null; 
+
         
+
         let currentExcelData = [];
+
         let currentPropType = "";
+
         let globalCurrentPnu = ""; 
+
         let globalComplexName = ""; 
-        let globalSigunguCode = "";
-        let globalBdongCode = "";
-        let globalBun = "";
-        let globalJi = "";
+
         
+
         let globalTransactions = [];
+
         let currentTransactionFilter = 'all';
+
+
 
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+
+
         document.addEventListener("DOMContentLoaded", () => {
+
             const today = new Date();
+
             let yyyy = today.getFullYear();
+
             let mm = String(today.getMonth() + 1).padStart(2, '0');
+
             document.getElementById('searchEndMonth').value = `${yyyy}-${mm}`;
+
             
+
             today.setMonth(today.getMonth() - 5); 
+
             yyyy = today.getFullYear();
+
             mm = String(today.getMonth() + 1).padStart(2, '0');
+
             document.getElementById('searchStartMonth').value = `${yyyy}-${mm}`;
+
             
+
             initSigaChart([]); 
+
         });
 
+
+
         function switchTab(tab) {
+
             const tabGongsi = document.getElementById('tab-gongsi');
+
             const tabSiga = document.getElementById('tab-siga');
-            const tabDaejang = document.getElementById('tab-daejang');
+
             const contentGongsi = document.getElementById('content-gongsi');
+
             const contentSiga = document.getElementById('content-siga');
-            const contentDaejang = document.getElementById('content-daejang');
 
-            // 탭 스타일 초기화
-            [tabGongsi, tabSiga, tabDaejang].forEach(t => {
-                t.className = "px-4 sm:px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap";
-            });
-            [contentGongsi, contentSiga, contentDaejang].forEach(c => c.classList.add('hidden'));
 
-            // 선택된 탭 활성화
+
             if (tab === 'gongsi') {
-                tabGongsi.className = "px-4 sm:px-5 py-3 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 focus:outline-none whitespace-nowrap";
+
+                tabGongsi.className = "px-5 py-3 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 focus:outline-none";
+
+                tabSiga.className = "px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none";
+
                 contentGongsi.classList.remove('hidden');
-            } else if (tab === 'siga') {
-                tabSiga.className = "px-4 sm:px-5 py-3 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 focus:outline-none whitespace-nowrap";
+
+                contentSiga.classList.add('hidden');
+
+            } else {
+
+                tabSiga.className = "px-5 py-3 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 focus:outline-none";
+
+                tabGongsi.className = "px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none";
+
                 contentSiga.classList.remove('hidden');
-            } else if (tab === 'daejang') {
-                tabDaejang.className = "px-4 sm:px-5 py-3 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 focus:outline-none whitespace-nowrap";
-                contentDaejang.classList.remove('hidden');
+
+                contentGongsi.classList.add('hidden');
+
             }
+
         }
+
+
 
         function execDaumPostcode() {
+
             new daum.Postcode({
+
                 oncomplete: function(data) {
+
                     document.getElementById('address').value = data.roadAddress || data.jibunAddress;
-                    // 대장 API 조회를 위해 행정동, 지번 분리 저장 (우편번호 서비스에서 파싱 가능시 유용)
-                    globalSigunguCode = data.sigunguCode || "";
-                    globalBdongCode = data.bcode || "";
+
                 }
+
             }).open();
+
         }
+
+
 
         function extractNum(text) {
+
             if (!text) return "";
+
             const nums = String(text).match(/\d+/g);
+
             return nums ? nums.join("") : String(text).trim();
+
         }
+
+
 
         function formatBaseDate(stdrMt) {
+
             if (!stdrMt) return "01월01일";
+
             const mt = String(stdrMt).padStart(2, '0');
+
             return `${mt}월01일`;
+
         }
+
+
 
         function formatPubDate(rawDate) {
+
             if (rawDate && String(rawDate).length >= 8) {
+
                 const str = String(rawDate).replace(/\D/g, '');
+
                 if(str.length >= 8) {
+
                     return `${str.substring(0,4)}-${str.substring(4,6)}-${str.substring(6,8)}`;
+
                 }
+
             }
+
             return "";
+
         }
+
+
 
         function fetchJSONP(url) {
+
             return new Promise((resolve, reject) => {
+
                 const callbackName = 'vworld_cb_' + Math.round(100000 * Math.random());
+
                 const script = document.createElement('script');
+
                 window[callbackName] = function(data) {
+
                     delete window[callbackName];
+
                     document.body.removeChild(script);
+
                     resolve(data);
+
                 };
+
                 const char = url.indexOf('?') > -1 ? '&' : '?';
+
                 script.src = url + char + 'callback=' + callbackName;
+
                 script.onerror = () => {
+
                     delete window[callbackName];
+
                     document.body.removeChild(script);
+
                     reject(new Error('서버 응답 지연'));
+
                 };
+
                 document.body.appendChild(script);
+
             });
+
         }
+
+
 
         async function getPnu(address) {
+
             const categories = ["parcel", "road"]; 
+
             for (let category of categories) {
+
                 const url = `https://api.vworld.kr/req/search?service=search&request=search&version=2.0&query=${encodeURIComponent(address)}&type=address&category=${category}&format=json&key=${VWORLD_KEY}&domain=${DOMAIN}`;
+
                 try {
+
                     const data = await fetchJSONP(url);
+
                     if (data.response && data.response.status === 'OK' && data.response.result.items.length > 0) {
+
                         return data.response.result.items[0].id; 
+
                     }
+
                 } catch (error) {}
+
             }
+
             return null;
+
         }
+
+
 
         function matchJibun(apiJibunStr, isSan, targetBon, targetBu) {
+
             if (!apiJibunStr) return false;
+
             const apiJibuns = String(apiJibunStr).replace(/\s/g, '').split(',');
+
             for (let j of apiJibuns) {
+
                 let isApiSan = j.includes("산");
+
                 let cleanJ = j.replace("산", ""); 
+
                 let parts = cleanJ.split('-'); 
+
                 
+
                 let aBon = parseInt(parts[0], 10);
+
                 let aBu = parts.length > 1 ? parseInt(parts[1], 10) : 0; 
+
                 
+
                 if (isSan === isApiSan && targetBon === aBon && targetBu === aBu) {
+
                     return true;
+
                 }
+
             }
+
             return false;
+
         }
+
+
 
         function parseHybridData(responseText) {
+
             let extractedItems = [];
+
             
+
             try {
+
                 const jsonObj = JSON.parse(responseText);
+
                 const findItems = (obj) => {
+
                     if (Array.isArray(obj)) return obj;
+
                     for (let key in obj) {
+
                         if (Array.isArray(obj[key])) return obj[key];
+
                         if (typeof obj[key] === 'object' && obj[key] !== null) {
+
                             let result = findItems(obj[key]);
+
                             if (result) return result;
+
                         }
+
                     }
+
                     return null;
+
                 };
+
                 let items = findItems(jsonObj) || (jsonObj.items ? jsonObj.items : [jsonObj]);
+
                 
+
                 if (Array.isArray(items) && items.length > 0) {
+
                     items.forEach(item => {
+
                         extractedItems.push({
+
                             dealAmount: String(item.dealAmount || item.거래금액 || item.deposit || item.보증금액 || "0"),
+
                             monthly: String(item.monthlyRent || item.월세금액 || "0"),
+
                             area: String(item.excluUseAr || item.전용면적 || "0"),
+
                             year: String(item.dealYear || item.년 || ""),
+
                             month: String(item.dealMonth || item.월 || ""),
+
                             day: String(item.dealDay || item.일 || "1").split('~')[0].trim(),
+
                             complexName: String(item.aptNm || item.mhouseNm || item.offiNm || item.단지명 || item.아파트 || item.연립다세대 || item.단지 || ""),
+
                             jibun: String(item.jibun || item.지번 || ""),
+
                             floor: String(item.floor || item.층 || "-"),
+
                             ownershipGbn: String(item.ownershipGbn || item.구분 || "")
+
                         });
+
                     });
+
                     return extractedItems;
+
                 }
-            } catch (e) {}
+
+            } catch (e) {
+
+                // XML fallback
+
+            }
+
+
 
             const parser = new DOMParser();
+
             const xmlDoc = parser.parseFromString(responseText, "text/xml");
+
             const xmlItems = xmlDoc.getElementsByTagName("item");
 
+
+
             const getText = (node, tagNames) => {
+
                 for (let tag of tagNames) {
+
                     let el = node.getElementsByTagName(tag)[0];
+
                     if (el && el.textContent) return el.textContent;
+
                 }
+
                 return "";
+
             };
 
+
+
             for (let item of xmlItems) {
+
                 extractedItems.push({
+
                     dealAmount: getText(item, ["dealAmount", "거래금액", "deposit", "보증금액"]) || "0",
+
                     monthly: getText(item, ["monthlyRent", "월세금액"]) || "0",
+
                     area: getText(item, ["excluUseAr", "전용면적"]) || "0",
+
                     year: getText(item, ["dealYear", "년"]),
+
                     month: getText(item, ["dealMonth", "월"]),
+
                     day: (getText(item, ["dealDay", "일"]) || "1").split('~')[0].trim(),
+
                     complexName: getText(item, ["aptNm", "mhouseNm", "offiNm", "단지명", "아파트", "연립다세대", "단지"]),
+
                     jibun: getText(item, ["jibun", "지번"]),
+
                     floor: getText(item, ["floor", "층"]) || "-",
+
                     ownershipGbn: getText(item, ["ownershipGbn", "구분"]) || ""
+
                 });
+
             }
+
             
+
             return extractedItems;
+
         }
 
-        // XML 전용 텍스트 추출 헬퍼 (대장조회용)
-        function getXmlText(node, tagName) {
-            let el = node.getElementsByTagName(tagName)[0];
-            return el && el.textContent ? el.textContent : "-";
-        }
 
-        // 🌟 탭 1 & 3 통합 호출 (공시가격 + 대장정보 동기화)
+
         async function searchPriceHistory() {
+
             const address = document.getElementById('address').value;
+
             const propType = document.querySelector('input[name="propType"]:checked').value;
+
             const dong = extractNum(document.getElementById('dong').value);
+
             const ho = extractNum(document.getElementById('ho').value);
+
             const btn = document.getElementById('searchBtn');
+
+
 
             if (!address) { alert("주소를 먼저 입력해 주세요."); return; }
 
-            btn.innerText = "공시가격 및 대장 정보 동기화 중...";
+
+
+            btn.innerText = "기준시가 데이터 동기화 중...";
+
             btn.disabled = true;
+
             document.getElementById('gongsi-placeholder').classList.add('hidden');
-            document.getElementById('daejang-placeholder').classList.add('hidden');
+
+
 
             try {
+
                 const pnu = await getPnu(address);
+
                 if (!pnu) {
+
                     alert("정확한 지번/도로명을 찾을 수 없습니다. (단, 지역구 연동을 위해 임시 저장합니다.)");
-                }
-                
-                globalCurrentPnu = pnu || "1168010100100010000"; 
-                globalComplexName = ""; 
-                
-                // PNU 파싱하여 시군구, 법정동, 번, 지 추출 (대장 API용)
-                if (globalCurrentPnu.length === 19) {
-                    globalSigunguCode = globalCurrentPnu.substring(0, 5);
-                    globalBdongCode = globalCurrentPnu.substring(5, 10);
-                    globalBun = globalCurrentPnu.substring(11, 15);
-                    globalJi = globalCurrentPnu.substring(15, 19);
+
                 }
 
-                // --- 1. 공시가격 조회 로직 ---
+                
+
+                globalCurrentPnu = pnu || "1168010100100010000"; 
+
+                globalComplexName = ""; 
+
+
+
                 let apiUrl = ""; let priceField = "";
+
                 if (propType === "공동주택") { apiUrl = "https://api.vworld.kr/ned/data/getApartHousingPriceAttr"; priceField = "pblntfPc"; }
+
                 else if (propType === "단독주택") { apiUrl = "https://api.vworld.kr/ned/data/getIndvdHousingPriceAttr"; priceField = "pblntfPc"; }
+
                 else { apiUrl = "https://api.vworld.kr/ned/data/getIndvdLandPriceAttr"; priceField = "pblntfPclnd"; }
+
+
 
                 const historyData = []; let pageNo = 1; let keepFetching = true;
 
+
+
                 while (keepFetching) {
+
                     const params = new URLSearchParams({ key: VWORLD_KEY, pnu: globalCurrentPnu, format: "json", numOfRows: "1000", pageNo: String(pageNo), domain: DOMAIN });
+
                     const data = await fetchJSONP(`${apiUrl}?${params.toString()}`);
+
                     let items = [];
+
                     for (const key in data) {
+
                         if (data[key] && data[key].field) {
+
                             items = Array.isArray(data[key].field) ? data[key].field : [data[key].field]; break;
+
                         }
+
                     }
+
                     if (items.length === 0) break;
 
+
+
                     for (const item of items) {
+
                         if (propType === "공동주택") {
+
                             const itemDong = extractNum(item.dongNm); const itemHo = extractNum(item.hoNm);
+
                             if (dong && itemDong !== dong) continue;
+
                             if (ho && itemHo !== ho) continue;
+
                             
+
                             if (item.aptNm && !globalComplexName) {
+
                                 globalComplexName = item.aptNm.trim();
+
                             }
+
                         }
+
                         const priceVal = item[priceField] || item.housePc || item.prc || 0;
+
                         const yearVal = item.stdrYear || item.pblntfYear;
+
                         const baseDate = formatBaseDate(item.stdrMt);
+
                         let pubDate = formatPubDate(item.pblntfDe || item.pblntfDate || item.pblntfYmd || item.pblntfDay);
 
+
+
                         if (priceVal && yearVal) {
+
                             const row = { year: `${yearVal}년`, baseDate: baseDate, pubDate: pubDate, price: parseInt(priceVal) };
+
                             if (propType === "공동주택") { row.area = item.prvuseAr || item.totArea || "N/A"; } 
+
                             else if (propType === "단독주택") {
+
                                 row.landTotal = item.ladRegstrAr || "N/A"; row.landCalc = item.calcPlotAr || row.landTotal;
+
                                 row.bldTotal = item.buldAllTotAr || "N/A"; row.bldCalc = item.calcBuldTotAr || row.bldTotal;
+
                             }
+
                             historyData.push(row);
+
                         }
+
                     }
+
                     if (items.length < 1000) keepFetching = false;
+
                     pageNo++;
+
                 }
+
+
 
                 if (historyData.length > 0) {
+
                     const uniqueData = []; const seen = new Set();
+
                     historyData.forEach(row => {
+
                         const key = `${row.year}_${row.price}_${row.baseDate}_${row.pubDate}`;
+
                         if (!seen.has(key)) { seen.add(key); uniqueData.push(row); }
+
                     });
+
                     uniqueData.sort((a, b) => parseInt(b.year) - parseInt(a.year));
+
                     currentExcelData = uniqueData; currentPropType = propType;
 
+
+
                     renderChart(uniqueData);
+
                     renderTags(propType, uniqueData);
+
                     document.getElementById('result-container').classList.remove('hidden');
+
+
+
                 } else {
+
                     document.getElementById('result-container').classList.add('hidden');
-                }
 
-                // --- 2. 대장 정보 조회 로직 (병렬 처리) ---
-                if (globalSigunguCode && globalBdongCode) {
-                    // 건축물대장 (공동주택이면 전유부, 아니면 표제부)
-                    let bldApi = propType === "공동주택" ? "getBrBasisOulnInfo" : "getBrTitleInfo"; 
-                    const bldUrl = `/api/bld/BldRgstService_V2/${bldApi}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&sigunguCd=${globalSigunguCode}&bjdongCd=${globalBdongCode}&bun=${globalBun}&ji=${globalJi}&numOfRows=100`;
-                    
-                    // 토지특성정보 (VWORLD)
-                    const landUrl = `https://api.vworld.kr/req/data?service=data&request=GetFeature&data=LT_C_UQ111&key=${VWORLD_KEY}&domain=${DOMAIN}&attrFilter=pnu:=:${globalCurrentPnu}`;
+                    alert("공시가 내역이 존재하지 않습니다.\n(단, 지역 코드는 정상적으로 획득했으므로 [2번 탭] 실거래가 분석은 정상 이용 가능합니다.)"); 
 
-                    try {
-                        const [bldRes, landRes] = await Promise.all([
-                            fetch(bldUrl).then(r => r.text()).catch(()=>null),
-                            fetchJSONP(landUrl).catch(()=>null)
-                        ]);
-
-                        renderDaejang(bldRes, landRes, propType, dong, ho);
-                    } catch(e) {
-                        console.error("대장 조회 중 오류", e);
-                        document.getElementById('daejang-container').classList.remove('hidden');
-                        document.getElementById('building-info-grid').innerHTML = `<div class="col-span-4 text-sm text-slate-500 py-4">대장 정보를 불러오지 못했습니다 (API 에러 또는 미준공 물건).</div>`;
-                        document.getElementById('land-info-grid').innerHTML = `<div class="col-span-4 text-sm text-slate-500 py-4">토지 정보를 불러오지 못했습니다.</div>`;
-                    }
                 }
 
             } catch (error) { 
+
                 console.error(error);
+
             } finally { 
+
                 btn.innerText = "기본 정보 및 공시가격 연혁 조회"; btn.disabled = false; 
+
             }
+
         }
 
-        // 🌟 대장 정보 화면 렌더링 함수
-        function renderDaejang(bldXmlText, landJson, propType, filterDong, filterHo) {
-            document.getElementById('daejang-container').classList.remove('hidden');
-            
-            const bldGrid = document.getElementById('building-info-grid');
-            const landGrid = document.getElementById('land-info-grid');
 
-            // 1. 건축물대장 파싱
-            bldGrid.innerHTML = "";
-            let bldFound = false;
-            
-            if (bldXmlText && !bldXmlText.includes("SERVICE KEY IS NOT REGISTERED ERROR")) {
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(bldXmlText, "text/xml");
-                const items = xmlDoc.getElementsByTagName("item");
 
-                let targetItem = items[0]; // 기본 첫번째 아이템
-                
-                // 공동주택 동/호수 필터링
-                if (propType === "공동주택" && (filterDong || filterHo) && items.length > 0) {
-                    for(let item of items) {
-                        let iDong = getXmlText(item, "dongNm").replace(/\D/g, '');
-                        let iHo = getXmlText(item, "hoNm").replace(/\D/g, '');
-                        if ((!filterDong || iDong === filterDong) && (!filterHo || iHo === filterHo)) {
-                            targetItem = item; break;
-                        }
-                    }
-                }
+        // 🌟 초고속 병렬(Parallel) 처리 적용 함수
 
-                if (targetItem) {
-                    bldFound = true;
-                    
-                    const makeCard = (label, value) => `
-                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 flex flex-col justify-center">
-                            <span class="text-[11px] text-slate-500 font-bold mb-1">${label}</span>
-                            <span class="text-sm font-extrabold text-slate-800 break-all">${value}</span>
-                        </div>
-                    `;
-
-                    let bldHtml = "";
-                    if (propType === "공동주택") { // 전유부 정보
-                        bldHtml += makeCard("동/호칭", `${getXmlText(targetItem, "dongNm")} / ${getXmlText(targetItem, "hoNm")}`);
-                        bldHtml += makeCard("전용면적(㎡)", getXmlText(targetItem, "area"));
-                        bldHtml += makeCard("주용도", getXmlText(targetItem, "mainPurpsCdNm"));
-                        bldHtml += makeCard("해당 층수", getXmlText(targetItem, "flrNoNm"));
-                    } else { // 표제부 정보
-                        bldHtml += makeCard("주구조", getXmlText(targetItem, "strctCdNm"));
-                        bldHtml += makeCard("주용도", getXmlText(targetItem, "mainPurpsCdNm"));
-                        bldHtml += makeCard("대지면적(㎡)", getXmlText(targetItem, "platArea"));
-                        bldHtml += makeCard("연면적(㎡)", getXmlText(targetItem, "totArea"));
-                        bldHtml += makeCard("건축면적(㎡)", getXmlText(targetItem, "archArea"));
-                        bldHtml += makeCard("층수(지상/지하)", `${getXmlText(targetItem, "grndFlrCnt")} / ${getXmlText(targetItem, "ugrndFlrCnt")}`);
-                    }
-                    // 공통
-                    bldHtml += makeCard("사용승인일", getXmlText(targetItem, "useAprvDay"));
-                    
-                    bldGrid.innerHTML = bldHtml;
-                }
-            }
-            
-            if (!bldFound) {
-                bldGrid.innerHTML = `<div class="col-span-4 text-sm text-amber-600 bg-amber-50 p-4 rounded-xl border border-amber-100">건축물대장 정보가 없습니다. (미준공 상태인 분양권이거나 지번 불일치일 수 있습니다.)</div>`;
-            }
-
-            // 2. 토지대장 파싱 (VWORLD 토지특성정보)
-            landGrid.innerHTML = "";
-            let landFound = false;
-
-            if (landJson && landJson.response && landJson.response.status === 'OK' && landJson.response.result.featureCollection.features.length > 0) {
-                const props = landJson.response.result.featureCollection.features[0].properties;
-                landFound = true;
-                
-                const makeCard = (label, value) => `
-                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 flex flex-col justify-center">
-                        <span class="text-[11px] text-slate-500 font-bold mb-1">${label}</span>
-                        <span class="text-sm font-extrabold text-slate-800 break-all">${value}</span>
-                    </div>
-                `;
-
-                let landHtml = "";
-                landHtml += makeCard("지목", props.lndcgr_code_nm || "-");
-                landHtml += makeCard("토지면적(㎡)", props.parea || "-");
-                landHtml += makeCard("용도지역", props.prpos_area_1_nm || "-");
-                landHtml += makeCard("토지이용상황", props.lnd_us_sttus_nm || "-");
-                landHtml += makeCard("지형(고저/형상)", `${props.tpgrph_hg_code_nm || "-"} / ${props.tpgrph_frm_code_nm || "-"}`);
-                landHtml += makeCard("도로접면", props.road_side_code_nm || "-");
-
-                landGrid.innerHTML = landHtml;
-            }
-
-            if (!landFound) {
-                landGrid.innerHTML = `<div class="col-span-4 text-sm text-slate-500 py-4">해당 필지의 토지 특성 정보를 찾을 수 없습니다.</div>`;
-            }
-        }
-
-        // 🌟 탭 2: 단지 내 매매/전월세/분양권 통합 스캔
         async function fetchComplexTransactions() {
+
             const startMonthInput = document.getElementById('searchStartMonth').value;
+
             const endMonthInput = document.getElementById('searchEndMonth').value;
+
             const targetType = document.getElementById('sigaTargetType').value;
+
             const keywordInput = document.getElementById('searchKeyword').value.replace(/\s/g, '').toLowerCase(); 
+
             
+
             const btn = document.getElementById('sigaBtn');
 
+
+
             if (!globalCurrentPnu) {
+
                 alert("먼저 좌측 주소창에서 주소를 검색하고 '공시가격 연혁 조회'를 눌러 지역 연동을 완료해 주세요.");
+
                 return;
-            }
-            if (!startMonthInput || !endMonthInput) {
-                alert("조회 시작 월과 종료 월을 모두 입력해 주세요.");
-                return;
+
             }
 
-            btn.innerText = "데이터 초고속 추출 중 (매매/전월세/분양권 동시 스캔)...";
+            if (!startMonthInput || !endMonthInput) {
+
+                alert("조회 시작 월과 종료 월을 모두 입력해 주세요.");
+
+                return;
+
+            }
+
+
+
+            // 🌟 UI: 병렬 스캔 안내 문구
+
+            btn.innerText = "데이터 초고속 병렬 추출 중 (전체 기간 동시 스캔)...";
+
             btn.disabled = true;
+
             globalTransactions = [];
 
+
+
             try {
+
                 const lawdCd = globalCurrentPnu.substring(0, 5);
+
                 const isSan = globalCurrentPnu.substring(10, 11) === '2';
+
                 const bon = parseInt(globalCurrentPnu.substring(11, 15), 10);
+
                 const bu = parseInt(globalCurrentPnu.substring(15, 19), 10);
+
                 
+
                 const startD = new Date(startMonthInput + "-01");
+
                 const endD = new Date(endMonthInput + "-01");
+
                 let targetMonths = [];
+
                 let currentD = new Date(startD);
+
                 
+
                 while (currentD <= endD) {
+
                     targetMonths.push(`${currentD.getFullYear()}${String(currentD.getMonth() + 1).padStart(2, '0')}`);
+
                     currentD.setMonth(currentD.getMonth() + 1);
+
                 }
+
+
 
                 let tradeApiPath = "RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade"; 
+
                 let rentApiPath = "RTMSDataSvcAptRent/getRTMSDataSvcAptRent";
+
                 let silvApiPath = "RTMSDataSvcSilvTrade/getRTMSDataSvcSilvTrade"; 
+
                 
+
                 let includeSilv = (targetType === "APT");
 
+
+
                 if (targetType === "RH") {
+
                     tradeApiPath = "RTMSDataSvcRhTrade/getRTMSDataSvcRhTrade";
+
                     rentApiPath = "RTMSDataSvcRhRent/getRTMSDataSvcRhRent";
+
                 } else if (targetType === "OFFI") {
+
                     tradeApiPath = "RTMSDataSvcOffiTrade/getRTMSDataSvcOffiTrade";
+
                     rentApiPath = "RTMSDataSvcOffiRent/getRTMSDataSvcOffiRent";
+
                 }
 
+
+
+                // 🌟 핵심 병렬 로직: 모든 달에 대한 fetch 작업을 배열로 생성
+
                 const fetchTasks = targetMonths.map(async (ym) => {
+
                     const tradeUrl = `/api/rtms/${tradeApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`;
+
                     const rentUrl = `/api/rent/${rentApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`;
+
                     const silvUrl = `/api/rtms/${silvApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`;
+
                     
+
                     try {
+
                         const fetchPromises = [
+
                             fetch(tradeUrl).then(res => ({res, dataType: 'trade'})).catch(e => ({res: null, dataType: 'trade'})),
+
                             fetch(rentUrl).then(res => ({res, dataType: 'rent'})).catch(e => ({res: null, dataType: 'rent'}))
+
                         ];
+
                         if (includeSilv) fetchPromises.push(fetch(silvUrl).then(res => ({res, dataType: 'silv'})).catch(e => ({res: null, dataType: 'silv'})));
+
                         
+
                         const responses = await Promise.all(fetchPromises);
 
+
+
                         const processResponse = async (resultObj) => {
+
                             if (!resultObj.res || !resultObj.res.ok) return;
+
                             const text = await resultObj.res.text();
+
                             if (text.includes("SERVICE KEY IS NOT REGISTERED ERROR")) return;
+
+
 
                             const parsedItems = parseHybridData(text);
 
+
+
                             parsedItems.forEach(item => {
+
                                 let isKeywordMatch = false;
+
                                 if (keywordInput && item.complexName) {
+
                                     let cleanApi = item.complexName.replace(/\s/g, '').toLowerCase();
+
                                     if (cleanApi.includes(keywordInput)) isKeywordMatch = true;
+
                                 }
+
+
 
                                 let isJibunValid = matchJibun(item.jibun, isSan, bon, bu);
+
                                 let isNameValid = false;
+
                                 
+
                                 if (globalComplexName && item.complexName) {
+
                                     let cleanGlobal = globalComplexName.replace(/\s/g, '').toLowerCase();
+
                                     let cleanApi = item.complexName.replace(/\s/g, '').toLowerCase();
+
                                     if (cleanApi.includes(cleanGlobal) || cleanGlobal.includes(cleanApi)) {
+
                                         isNameValid = true;
+
                                     }
+
                                 }
+
+
 
                                 if (resultObj.dataType === 'silv') {
+
                                     if (!isKeywordMatch && !isNameValid) return; 
+
                                 } else {
+
                                     if (keywordInput) {
+
                                         if (!isKeywordMatch) return;
+
                                     } else {
+
                                         if (!isJibunValid && !isNameValid) return;
+
                                     }
+
                                 }
+
+
 
                                 let parsedAmount = parseInt(item.dealAmount.replace(/,/g, '').trim()) || 0;
+
                                 let parsedMonthly = parseInt(item.monthly.replace(/,/g, '').trim()) || 0;
 
+
+
                                 let finalType = '매매';
+
                                 if (resultObj.dataType === 'rent') {
+
                                     finalType = parsedMonthly > 0 ? '월세' : '전세';
+
                                 } else if (resultObj.dataType === 'silv') {
+
                                     finalType = item.ownershipGbn === '입' ? '입주권' : '분양권';
+
                                 }
 
+
+
                                 globalTransactions.push({
+
                                     type: finalType,
+
                                     name: item.complexName.trim() || "-",
+
                                     date: `${item.year}-${String(item.month).padStart(2, '0')}-${String(item.day).padStart(2, '0')}`,
+
                                     floor: item.floor,
+
                                     area: parseFloat(item.area) || 0,
+
                                     amount: parsedAmount * 10000,
+
                                     monthlyRent: parsedMonthly * 10000
+
                                 });
+
                             });
+
                         };
+
+
+
+                        // 각 월별 API 데이터 파싱
 
                         await Promise.all(responses.map(resObj => processResponse(resObj)));
 
+
+
                     } catch (e) {
+
                         console.error(`${ym}월 파싱 중 에러:`, e);
+
                     }
+
                 });
+
+
+
+                // 🌟 한 번에 수십 개의 달의 API를 전부 동시에 쏘고 다 끝날 때까지 대기
 
                 await Promise.all(fetchTasks);
 
+
+
                 globalTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
                 updateFilterCounts();
+
                 filterTransactions('all');
 
+
+
             } catch (err) {
+
                 alert("조회 중 오류가 발생했습니다.");
+
                 console.error(err);
+
             } finally {
+
                 btn.innerText = "선택 기간 내 매매 / 전월세 / 분양·입주권 데이터 동시 스캔";
+
                 btn.disabled = false;
+
             }
+
         }
+
+
 
         function updateFilterCounts() {
+
             let tradeCount = globalTransactions.filter(r => r.type === '매매').length;
+
             let rentCount = globalTransactions.filter(r => r.type === '전세' || r.type === '월세').length;
+
             let silvCount = globalTransactions.filter(r => r.type === '분양권' || r.type === '입주권').length;
+
             
+
             document.getElementById('btn-filter-all').innerText = `총 ${globalTransactions.length}건`;
+
             document.getElementById('btn-filter-trade').innerText = `매매 ${tradeCount}건`;
+
             document.getElementById('btn-filter-rent').innerText = `전월세 ${rentCount}건`;
+
             document.getElementById('btn-filter-silv').innerText = `분양·입주권 ${silvCount}건`;
+
         }
+
+
 
         function filterTransactions(type) {
+
             currentTransactionFilter = type;
+
             
+
             const btnAll = document.getElementById('btn-filter-all');
+
             const btnTrade = document.getElementById('btn-filter-trade');
+
             const btnRent = document.getElementById('btn-filter-rent');
+
             const btnSilv = document.getElementById('btn-filter-silv');
 
+
+
             btnAll.className = "bg-white text-indigo-700 text-xs px-3 py-1.5 rounded-full font-bold border border-indigo-200 hover:bg-indigo-50 transition-colors shadow-sm focus:outline-none";
+
             btnTrade.className = "bg-white text-emerald-700 text-xs px-3 py-1.5 rounded-full font-bold border border-emerald-200 hover:bg-emerald-50 transition-colors shadow-sm focus:outline-none";
+
             btnRent.className = "bg-white text-amber-700 text-xs px-3 py-1.5 rounded-full font-bold border border-amber-200 hover:bg-amber-50 transition-colors shadow-sm focus:outline-none";
+
             btnSilv.className = "bg-white text-purple-700 text-xs px-3 py-1.5 rounded-full font-bold border border-purple-200 hover:bg-purple-50 transition-colors shadow-sm focus:outline-none";
 
+
+
             if (type === 'all') btnAll.className = "bg-indigo-600 text-white text-xs px-3 py-1.5 rounded-full font-bold border border-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm focus:outline-none";
+
             else if (type === 'trade') btnTrade.className = "bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-full font-bold border border-emerald-600 hover:bg-emerald-700 transition-colors shadow-sm focus:outline-none";
+
             else if (type === 'rent') btnRent.className = "bg-amber-500 text-white text-xs px-3 py-1.5 rounded-full font-bold border border-amber-500 hover:bg-amber-600 transition-colors shadow-sm focus:outline-none";
+
             else if (type === 'silv') btnSilv.className = "bg-purple-600 text-white text-xs px-3 py-1.5 rounded-full font-bold border border-purple-600 hover:bg-purple-700 transition-colors shadow-sm focus:outline-none";
 
+
+
             let filtered = globalTransactions;
+
             if (type === 'trade') filtered = globalTransactions.filter(r => r.type === '매매');
+
             else if (type === 'rent') filtered = globalTransactions.filter(r => r.type === '전세' || r.type === '월세');
+
             else if (type === 'silv') filtered = globalTransactions.filter(r => r.type === '분양권' || r.type === '입주권');
 
+
+
             const tbody = document.getElementById('siga-table-body');
+
             tbody.innerHTML = "";
 
+
+
             if (filtered.length === 0) {
+
                 tbody.innerHTML = `<tr><td colspan="7" class="py-12 text-center text-slate-500 font-medium">검색된 실거래가 내역이 없습니다.<br><br><span class='text-sm bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg'>💡 [단지명 직접 검색] 칸에 키워드를 정확히 입력해 보세요.</span></td></tr>`;
+
             } else {
+
                 filtered.forEach((row) => {
+
                     let typeBadge = '';
+
                     if (row.type === '매매') typeBadge = '<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded">매매</span>';
+
                     else if (row.type === '전세') typeBadge = '<span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded">전세</span>';
+
                     else if (row.type === '월세') typeBadge = '<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded">월세</span>';
+
                     else if (row.type === '분양권') typeBadge = '<span class="bg-purple-100 text-purple-800 text-[10px] font-bold px-2 py-0.5 rounded">분양권</span>';
+
                     else typeBadge = '<span class="bg-fuchsia-100 text-fuchsia-800 text-[10px] font-bold px-2 py-0.5 rounded">입주권</span>';
 
+
+
                     let amountText = row.amount.toLocaleString() + '원';
+
                     let monthlyText = row.monthlyRent > 0 ? row.monthlyRent.toLocaleString() + '원' : '-';
 
+
+
                     tbody.innerHTML += `
+
                         <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0">
+
                             <td class="py-3 px-4 font-medium text-slate-700">${row.date}</td>
+
                             <td class="py-3 px-4">${typeBadge}</td>
+
                             <td class="py-3 px-4 text-slate-600 font-medium truncate max-w-[120px]" title="${row.name}">${row.name}</td>
+
                             <td class="py-3 px-4 font-mono font-bold text-slate-700">${row.area.toFixed(2)}㎡</td>
+
                             <td class="py-3 px-4 text-slate-500">${row.floor}층</td>
+
                             <td class="py-3 px-4 font-extrabold text-right ${row.type === '매매' || row.type.includes('권') ? 'text-emerald-600' : 'text-slate-800'}">${amountText}</td>
+
                             <td class="py-3 px-4 font-bold text-amber-600 text-right">${monthlyText}</td>
+
                         </tr>`;
+
                 });
+
             }
+
+
 
             updateSigaChart(filtered, type);
+
         }
+
+
 
         function initSigaChart(data) {
+
             const ctx = document.getElementById('sigaChart').getContext('2d');
+
             sigaChartInstance = new Chart(ctx, {
+
                 type: 'line',
+
                 data: { labels: [], datasets: [] },
+
                 options: {
+
                     responsive: true,
+
                     maintainAspectRatio: false,
+
                     plugins: { 
+
                         tooltip: { mode: 'index', intersect: false },
+
                         legend: { display: true, position: 'top', labels: { usePointStyle: true, boxWidth: 8 } }
+
                     },
+
                     interaction: { mode: 'nearest', axis: 'x', intersect: false }
+
                 }
+
             });
+
         }
+
+
 
         function updateSigaChart(filteredData, viewType) {
+
             if (!sigaChartInstance) return;
+
             
+
             const chartData = [...filteredData].reverse();
+
             sigaChartInstance.data.labels = chartData.map(d => d.date);
 
+
+
             let datasets = [];
+
             
+
             if (viewType === 'all') {
+
+                // 🌟 월세 왜곡 방지: 월세(monthlyRent > 0)가 아닌 순수 전세 거래만 추출
+
                 const tradeValues = chartData.map(d => (d.type === '매매') ? d.amount / 10000 : null);
+
                 const rentOnlyValues = chartData.map(d => (d.type === '전세' && d.monthlyRent === 0) ? d.amount / 10000 : null);
+
                 const silvValues = chartData.map(d => (d.type === '분양권' || d.type === '입주권') ? d.amount / 10000 : null);
 
+
+
                 if (tradeValues.some(v => v !== null)) {
+
                     datasets.push({
+
                         label: '매매가 (만원)',
+
                         data: tradeValues,
+
                         borderColor: '#10b981',
+
                         backgroundColor: 'rgba(16, 185, 129, 0.1)',
+
                         tension: 0.2, fill: false, pointRadius: 4, spanGaps: true
+
                     });
+
                 }
+
                 if (rentOnlyValues.some(v => v !== null)) {
+
                     datasets.push({
+
                         label: '순수 전세 보증금 (만원)',
+
                         data: rentOnlyValues,
+
                         borderColor: '#f59e0b',
+
                         backgroundColor: 'rgba(245, 158, 11, 0.1)',
+
                         tension: 0.2, fill: false, pointRadius: 4, spanGaps: true
+
                     });
+
                 }
+
                 if (silvValues.some(v => v !== null)) {
+
                     datasets.push({
+
                         label: '분양·입주권 (만원)',
+
                         data: silvValues,
+
                         borderColor: '#9333ea',
+
                         backgroundColor: 'rgba(147, 51, 234, 0.1)',
+
                         tension: 0.2, fill: false, pointRadius: 4, spanGaps: true
+
                     });
+
                 }
+
             } else if (viewType === 'trade') {
+
                 datasets.push({
+
                     label: '매매가 (만원)',
+
                     data: chartData.map(d => d.amount / 10000),
+
                     borderColor: '#10b981',
+
                     backgroundColor: 'rgba(16, 185, 129, 0.1)',
+
                     tension: 0.2, fill: true, pointRadius: 4
+
                 });
+
             } else if (viewType === 'rent') {
+
+                // 🌟 월세 왜곡 방지: 필터 뷰에서도 월세 제외하고 순수 전세만 표시
+
                 datasets.push({
+
                     label: '순수 전세 보증금 (만원)',
+
                     data: chartData.map(d => (d.type === '전세' && d.monthlyRent === 0) ? d.amount / 10000 : null),
+
                     borderColor: '#f59e0b',
+
                     backgroundColor: 'rgba(245, 158, 11, 0.1)',
+
                     tension: 0.2, fill: true, pointRadius: 4, spanGaps: true
+
                 });
+
             } else if (viewType === 'silv') {
+
                 datasets.push({
+
                     label: '분양·입주권 프리미엄 포함가 (만원)',
+
                     data: chartData.map(d => d.amount / 10000),
+
                     borderColor: '#9333ea',
+
                     backgroundColor: 'rgba(147, 51, 234, 0.1)',
+
                     tension: 0.2, fill: true, pointRadius: 4
+
                 });
+
             }
+
+
 
             sigaChartInstance.data.datasets = datasets;
+
             sigaChartInstance.update();
+
         }
+
+
 
         function downloadSigaExcel() {
+
             if (globalTransactions.length === 0) {
+
                 alert("다운로드할 실거래가 데이터가 없습니다.");
+
                 return;
+
             }
+
             const fullAddress = document.getElementById('address').value;
+
             
+
             let filtered = globalTransactions;
+
             if (currentTransactionFilter === 'trade') filtered = globalTransactions.filter(r => r.type === '매매');
+
             else if (currentTransactionFilter === 'rent') filtered = globalTransactions.filter(r => r.type === '전세' || r.type === '월세');
+
             else if (currentTransactionFilter === 'silv') filtered = globalTransactions.filter(r => r.type === '분양권' || r.type === '입주권');
 
+
+
             const formattedData = filtered.map(row => {
+
                 return {
+
                     "대상 주소": fullAddress,
+
                     "계약일자": row.date,
+
                     "유형": row.type,
+
                     "단지명": row.name,
+
                     "전용면적(㎡)": row.area,
+
                     "층수": row.floor,
+
                     "거래금액(매매/보증금)": row.amount,
+
                     "월세금액": row.monthlyRent > 0 ? row.monthlyRent : "-"
+
                 };
+
             });
+
             
+
             formattedData.push({});
+
             formattedData.push({ "대상 주소": "💡 양도세/상속세/증여세 및 부동산 절세 상담:", "계약일자": "강승완 세무사", "유형": OFFICE_PHONE, "단지명": "www.micro-tax.com" });
 
+
+
             const worksheet = XLSX.utils.json_to_sheet(formattedData);
+
             const workbook = XLSX.utils.book_new();
+
             XLSX.utils.book_append_sheet(workbook, worksheet, "단지 실거래 내역");
+
             XLSX.writeFile(workbook, "강승완세무사_단지_실거래가.xlsx");
+
         }
+
+
+
+        function renderChart(data) {
+
+            const ctx = document.getElementById('priceChart').getContext('2d');
+
+            if (priceChartInstance) { priceChartInstance.destroy(); }
+
+            const chartData = [...data].reverse();
+
+            priceChartInstance = new Chart(ctx, {
+
+                type: 'line',
+
+                data: {
+
+                    labels: chartData.map(row => row.year),
+
+                    datasets: [{
+
+                        label: '고시 기준시가', data: chartData.map(row => row.price),
+
+                        borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.05)',
+
+                        borderWidth: 3, pointBackgroundColor: '#ffffff', pointBorderColor: '#4f46e5', pointRadius: 4, fill: true, tension: 0.2
+
+                    }]
+
+                },
+
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+
+            });
+
+        }
+
+
+
+        function renderTags(propType, data) {
+
+            const container = document.getElementById('tag-container');
+
+            container.innerHTML = "";
+
+            data.forEach(row => {
+
+                let extraInfo = "";
+
+                if (propType === "공동주택") { extraInfo = `전용면적: ${row.area}㎡`; } 
+
+                else if (propType === "단독주택") { extraInfo = `대지(전체/산정): ${row.landTotal}/${row.landCalc}㎡ │ 건물(전체/산정): ${row.bldTotal}/${row.bldCalc}㎡`; }
+
+
+
+                let dateDisplay = `<span class="text-xs text-slate-500 ml-3 pl-3 border-l border-slate-300 font-medium">기준일: ${row.baseDate}</span>`;
+
+                if(row.pubDate) { dateDisplay += `<span class="text-xs text-slate-500 ml-2 font-medium">/ 공시일: ${row.pubDate}</span>`; }
+
+                
+
+                container.innerHTML += `
+
+                    <div class="flex flex-col bg-white border border-slate-200 rounded-xl px-5 py-4 shadow-sm">
+
+                        <div class="flex items-center mb-1">
+
+                            <span class="font-extrabold text-slate-800 text-sm mr-3">${row.year}</span>
+
+                            <span class="text-indigo-600 font-bold text-base">${row.price.toLocaleString()}<span class="text-sm font-medium ml-1 text-indigo-400">원</span></span>
+
+                            ${dateDisplay}
+
+                        </div>
+
+                        ${extraInfo ? `<span class="text-xs text-slate-400 font-normal mt-1">${extraInfo}</span>` : ""}
+
+                    </div>`;
+
+            });
+
+        }
+
+
+
+        function downloadExcel() {
+
+            if (currentExcelData.length === 0) return;
+
+            const fullAddress = document.getElementById('address').value;
+
+            const formattedData = currentExcelData.map(row => {
+
+                let excelRow = { "대상 주소": fullAddress, "가격기준연도": row.year, "기준일자": row.baseDate, "공시일자": row.pubDate, "기준시가(원)": row.price };
+
+                if (currentPropType === "공동주택") { excelRow["전용면적(㎡)"] = row.area; } 
+
+                else if (currentPropType === "단독주택") {
+
+                    excelRow["대지면적_전체(㎡)"] = row.landTotal; excelRow["대지면적_산정(㎡)"] = row.landCalc;
+
+                    excelRow["건물연면적_전체(㎡)"] = row.bldTotal; excelRow["건물연면적_산정(㎡)"] = row.bldCalc;
+
+                }
+
+                return excelRow;
+
+            });
+
+            formattedData.push({});
+
+            formattedData.push({ "대상 주소": "💡 양도세/상속세/증여세 및 부동산 절세 상담:", "가격기준연도": "강승완 세무사", "기준일자": OFFICE_PHONE, "공시일자": "www.micro-tax.com" });
+
+
+
+            const worksheet = XLSX.utils.json_to_sheet(formattedData);
+
+            const workbook = XLSX.utils.book_new();
+
+            XLSX.utils.book_append_sheet(workbook, worksheet, "기준시가 연혁");
+
+            XLSX.writeFile(workbook, "강승완세무사_기준시가_연혁.xlsx");
+
+        }
+
+
 
         async function handleBulkExcel(event) {
+
             const file = event.target.files[0];
+
             if (!file) return;
 
+
+
             const propType = document.getElementById('bulkPropType').value;
+
             const progressContainer = document.getElementById('bulk-progress-container');
+
             const progressBar = document.getElementById('bulk-progress-bar');
+
             const statusText = document.getElementById('bulk-status-text');
+
             const percentageText = document.getElementById('bulk-percentage');
 
+
+
             progressContainer.classList.remove('hidden');
+
             statusText.innerText = "데이터 스마트 분석 중...";
+
             progressBar.style.width = "0%";
+
             percentageText.innerText = "0%";
 
+
+
             const reader = new FileReader();
+
             reader.onload = async function(e) {
+
                 try {
+
                     const data = new Uint8Array(e.target.result);
+
                     const workbook = XLSX.read(data, { type: 'array' });
+
                     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+
                     const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
                     
+
                     const validRows = [];
 
+
+
                     for (let i = 0; i < rows.length; i++) {
+
                         if (i === 0 && (rows[i][0] === "주소" || rows[i][0] === "대상 주소")) continue;
+
                         let rawAddr = rows[i][0] ? String(rows[i][0]).trim() : "";
+
                         if (!rawAddr) continue;
+
                         let dong = rows[i][1] ? String(rows[i][1]).replace(/\D/g, '') : "";
+
                         let ho = rows[i][2] ? String(rows[i][2]).replace(/\D/g, '') : "";
+
                         let baseAddr = rawAddr;
+
                         let hasDong = rawAddr.includes("동");
+
                         let hasHo = rawAddr.includes("호");
+
                         let isRoadAddr = rawAddr.includes("로") || rawAddr.includes("길");
 
+
+
                         if ((propType === "auto" || propType === "공동주택") && !dong && !ho) {
+
                             if (isRoadAddr || hasDong || hasHo) {
+
                                 let matchCommaDongHo = rawAddr.match(/,\s*(\d+)\s*(?:동|-)\s*(\d+)\s*(?:호)?\s*$/);
+
                                 let matchCommaHoOnly = rawAddr.match(/,\s*(?:제)?(\d+)\s*(?:호)?\s*$/);
+
                                 let matchTextDongHo = rawAddr.match(/(\d+)\s*동\s*(\d+)\s*(?:호)?\s*$/);
+
                                 let matchTextHoOnly = rawAddr.match(/\s+(?:제)?(\d+)\s*호\s*$/);
+
                                 if (matchCommaDongHo) { dong = matchCommaDongHo[1]; ho = matchCommaDongHo[2]; baseAddr = rawAddr.split(',')[0].trim(); }
+
                                 else if (matchCommaHoOnly) { ho = matchCommaHoOnly[1]; baseAddr = rawAddr.split(',')[0].trim(); }
+
                                 else if (matchTextDongHo) { dong = matchTextDongHo[1]; ho = matchTextDongHo[2]; baseAddr = rawAddr.replace(matchTextDongHo[0], '').trim(); }
+
                                 else if (matchTextHoOnly) { ho = matchTextHoOnly[1]; baseAddr = rawAddr.replace(matchTextHoOnly[0], '').trim(); }
+
                             }
+
                         }
+
                         validRows.push({ rawAddr, baseAddr, dong, ho });
+
                     }
+
+
 
                     if (validRows.length === 0) {
+
                         alert("유효한 주소를 식별하지 못했습니다.");
+
                         progressContainer.classList.add('hidden');
+
                         return;
+
                     }
+
+
 
                     const totalCount = validRows.length;
+
                     const finalBulkRows = [];
+
                     const typesToTry = propType === "auto" ? ["공동주택", "단독주택", "토지"] : [propType];
 
+
+
                     for (let i = 0; i < totalCount; i++) {
+
                         const { rawAddr, baseAddr, dong, ho } = validRows[i];
+
                         const percent = Math.round(((i + 1) / totalCount) * 100);
+
                         statusText.innerText = `대량 전수 스캔 중... (${i + 1}/${totalCount})`;
+
                         progressBar.style.width = `${percent}%`;
+
                         percentageText.innerText = `${percent}%`;
 
+
+
                         const pnu = await getPnu(baseAddr);
+
                         if (!pnu) {
+
                             finalBulkRows.push({ "대상 주소": rawAddr, "물건 구분": "오류", "가격기준연도": "오류", "기준시가(원)": "주소 인식 불가능" });
+
                             continue;
+
                         }
+
+
 
                         let bestHistory = [];
+
                         let maxYearBest = 0;
+
                         let finalPropType = "없음";
 
+
+
                         for (let probeType of typesToTry) {
+
                             let apiUrl = ""; let priceField = "";
+
                             if (probeType === "공동주택") { apiUrl = "https://api.vworld.kr/ned/data/getApartHousingPriceAttr"; priceField = "pblntfPc"; }
+
                             else if (probeType === "단독주택") { apiUrl = "https://api.vworld.kr/ned/data/getIndvdHousingPriceAttr"; priceField = "pblntfPc"; }
+
                             else { apiUrl = "https://api.vworld.kr/ned/data/getIndvdLandPriceAttr"; priceField = "pblntfPclnd"; }
 
+
+
                             try {
+
                                 let pageNo = 1; let keepFetching = true;
+
                                 const seenKeys = new Set(); const tempHistory = [];
 
+
+
                                 while (keepFetching) {
+
                                     const params = new URLSearchParams({ key: VWORLD_KEY, pnu: pnu, format: "json", numOfRows: "1000", pageNo: String(pageNo), domain: DOMAIN });
+
                                     const resData = await fetchJSONP(`${apiUrl}?${params.toString()}`);
+
                                     let items = [];
+
                                     for (const key in resData) {
+
                                         if (resData[key] && resData[key].field) {
+
                                             items = Array.isArray(resData[key].field) ? resData[key].field : [resData[key].field];
+
                                             break;
+
                                         }
+
                                     }
+
                                     if (items.length === 0) break;
 
+
+
                                     for (const item of items) {
+
                                         if (probeType === "공동주택") {
+
                                             const itemDong = extractNum(item.dongNm);
+
                                             const itemHo = extractNum(item.hoNm);
+
                                             if (dong && itemDong !== dong) continue;
+
                                             if (ho && itemHo !== ho) continue;
+
                                         }
+
                                         const priceVal = item[priceField] || item.housePc || item.prc || 0;
+
                                         const yearVal = item.stdrYear || item.pblntfYear;
+
                                         const baseDate = formatBaseDate(item.stdrMt);
+
                                         let pubDate = formatPubDate(item.pblntfDe || item.pblntfDate || item.pblntfYmd || item.pblntfDay);
 
+
+
                                         if (priceVal && yearVal) {
+
                                             const uniqueKey = `${yearVal}_${priceVal}_${baseDate}_${pubDate}`;
+
                                             if (!seenKeys.has(uniqueKey)) {
+
                                                 seenKeys.add(uniqueKey);
+
                                                 tempHistory.push({
+
                                                     "대상 주소": rawAddr, "물건 구분": probeType, "가격기준연도": `${yearVal}년`, "기준일자": baseDate, "공시일자": pubDate, "기준시가(원)": parseInt(priceVal),
+
                                                     "전용면적(㎡)": probeType === "공동주택" ? (item.prvuseAr || item.totArea || "-") : "-",
+
                                                     "대지면적_전체(㎡)": probeType === "단독주택" ? (item.ladRegstrAr || item.totPlotAr || "-") : "-",
+
                                                     "대지면적_산정(㎡)": probeType === "단독주택" ? (item.calcPlotAr || item.ladRegstrAr || "-") : "-",
+
                                                     "건물연면적_전체(㎡)": probeType === "단독주택" ? (item.buldAllTotAr || "-") : "-",
+
                                                     "건물연면적_산정(㎡)": probeType === "단독주택" ? (item.calcBuldTotAr || item.buldAllTotAr || "-") : "-"
+
                                                 });
+
                                             }
+
                                         }
+
                                     }
+
                                     if (items.length < 1000) keepFetching = false;
+
                                     pageNo++;
+
                                 }
+
                                 if (tempHistory.length > 0) {
+
                                     let maxYearThisType = Math.max(...tempHistory.map(h => parseInt(h["가격기준연도"])));
+
                                     if (maxYearThisType > maxYearBest) {
+
                                         maxYearBest = maxYearThisType;
+
                                         tempHistory.sort((a, b) => parseInt(b["가격기준연도"]) - parseInt(a["가격기준연도"]));
+
                                         bestHistory = tempHistory; finalPropType = probeType;
+
                                     }
+
                                     if (maxYearThisType >= 2025) break;
+
                                 }
+
                             } catch (err) { console.error(err); }
+
                         }
+
                         if (bestHistory.length > 0) {
+
                             bestHistory = bestHistory.map(row => ({...row, "물건 구분": finalPropType}));
+
                             finalBulkRows.push(...bestHistory);
+
                         } else {
+
                             finalBulkRows.push({ "대상 주소": rawAddr, "물건 구분": "없음", "가격기준연도": "정보 없음" });
+
                         }
+
                         
+
+                        // 🌟 대량 조회 스캔 속도 초고속화 유지
+
                         await sleep(30); 
+
                     }
 
+
+
                     finalBulkRows.push({});
+
                     finalBulkRows.push({ "대상 주소": "💡 양도세/상속세/증여세 및 부동산 절세 상담:", "물건 구분": "강승완 세무사", "가격기준연도": OFFICE_PHONE, "기준일자": "www.micro-tax.com" });
 
+
+
                     const bulkWorksheet = XLSX.utils.json_to_sheet(finalBulkRows);
+
                     const bulkWorkbook = XLSX.utils.book_new();
+
                     XLSX.utils.book_append_sheet(bulkWorkbook, bulkWorksheet, "대량조회_통합결과");
+
                     XLSX.writeFile(bulkWorkbook, "강승완세무사_대량_공시가격_추출결과.xlsx");
+
                     statusText.innerText = "✅ 대량 전수조사 취합 다운로드 완료!";
+
                 } catch (err) { alert("엑셀 빌드 실패"); progressContainer.classList.add('hidden'); }
+
             };
+
             reader.readAsArrayBuffer(file);
+
         }
+
     </script>
+
 </body>
+
 </html>
