@@ -549,7 +549,7 @@
             return null;
         }
 
-        // 🌟 단일 조회용 초정밀 족집게 함수
+        // 단일 조회용 초정밀 족집게 함수
         function isMatch(apiStr, targetStr) {
             if (!targetStr) return true; 
             if (apiStr === null || apiStr === undefined) return false;
@@ -566,7 +566,7 @@
             }
         }
 
-        // 🌟 1. 상가/건물 안내 배너 및 개별공시지가 연동 로직
+        // 상가/건물 안내 배너 및 개별공시지가 연동 로직
         async function searchPriceHistory() {
             const address = document.getElementById('address').value;
             const propType = document.querySelector('input[name="propType"]:checked').value;
@@ -589,7 +589,8 @@
                 globalCurrentPnu = pnu || "1168010100100010000"; 
                 globalComplexName = ""; 
 
-                setTimeout(() => fetchDaejangInfo(globalCurrentPnu), 500);
+                // 🌟 불필요한 0.5초 강제 딜레이 삭제: 즉시 호출
+                fetchDaejangInfo(globalCurrentPnu);
 
                 // 상가/건물 전용 안내 배너 처리
                 let noticeBanner = document.getElementById('commercial-notice');
@@ -699,7 +700,7 @@
             }
         }
 
-        // 🌟 상가 및 집합건물/일반건물 모두 원활하게 대응하는 대장 조회 함수
+        // 상가 및 집합건물/일반건물 모두 원활하게 대응하는 대장 조회 함수
         async function fetchDaejangInfo(pnu) {
             if (!pnu || pnu.length !== 19) return;
             
@@ -749,27 +750,23 @@
                 document.getElementById('land-info').innerHTML = landHtml;
             } catch(e) { console.error("❌ 토지대장 에러:", e); }
 
+            // 🌟 불필요한 에러 체크 단계 삭제하여 대기시간 단축 (곧바로 프록시 호출)
             async function fetchWithProxy(url) {
                 try {
-                    const res = await fetch(url);
+                    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+                    const res = await fetch(proxyUrl);
                     if (!res.ok) throw new Error();
                     return await res.json();
                 } catch(e) {
-                    try {
-                        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-                        const res2 = await fetch(proxyUrl);
-                        if (!res2.ok) throw new Error();
-                        return await res2.json();
-                    } catch(e2) {
-                        const proxyUrl2 = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-                        const res3 = await fetch(proxyUrl2);
-                        return await res3.json();
-                    }
+                    const proxyUrl2 = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+                    const res2 = await fetch(proxyUrl2);
+                    return await res2.json();
                 }
             }
 
             try {
-                document.getElementById('bldg-info').innerHTML = `<div class="p-4 bg-indigo-50 text-indigo-600 rounded-xl text-center col-span-full font-bold animate-pulse">건축물대장 정보 정밀 매칭 중...</div>`;
+                // 🌟 화면 표시 문구 부드럽게 수정
+                document.getElementById('bldg-info').innerHTML = `<div class="p-4 bg-indigo-50 text-indigo-600 rounded-xl text-center col-span-full font-bold animate-pulse">건축물대장 정보를 불러오는 중입니다...</div>`;
                 let isApiError = false;
                 
                 let titleItem = null;
@@ -1516,7 +1513,6 @@
                                     }
                                     if (items.length === 0) break;
 
-                                    // 🌟 과거에 완벽하게 작동하던 단순 extractNum 필터 로직
                                     for (const item of items) {
                                         if (probeType === "공동주택") {
                                             const itemDong = extractNum(item.dongNm);
