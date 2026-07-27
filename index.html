@@ -72,7 +72,6 @@
         <input type="radio" name="propType" value="단독주택" class="peer sr-only">
         <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">단독주택</div>
     </label>
-    <!-- 👇 추가된 상가/일반건물 버튼 -->
     <label class="cursor-pointer">
         <input type="radio" name="propType" value="상가/건물" class="peer sr-only">
         <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">상가/일반건물</div>
@@ -750,17 +749,23 @@
                 document.getElementById('land-info').innerHTML = landHtml;
             } catch(e) { console.error("❌ 토지대장 에러:", e); }
 
-            // 🌟 불필요한 에러 체크 단계 삭제하여 대기시간 단축 (곧바로 프록시 호출)
+            // 🌟 원래대로 완벽하게 복구된 프록시 함수 (직접 호출 ➔ 프록시 1 ➔ 프록시 2)
             async function fetchWithProxy(url) {
                 try {
-                    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-                    const res = await fetch(proxyUrl);
+                    const res = await fetch(url);
                     if (!res.ok) throw new Error();
                     return await res.json();
                 } catch(e) {
-                    const proxyUrl2 = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-                    const res2 = await fetch(proxyUrl2);
-                    return await res2.json();
+                    try {
+                        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+                        const res2 = await fetch(proxyUrl);
+                        if (!res2.ok) throw new Error();
+                        return await res2.json();
+                    } catch(e2) {
+                        const proxyUrl2 = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+                        const res3 = await fetch(proxyUrl2);
+                        return await res3.json();
+                    }
                 }
             }
 
@@ -1412,7 +1417,7 @@
             XLSX.writeFile(workbook, "강승완세무사_기준시가_연혁.xlsx");
         }
 
-        // 🌟 복원된 과거의 완벽하게 동작하던 대량조회 로직 (extractNum 방식 유지)
+        // 복원된 과거의 완벽하게 동작하던 대량조회 로직 (extractNum 방식 유지)
         async function handleBulkExcel(event) {
             const file = event.target.files[0];
             if (!file) return;
