@@ -16,7 +16,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
     <!-- 👇 발급받으신 카카오맵 JavaScript 키 적용 (장소 검색 및 주소 변환 라이브러리 포함) -->
-    <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=3a7d9443d71efe52e00cdafca82bdd5a&libraries=services&autoload=false"></script>
+    <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=3a7d9443d71efe52e00cdafca82bdd5a&libraries=services"></script>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -508,14 +508,20 @@
             initSigaChart([]); 
         });
 
-        // 🌟 [지도 기능 1] 모달 열기 및 지도 세팅
+        // 🌟 [지도 기능 1] 모달 열기 및 지도 세팅 (애니메이션 타이밍 완벽 동기화)
         function openMapModal() {
             const modal = document.getElementById('mapModal');
             modal.classList.remove('hidden');
+            
+            // 팝업창 나타나기 애니메이션 시작
             setTimeout(() => { 
                 modal.classList.remove('opacity-0'); 
-                initKakaoMap(); // 화면이 열리면 지도를 그림
             }, 10);
+
+            // ★ 핵심: 팝업창이 완전히 커진 후(300ms)에 지도를 그려야 회색 화면이 안 나옵니다!
+            setTimeout(() => {
+                initKakaoMap();
+            }, 300);
         }
 
         // 🌟 [지도 기능 2] 모달 닫기
@@ -526,51 +532,57 @@
         }
 
         // 🌟 [지도 기능 3] 지도 핵심 생성 로직
-        // 🌟 [지도 기능 3] 지도 핵심 생성 로직 (안전한 비동기 로딩 적용)
         function initKakaoMap() {
-            // 브라우저가 카카오맵 엔진을 100% 다운로드한 후에만 실행하도록 강제
-            kakao.maps.load(function() {
-                // 이미 지도가 만들어져 있다면 크기만 다시 맞춤(깨짐 방지)
-                if (mapInstance) {
-                    mapInstance.relayout();
-                    return;
-                }
-                const mapContainer = document.getElementById('kakaoMap');
-                const mapOption = {
-                    center: new kakao.maps.LatLng(37.566826, 126.978656), // 처음 열었을 때 중심 (서울시청)
-                    level: 5 // 확대/축소 레벨
-                };
-                
-                // 지도와 부가 기능(주소변환, 장소검색, 말풍선) 객체 생성
-                mapInstance = new kakao.maps.Map(mapContainer, mapOption);
-                mapGeocoder = new kakao.maps.services.Geocoder();
-                mapPlaces = new kakao.maps.services.Places();
-                mapInfoWindow = new kakao.maps.InfoWindow({zIndex: 1, removable: true});
+            // 카카오맵 스크립트가 혹시라도 덜 불려왔다면 에러 방지
+            if (!window.kakao || !window.kakao.maps) {
+                console.error("카카오맵 로딩 대기 중...");
+                return;
+            }
 
-                // 지도 위 아무 곳이나 [클릭]했을 때 해당 위치 주소를 가져와 말풍선 띄우기
-                kakao.maps.event.addListener(mapInstance, 'click', function(mouseEvent) {
-                    mapGeocoder.coord2Address(mouseEvent.latLng.getLng(), mouseEvent.latLng.getLat(), function(result, status) {
-                        if (status === kakao.maps.services.Status.OK) {
-                            let roadAddr = result[0].road_address ? result[0].road_address.address_name : '';
-                            let jibunAddr = result[0].address.address_name;
-                            let bldNm = result[0].road_address ? result[0].road_address.building_name : '';
-                            
-                            let finalAddr = roadAddr || jibunAddr; // 도로명이 없으면 지번으로
-                            let displayBld = bldNm ? `<span class="font-bold text-indigo-700 bg-indigo-50 px-1 rounded ml-1">${bldNm}</span>` : '';
-                            
-                            let content = `
-                                <div class="p-3 min-w-[250px] text-sm font-sans">
-                                    <p class="font-bold text-slate-800 mb-1 border-b border-slate-100 pb-1">📍 선택한 위치</p>
-                                    <p class="text-slate-700 text-xs mb-3 font-medium">${finalAddr}${displayBld}</p>
-                                    <button onclick="selectMapAddress('${finalAddr}', '${bldNm}')" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-bold shadow-sm hover:bg-indigo-700 transition-colors">이 주소로 스캔하기</button>
-                                </div>
-                            `;
-                            
-                            mapInfoWindow.setContent(content);
-                            mapInfoWindow.setPosition(mouseEvent.latLng);
-                            mapInfoWindow.open(mapInstance);
-                        }
-                    });
+            const mapContainer = document.getElementById('kakaoMap');
+            const defaultCenter = new kakao.maps.LatLng(37.566826, 126.978656); // 서울시청
+
+            // 이미 지도가 만들어져 있다면 사이즈만 다시 꽉 채우고(relayout) 중심점 이동
+            if (mapInstance) {
+                mapInstance.relayout();
+                mapInstance.setCenter(defaultCenter);
+                return;
+            }
+            
+            const mapOption = {
+                center: defaultCenter, 
+                level: 5 // 확대/축소 레벨
+            };
+            
+            // 지도와 부가 기능(주소변환, 장소검색, 말풍선) 객체 생성
+            mapInstance = new kakao.maps.Map(mapContainer, mapOption);
+            mapGeocoder = new kakao.maps.services.Geocoder();
+            mapPlaces = new kakao.maps.services.Places();
+            mapInfoWindow = new kakao.maps.InfoWindow({zIndex: 1, removable: true});
+
+            // 지도 위 아무 곳이나 [클릭]했을 때 해당 위치 주소를 가져와 말풍선 띄우기
+            kakao.maps.event.addListener(mapInstance, 'click', function(mouseEvent) {
+                mapGeocoder.coord2Address(mouseEvent.latLng.getLng(), mouseEvent.latLng.getLat(), function(result, status) {
+                    if (status === kakao.maps.services.Status.OK) {
+                        let roadAddr = result[0].road_address ? result[0].road_address.address_name : '';
+                        let jibunAddr = result[0].address.address_name;
+                        let bldNm = result[0].road_address ? result[0].road_address.building_name : '';
+                        
+                        let finalAddr = roadAddr || jibunAddr; // 도로명이 없으면 지번으로
+                        let displayBld = bldNm ? `<span class="font-bold text-indigo-700 bg-indigo-50 px-1 rounded ml-1">${bldNm}</span>` : '';
+                        
+                        let content = `
+                            <div class="p-3 min-w-[250px] text-sm font-sans">
+                                <p class="font-bold text-slate-800 mb-1 border-b border-slate-100 pb-1">📍 선택한 위치</p>
+                                <p class="text-slate-700 text-xs mb-3 font-medium">${finalAddr}${displayBld}</p>
+                                <button onclick="selectMapAddress('${finalAddr}', '${bldNm}')" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-bold shadow-sm hover:bg-indigo-700 transition-colors">이 주소로 스캔하기</button>
+                            </div>
+                        `;
+                        
+                        mapInfoWindow.setContent(content);
+                        mapInfoWindow.setPosition(mouseEvent.latLng);
+                        mapInfoWindow.open(mapInstance);
+                    }
                 });
             });
         }
