@@ -964,45 +964,54 @@
 
                     if (exposItem) globalExposItem = exposItem;
 
-                    // 🌟 [4] 위반건축물 데이터 스캔 및 배너 추가 (깐깐한 검증 로직으로 교체)
-                    
-                    // 1단계: 검색한 해당 동(표제부)이나 해당 호수(전유부) 장부 자체에 공식적으로 '1(위반)'이 찍혀있는지부터 확인
-                    globalIsVioltBld = (titleItem?.violtBldYn === '1' || exposItem?.violtBldYn === '1');
+                    // 🌟 [4] 위반건축물 데이터 스캔 및 배너 추가 (최종 로직: 일반건물/집합건물 완벽 분리)
                     globalViolationItems = [];
-                    
-                    // 2단계: 내 장부에 딱지가 붙은 게 확실할 때만 상세 내역을 조회함 (이웃집/상가 위반 내역 오탐지 방지)
-                    if (globalIsVioltBld) {
-                        const violtUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrWclfInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=100&pageNo=1&_type=json`;
-                        try {
-                            const violtJson = await fetchWithProxy(violtUrl);
-                            if (violtJson?.response?.body?.items?.item) {
-                                const vArr = Array.isArray(violtJson.response.body.items.item) ? violtJson.response.body.items.item : [violtJson.response.body.items.item];
-                                
-                                globalViolationItems = vArr.filter(i => {
-                                    let dOk = true; let hOk = true;
-                                    if (rawDongVal) dOk = isMatch(i.dongNm, rawDongVal) || isMatch(i.bldNm, rawDongVal);
-                                    if (rawHoVal) hOk = isMatch(i.hoNm, rawHoVal);
-                                    return dOk && hOk;
-                                });
+                    globalIsVioltBld = false;
 
-                                // 내 장부에 딱지는 붙었는데 상세내역 호수 매칭이 안 된다면? (지자체의 호수 기재 누락)
-                                // 이 경우에만 예외적으로 전체 위반 내역을 보여줌.
-                                if(globalViolationItems.length === 0 && vArr.length > 0) {
-                                    globalViolationItems = vArr; 
-                                }
-                            }
-                        } catch(e){}
+                    // 1단계: 위반건축물 상세내역 API 무조건 먼저 찔러보기 (표제부 요약의 누락 가능성 대비)
+                    const violtUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrWclfInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=100&pageNo=1&_type=json`;
+                    
+                    let vArr = [];
+                    try {
+                        const violtJson = await fetchWithProxy(violtUrl);
+                        if (violtJson?.response?.body?.items?.item) {
+                            vArr = Array.isArray(violtJson.response.body.items.item) ? violtJson.response.body.items.item : [violtJson.response.body.items.item];
+                        }
+                    } catch(e){}
+
+                    // 2단계: 사용자가 '동/호수'를 입력했는지 여부에 따라 필터링 잣대 다르게 적용
+                    if (rawDongVal || rawHoVal) {
+                        // [아파트/다세대 등] -> 검색한 동/호수와 정확히 일치하는 위반 내역만 남김 (이웃집 상가 위반 오탐지 방지)
+                        globalViolationItems = vArr.filter(i => {
+                            let dOk = true; let hOk = true;
+                            if (rawDongVal) dOk = isMatch(i.dongNm, rawDongVal) || isMatch(i.bldNm, rawDongVal);
+                            if (rawHoVal) hOk = isMatch(i.hoNm, rawHoVal);
+                            return dOk && hOk;
+                        });
+
+                        // 내 호수에 딱지가 있거나, 대장 요약본에 1이라고 찍혀있을 때만 위반건축물로 판정
+                        if (globalViolationItems.length > 0) {
+                            globalIsVioltBld = true; 
+                        } else if (exposItem?.violtBldYn === '1' || titleItem?.violtBldYn === '1') {
+                            globalIsVioltBld = true;
+                        }
+                    } else {
+                        // [단독주택/일반상가 통건물 등] -> 동/호수를 입력하지 않았으므로 해당 지번의 모든 위반내역 표출 (합정동 410-19 케이스)
+                        globalViolationItems = vArr;
+                        if (vArr.length > 0 || titleItem?.violtBldYn === '1') {
+                            globalIsVioltBld = true;
+                        }
                     }
 
                     let warningHtml = "";
                     
-                    // 위반건축물 배너 (내 장부에 딱지가 있을 때만 노출)
+                    // 위반건축물 배너
                     if (globalIsVioltBld) {
                         warningHtml += `
                             <div class="bg-red-50 border border-red-400 p-3 rounded-xl col-span-full mb-2 animate-pulse shadow-sm">
                                 <p class="text-sm text-red-800 font-black flex items-center">
                                     <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                                    위반건축물 등재 물건입니다! (취득세 중과 및 비과세 배제 등 세무 리스크 주의)
+                                    위반건축물 등재 물건입니다!
                                 </p>
                             </div>
                         `;
