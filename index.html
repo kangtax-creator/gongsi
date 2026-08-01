@@ -508,41 +508,46 @@
             initSigaChart([]); 
         });
 
-        // 🌟 [지도 기능 1] 모달 열기 및 지도 세팅 (애니메이션 타이밍 완벽 동기화)
+        // 🌟 [지도 기능 1] 모달 열기 및 카카오맵 스크립트 강제 동적 로딩 (가장 확실한 방법)
         function openMapModal() {
             const modal = document.getElementById('mapModal');
             modal.classList.remove('hidden');
-            
-            // 팝업창 나타나기 애니메이션 시작
-            setTimeout(() => { 
-                modal.classList.remove('opacity-0'); 
-            }, 10);
+            setTimeout(() => { modal.classList.remove('opacity-0'); }, 10);
 
-            // ★ 핵심: 팝업창이 완전히 커진 후(300ms)에 지도를 그려야 회색 화면이 안 나옵니다!
-            setTimeout(() => {
+            // 1. 이미 카카오맵이 성공적으로 로딩되어 있다면 바로 지도 그리기 실행
+            if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
                 initKakaoMap();
-            }, 300);
-        }
+                return;
+            }
 
-        // 🌟 [지도 기능 2] 모달 닫기
-        function closeMapModal() {
-            const modal = document.getElementById('mapModal');
-            modal.classList.add('opacity-0');
-            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+            // 2. 카카오맵이 없다면? 자바스크립트가 직접 스크립트를 생성해서 다운로드 강제 실행
+            const script = document.createElement('script');
+            script.type = "text/javascript";
+            // autoload=false 옵션을 주어 다운로드가 완벽히 끝난 후 우리가 직접 통제합니다.
+            script.src = "https://dapi.kakao.com/v2/maps/sdk.js?appkey=3a7d9443d71efe52e00cdafca82bdd5a&libraries=services&autoload=false";
+            
+            // 다운로드가 성공하면 실행됨
+            script.onload = function() {
+                kakao.maps.load(function() {
+                    initKakaoMap();
+                });
+            };
+            
+            // 만약 광고 차단기나 인터넷 문제로 다운로드 실패 시 원인 안내
+            script.onerror = function() {
+                alert("카카오맵을 불러오지 못했습니다.\n브라우저의 '광고 차단(AdBlock)' 프로그램이 켜져 있다면 끄고 다시 시도해 주세요.");
+            };
+
+            // HTML 문서에 스크립트 삽입하여 실행
+            document.head.appendChild(script);
         }
 
         // 🌟 [지도 기능 3] 지도 핵심 생성 로직
         function initKakaoMap() {
-            // 카카오맵 스크립트가 혹시라도 덜 불려왔다면 에러 방지
-            if (!window.kakao || !window.kakao.maps) {
-                console.error("카카오맵 로딩 대기 중...");
-                return;
-            }
-
             const mapContainer = document.getElementById('kakaoMap');
             const defaultCenter = new kakao.maps.LatLng(37.566826, 126.978656); // 서울시청
 
-            // 이미 지도가 만들어져 있다면 사이즈만 다시 꽉 채우고(relayout) 중심점 이동
+            // 이미 지도가 만들어져 있다면 사이즈만 꽉 채우고 리턴
             if (mapInstance) {
                 mapInstance.relayout();
                 mapInstance.setCenter(defaultCenter);
@@ -554,7 +559,7 @@
                 level: 5 // 확대/축소 레벨
             };
             
-            // 지도와 부가 기능(주소변환, 장소검색, 말풍선) 객체 생성
+            // 지도 및 부가 기능 객체 생성
             mapInstance = new kakao.maps.Map(mapContainer, mapOption);
             mapGeocoder = new kakao.maps.services.Geocoder();
             mapPlaces = new kakao.maps.services.Places();
@@ -568,7 +573,7 @@
                         let jibunAddr = result[0].address.address_name;
                         let bldNm = result[0].road_address ? result[0].road_address.building_name : '';
                         
-                        let finalAddr = roadAddr || jibunAddr; // 도로명이 없으면 지번으로
+                        let finalAddr = roadAddr || jibunAddr; 
                         let displayBld = bldNm ? `<span class="font-bold text-indigo-700 bg-indigo-50 px-1 rounded ml-1">${bldNm}</span>` : '';
                         
                         let content = `
@@ -586,7 +591,6 @@
                 });
             });
         }
-
         // 🌟 [지도 기능 4] 장소 이름으로 검색하기 (예: 아파트명)
         function searchMapKeyword() {
             const keyword = document.getElementById('mapKeyword').value;
