@@ -81,8 +81,10 @@
                     </div>
 
                     <div class="flex space-x-2">
-                        <input type="text" id="address" readonly placeholder="주소 검색 버튼을 클릭하세요" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none">
-                        <button onclick="execDaumPostcode()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap">주소 검색</button>
+                        <!-- 💡 입력창을 터치해도 검색이 실행되도록 onclick과 cursor-pointer 추가 -->
+                        <input type="text" id="address" readonly onclick="execDaumPostcode()" placeholder="여기를 터치하여 주소 검색" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none cursor-pointer">
+                        <!-- 💡 터치 씹힘 방지용 type="button" 명시 및 터치 애니메이션(active) 추가 -->
+                        <button type="button" onclick="execDaumPostcode()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-transform active:scale-95 whitespace-nowrap">주소 검색</button>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
