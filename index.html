@@ -966,7 +966,7 @@
 
                     if (exposItem) globalExposItem = exposItem;
 
-                    // 🌟 [4] 위반건축물 데이터 정밀 스캔 (꼼수 없는 정확한 타겟팅 매칭)
+                    // 🌟 [4] 위반건축물 데이터 정밀 스캔 (사용자 입력 기준 명확한 필터링)
                     const violtUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrWclfInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=100&pageNo=1&_type=json`;
                     
                     let vArr = [];
@@ -977,25 +977,25 @@
                         }
                     } catch(e){}
 
-                    // 💡 검색된 대장 원본(표제부/전유부)과 동/호수가 정확히 일치하는 위반 내역만 필터링
+                    // 💡 핵심 로직: 사용자가 검색창에 '동/호수'를 직접 쳤을 때만 깐깐하게 거르고, 
+                    // 단독건물처럼 동/호수를 비워뒀으면 해당 지번의 모든 위반 내역을 그대로 다 표출!
                     globalViolationItems = vArr.filter(i => {
                         let dOk = true; 
                         let hOk = true;
                         
-                        let targetDong = rawDongVal || titleItem?.dongNm || titleItem?.bldNm;
-                        if (targetDong && (i.dongNm || i.bldNm)) {
-                            dOk = isMatch(i.dongNm, targetDong) || isMatch(i.bldNm, targetDong);
+                        // 사용자가 '동'을 입력한 경우에만 필터링
+                        if (rawDongVal) {
+                            dOk = isMatch(i.dongNm, rawDongVal) || isMatch(i.bldNm, rawDongVal);
                         }
-                        
-                        let targetHo = rawHoVal || exposItem?.hoNm;
-                        if (targetHo && i.hoNm) {
-                            hOk = isMatch(i.hoNm, targetHo);
+                        // 사용자가 '호'를 입력한 경우에만 필터링
+                        if (rawHoVal) {
+                            hOk = isMatch(i.hoNm, rawHoVal);
                         }
                         
                         return dOk && hOk;
                     });
 
-                    // 💡 내 장부에 위반 표기가 있거나, 정확히 매칭된 위반 상세 내역이 있을 때만 최종 '위반건축물' 판정
+                    // 💡 최종 '위반건축물' 판정
                     globalIsVioltBld = false;
                     if (globalViolationItems.length > 0) {
                         globalIsVioltBld = true;
@@ -1005,7 +1005,7 @@
 
                     let warningHtml = "";
                     
-                    // 위반건축물 배너 (정확히 내 물건일 때만 출력)
+                    // 위반건축물 배너 (정확히 내 물건이거나, 지번 전체 검색 시 출력)
                     if (globalIsVioltBld) {
                         warningHtml += `
                             <div class="bg-red-50 border border-red-400 p-3 rounded-xl col-span-full mb-2 animate-pulse shadow-sm">
