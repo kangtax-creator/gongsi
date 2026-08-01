@@ -938,14 +938,18 @@
                         const violtJson = await fetchWithProxy(violtUrl);
                         if (violtJson?.response?.body?.items?.item) {
                             const vArr = Array.isArray(violtJson.response.body.items.item) ? violtJson.response.body.items.item : [violtJson.response.body.items.item];
+                            
+                            // 1차: 동/호수 매칭 시도
                             globalViolationItems = vArr.filter(i => {
                                 let dOk = true; let hOk = true;
                                 if (rawDongVal) dOk = isMatch(i.dongNm, rawDongVal) || isMatch(i.bldNm, rawDongVal);
                                 if (rawHoVal) hOk = isMatch(i.hoNm, rawHoVal);
                                 return dOk && hOk;
                             });
-                            // 호수 매칭 실패시 전체 위반내역을 일단 담아둠
-                            if(globalViolationItems.length === 0 && vArr.length > 0 && !rawHoVal) {
+
+                            // 💡 2차 (보강): 만약 동/호수를 쳤는데 매칭되는 게 없다면? 
+                            // 위반 딱지가 건물 전체(표제부)나 다른 호수에 붙었을 수 있으므로 해당 지번의 모든 위반 내역을 무조건 다 보여줍니다.
+                            if(globalViolationItems.length === 0 && vArr.length > 0) {
                                 globalViolationItems = vArr; 
                             }
                         }
@@ -1093,8 +1097,13 @@
             if (globalViolationItems && globalViolationItems.length > 0) {
                 violationSection.classList.remove('hidden');
                 globalViolationItems.forEach(v => {
-                    let vDate = formatPubDate(v.violtBldRegsDay) || '-';
-                    let vDetail = v.violtCn || '내용 없음';
+                    let vDate = formatPubDate(v.violtBldRegsDay);
+                    let vDetail = v.violtCn;
+                    
+                    // 💡 지자체 전산 누락 시 사용자가 오해하지 않도록 문구 명확화
+                    vDate = vDate ? vDate : '일자 미기재';
+                    vDetail = vDetail ? vDetail : '상세 사유 지자체 전산 미등록 (대장 원본 표제부 확인 요망)';
+                    
                     violationBody.innerHTML += `
                         <tr class="hover:bg-red-50/50">
                             <td class="py-3 px-4 font-bold text-red-700 border-b border-red-50 whitespace-nowrap">${vDate}</td>
@@ -1104,11 +1113,10 @@
                 });
             } else if (globalIsVioltBld) {
                 violationSection.classList.remove('hidden');
-                violationBody.innerHTML = `<tr><td colspan="2" class="py-4 px-4 text-center text-red-500 font-bold">위반건축물이나 상세 내역(사유)이 전산에 등록되지 않았습니다.</td></tr>`;
+                violationBody.innerHTML = `<tr><td colspan="2" class="py-4 px-4 text-center text-red-500 font-bold">위반건축물 표시가 있으나, 상세 내역이 전산에 등록되지 않았습니다.</td></tr>`;
             } else {
                 violationSection.classList.add('hidden');
             }
-
             modal.classList.remove('hidden');
             setTimeout(() => { modal.classList.remove('opacity-0'); }, 10);
         }
