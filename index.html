@@ -1256,31 +1256,32 @@
             }
         }
 
-        // 🌟 1. 면적 드롭다운 세팅 함수 (데이터에서 있는 면적만 뽑아냄)
+        // 🌟 1. 면적 드롭다운 세팅 함수 (소수점 그대로 유지, 평 환산 제거)
         function populateAreaFilter() {
             const areaSelect = document.getElementById('areaFilter');
-            // 면적(소수점 반올림) 기준으로 중복 제거 및 오름차순 정렬
-            const uniqueAreas = [...new Set(globalTransactions.map(t => Math.round(t.area)))].sort((a, b) => a - b);
+            
+            // Math.round(반올림) 제거하고 소수점 있는 원본 그대로 중복 제거 및 오름차순 정렬
+            const uniqueAreas = [...new Set(globalTransactions.map(t => t.area))].sort((a, b) => a - b);
             
             let html = '<option value="all">전체 면적</option>';
             uniqueAreas.forEach(area => {
                 if (area > 0) {
-                    const pyeong = Math.round(area * 0.3025);
-                    html += `<option value="${area}">전용 ${area}㎡ (약 ${pyeong}평)</option>`;
+                    // 평 환산 부분을 빼고 소수점 그대로 표시되도록 수정
+                    html += `<option value="${area}">전용 ${area}㎡</option>`;
                 }
             });
             areaSelect.innerHTML = html;
         }
 
-        // 🌟 2. 필터링 통합 함수 (면적 + 거래유형 동시 처리)
+        // 🌟 2. 필터링 통합 함수 (면적 필터링 시 소수점까지 정확히 비교)
         function applyFilters() {
             const selectedArea = document.getElementById('areaFilter').value;
             
-            // A. 면적 필터 먼저 적용
+            // A. 면적 필터 적용
             let areaFiltered = globalTransactions;
             if (selectedArea !== 'all') {
-                const targetArea = parseInt(selectedArea, 10);
-                areaFiltered = areaFiltered.filter(r => Math.round(r.area) === targetArea);
+                const targetArea = parseFloat(selectedArea); // parseInt(정수) 대신 parseFloat(소수) 사용
+                areaFiltered = areaFiltered.filter(r => r.area === targetArea); // Math.round 떼고 정확히 일치하는 것만 필터링
             }
 
             // B. 면적이 필터링된 상태에서 상단 버튼의 건수 업데이트
