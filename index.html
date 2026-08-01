@@ -12,23 +12,26 @@
     <meta property="og:url" content="https://gongsi-ten.vercel.app">
     <meta property="og:image" content="https://gongsi-ten.vercel.app/thumbnail.jpg">
     
-    <!-- 필수 라이브러리 추가: Tailwind, 카카오주소, Chart.js, SheetJS(엑셀), html2canvas(PDF), jsPDF(PDF) -->
+    <!-- 필수 라이브러리 추가: Tailwind, 카카오주소, 카카오맵API, Chart.js, SheetJS, html2canvas, jsPDF -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+    <!-- 👇 발급받으신 카카오맵 JavaScript 키 적용 (장소 검색 및 주소 변환 라이브러리 포함) -->
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=3a7d9443d71efe52e00cdafca82bdd5a&libraries=services"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <!-- 구글 애널리틱스 (GA4) 설치 코드 -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-97YGLD3SJ9"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-97YGLD3SJ9"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
 
-  gtag('config', 'G-97YGLD3SJ9');
-</script>
+      gtag('config', 'G-97YGLD3SJ9');
+    </script>
 </head>
 <body class="bg-[#f3f4f6] font-sans min-h-screen">
 
@@ -64,28 +67,35 @@
                 <div class="space-y-4">
                     <div>
                         <div class="flex flex-wrap gap-2">
-    <label class="cursor-pointer">
-        <input type="radio" name="propType" value="공동주택" checked class="peer sr-only">
-        <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">공동주택</div>
-    </label>
-    <label class="cursor-pointer">
-        <input type="radio" name="propType" value="단독주택" class="peer sr-only">
-        <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">단독주택</div>
-    </label>
-    <label class="cursor-pointer">
-        <input type="radio" name="propType" value="상가/건물" class="peer sr-only">
-        <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">상가/일반건물</div>
-    </label>
-    <label class="cursor-pointer">
-        <input type="radio" name="propType" value="토지" class="peer sr-only">
-        <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">토지(지가)</div>
-    </label>
-</div>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="propType" value="공동주택" checked class="peer sr-only">
+                                <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">공동주택</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="propType" value="단독주택" class="peer sr-only">
+                                <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">단독주택</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="propType" value="상가/건물" class="peer sr-only">
+                                <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">상가/일반건물</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="propType" value="토지" class="peer sr-only">
+                                <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">토지(지가)</div>
+                            </label>
+                        </div>
                     </div>
 
-                    <div class="flex space-x-2">
-                        <input type="text" id="address" readonly placeholder="주소 검색 버튼을 클릭하세요" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none">
-                        <button onclick="execDaumPostcode()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap">주소 검색</button>
+                    <div class="flex flex-col space-y-2">
+                        <div class="flex space-x-2">
+                            <input type="text" id="address" readonly placeholder="텍스트로 주소 찾기" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none">
+                            <button onclick="execDaumPostcode()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap shadow-sm">주소 검색</button>
+                        </div>
+                        <!-- 🌟 새로 추가된 지도 팝업 호출 버튼 -->
+                        <button onclick="openMapModal()" class="w-full bg-emerald-50 border border-emerald-500 hover:bg-emerald-100 text-emerald-700 px-4 py-2.5 rounded-xl text-sm font-extrabold transition-colors flex justify-center items-center shadow-sm">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                            지도에서 직접 보고 클릭해서 찾기
+                        </button>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
@@ -274,7 +284,7 @@
                 </div>
             </div>
 
-            <!-- 🌟 탭 3: 대장 정보 추가 영역 -->
+            <!-- 탭 3: 대장 정보 추가 영역 -->
             <div id="content-daejang" class="hidden space-y-6">
                 <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
                     <h2 class="text-lg font-extrabold text-slate-800 mb-4 flex items-center">
@@ -298,7 +308,6 @@
                     </div>
                 </div>
 
-                <!-- 🌟 상세 열람 버튼 컨테이너 -->
                 <div id="daejang-action-buttons" class="hidden mt-6">
                     <button onclick="openDaejangModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 rounded-xl shadow-md transition-all flex justify-center items-center">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
@@ -310,10 +319,33 @@
         </div>
     </div>
 
-    <!-- 🌟 대장 상세 열람 모달 (엑셀/PDF 버튼 포함) -->
+    <!-- 🌟 [신규 추가] 카카오맵 전용 모달 (팝업창) -->
+    <div id="mapModal" class="fixed inset-0 bg-slate-900/80 z-[60] hidden flex flex-col items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl w-full max-w-5xl h-[85vh] flex flex-col shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300">
+            <!-- 모달 헤더 -->
+            <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                <h3 class="font-extrabold text-slate-800 flex items-center text-lg"><span class="text-xl mr-2">🗺️</span> 지도에서 대상 물건 선택</h3>
+                <button onclick="closeMapModal()" class="text-slate-400 hover:text-slate-700 bg-white hover:bg-slate-100 rounded-full p-2 transition-colors border border-slate-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <!-- 모달 상단: 장소 검색창 -->
+            <div class="p-3 bg-white border-b border-slate-200 flex space-x-2">
+                <input type="text" id="mapKeyword" placeholder="아파트명 또는 지역명 검색 (예: 반포자이, 강남구)" class="flex-1 bg-slate-100 border border-slate-200 rounded-lg px-4 py-2.5 text-sm font-bold focus:outline-none focus:border-indigo-500 focus:bg-white transition-colors" onkeypress="if(event.keyCode==13) searchMapKeyword()">
+                <button onclick="searchMapKeyword()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow-sm transition-colors whitespace-nowrap">지도에서 검색</button>
+            </div>
+            <!-- 카카오맵이 뿌려질 영역 -->
+            <div id="kakaoMap" class="flex-1 w-full relative bg-slate-200"></div>
+            <!-- 모달 하단 안내문 -->
+            <div class="px-5 py-3 border-t border-slate-200 bg-indigo-50 flex items-center justify-between">
+                <p class="text-xs font-bold text-indigo-800">💡 지도 위에서 원하는 건물을 직접 클릭하시거나, 위쪽 검색창을 이용해 찾아보세요!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 기존: 대장 상세 열람 모달 -->
     <div id="daejangModal" class="fixed inset-0 bg-slate-900/60 z-50 hidden flex flex-col items-center justify-center p-4 sm:p-6 opacity-0 transition-opacity duration-300">
         <div class="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl transform scale-95 transition-transform duration-300">
-            
             <!-- 모달 헤더 -->
             <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 rounded-t-2xl">
                 <div>
@@ -455,6 +487,13 @@
 
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+        // 🌟 카카오맵 연동을 위한 전역 변수 모음
+        let mapInstance = null;
+        let mapGeocoder = null;
+        let mapPlaces = null;
+        let mapMarkers = [];
+        let mapInfoWindow = null;
+
         document.addEventListener("DOMContentLoaded", () => {
             const today = new Date();
             let yyyy = today.getFullYear();
@@ -468,6 +507,141 @@
             
             initSigaChart([]); 
         });
+
+        // 🌟 [지도 기능 1] 모달 열기 및 지도 세팅
+        function openMapModal() {
+            const modal = document.getElementById('mapModal');
+            modal.classList.remove('hidden');
+            setTimeout(() => { 
+                modal.classList.remove('opacity-0'); 
+                initKakaoMap(); // 화면이 열리면 지도를 그림
+            }, 10);
+        }
+
+        // 🌟 [지도 기능 2] 모달 닫기
+        function closeMapModal() {
+            const modal = document.getElementById('mapModal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+        }
+
+        // 🌟 [지도 기능 3] 지도 핵심 생성 로직
+        function initKakaoMap() {
+            // 이미 지도가 만들어져 있다면 크기만 다시 맞춤(깨짐 방지)
+            if (mapInstance) {
+                mapInstance.relayout();
+                return;
+            }
+            const mapContainer = document.getElementById('kakaoMap');
+            const mapOption = {
+                center: new kakao.maps.LatLng(37.566826, 126.978656), // 처음 열었을 때 중심 (서울시청)
+                level: 5 // 확대/축소 레벨
+            };
+            
+            // 지도와 부가 기능(주소변환, 장소검색, 말풍선) 객체 생성
+            mapInstance = new kakao.maps.Map(mapContainer, mapOption);
+            mapGeocoder = new kakao.maps.services.Geocoder();
+            mapPlaces = new kakao.maps.services.Places();
+            mapInfoWindow = new kakao.maps.InfoWindow({zIndex: 1, removable: true});
+
+            // 지도 위 아무 곳이나 [클릭]했을 때 해당 위치 주소를 가져와 말풍선 띄우기
+            kakao.maps.event.addListener(mapInstance, 'click', function(mouseEvent) {
+                mapGeocoder.coord2Address(mouseEvent.latLng.getLng(), mouseEvent.latLng.getLat(), function(result, status) {
+                    if (status === kakao.maps.services.Status.OK) {
+                        let roadAddr = result[0].road_address ? result[0].road_address.address_name : '';
+                        let jibunAddr = result[0].address.address_name;
+                        let bldNm = result[0].road_address ? result[0].road_address.building_name : '';
+                        
+                        let finalAddr = roadAddr || jibunAddr; // 도로명이 없으면 지번으로
+                        let displayBld = bldNm ? `<span class="font-bold text-indigo-700 bg-indigo-50 px-1 rounded ml-1">${bldNm}</span>` : '';
+                        
+                        let content = `
+                            <div class="p-3 min-w-[250px] text-sm font-sans">
+                                <p class="font-bold text-slate-800 mb-1 border-b border-slate-100 pb-1">📍 선택한 위치</p>
+                                <p class="text-slate-700 text-xs mb-3 font-medium">${finalAddr}${displayBld}</p>
+                                <button onclick="selectMapAddress('${finalAddr}', '${bldNm}')" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-bold shadow-sm hover:bg-indigo-700 transition-colors">이 주소로 스캔하기</button>
+                            </div>
+                        `;
+                        
+                        mapInfoWindow.setContent(content);
+                        mapInfoWindow.setPosition(mouseEvent.latLng);
+                        mapInfoWindow.open(mapInstance);
+                    }
+                });
+            });
+        }
+
+        // 🌟 [지도 기능 4] 장소 이름으로 검색하기 (예: 아파트명)
+        function searchMapKeyword() {
+            const keyword = document.getElementById('mapKeyword').value;
+            if (!keyword.replace(/^\s+|\s+$/g, '')) {
+                alert('검색하실 아파트명이나 지역 키워드를 입력해주세요!');
+                return false;
+            }
+            // 장소검색 객체를 통해 키워드로 장소검색을 요청합니다
+            mapPlaces.keywordSearch(keyword, function(data, status, pagination) {
+                if (status === kakao.maps.services.Status.OK) {
+                    // 검색된 장소 위치를 기준으로 지도 범위를 재설정
+                    const bounds = new kakao.maps.LatLngBounds();
+                    // 기존 마커 싹 지우기
+                    for (let i = 0; i < mapMarkers.length; i++) { mapMarkers[i].setMap(null); }
+                    mapMarkers = [];
+
+                    for (let i=0; i<data.length; i++) {
+                        displayMapMarker(data[i]);
+                        bounds.extend(new kakao.maps.LatLng(data[i].y, data[i].x));
+                    }
+                    mapInstance.setBounds(bounds); // 검색된 곳들이 모두 보이게 지도 이동
+                } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
+                    alert('검색 결과가 존재하지 않습니다.');
+                } else if (status === kakao.maps.services.Status.ERROR) {
+                    alert('검색 결과 중 오류가 발생했습니다.');
+                }
+            });
+        }
+
+        // 🌟 [지도 기능 5] 검색 결과 마커 지도에 찍기
+        function displayMapMarker(place) {
+            const marker = new kakao.maps.Marker({
+                map: mapInstance,
+                position: new kakao.maps.LatLng(place.y, place.x) 
+            });
+            
+            // 마커를 클릭했을 때 팝업 띄우기
+            kakao.maps.event.addListener(marker, 'click', function() {
+                let roadAddr = place.road_address_name || place.address_name;
+                let bldNm = place.place_name;
+                
+                let content = `
+                    <div class="p-3 min-w-[250px] text-sm font-sans">
+                        <p class="font-bold text-slate-800 mb-1 border-b border-slate-100 pb-1">🏢 ${bldNm}</p>
+                        <p class="text-slate-600 text-[11px] mb-3">${roadAddr}</p>
+                        <button onclick="selectMapAddress('${roadAddr}', '${bldNm}')" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-bold shadow-sm hover:bg-indigo-700 transition-colors">이 주소로 스캔하기</button>
+                    </div>
+                `;
+                mapInfoWindow.setContent(content);
+                mapInfoWindow.open(mapInstance, marker);
+            });
+            
+            mapMarkers.push(marker);
+        }
+
+        // 🌟 [지도 기능 6] 사용자가 최종적으로 주소를 [선택]했을 때!
+        function selectMapAddress(address, bldNm) {
+            closeMapModal(); // 지도 창 닫기
+            
+            // 기존 텍스트 입력창에 클릭한 주소 쏙 넣기
+            document.getElementById('address').value = address;
+            document.getElementById('dong').value = ""; // 새로운 주소니 동호수는 초기화
+            document.getElementById('ho').value = "";
+            
+            // 💡 세무사님이 타이핑 후 버튼을 누르는 과정을 100% 자동화! (원클릭 자동 실행)
+            setTimeout(() => {
+                searchPriceHistory();
+            }, 300);
+        }
+
+        // ================= 기존 로직들 유지 =================
 
         function switchTab(tab) {
             const tabs = ['gongsi', 'siga', 'daejang'];
@@ -548,7 +722,6 @@
             return null;
         }
 
-        // 단일 조회용 초정밀 족집게 함수
         function isMatch(apiStr, targetStr) {
             if (!targetStr) return true; 
             if (apiStr === null || apiStr === undefined) return false;
@@ -565,7 +738,6 @@
             }
         }
 
-        // 상가/건물 안내 배너 및 개별공시지가 연동 로직
         async function searchPriceHistory() {
             const address = document.getElementById('address').value;
             const propType = document.querySelector('input[name="propType"]:checked').value;
@@ -588,10 +760,8 @@
                 globalCurrentPnu = pnu || "1168010100100010000"; 
                 globalComplexName = ""; 
 
-                // 🌟 불필요한 0.5초 강제 딜레이 삭제: 즉시 호출
                 fetchDaejangInfo(globalCurrentPnu);
 
-                // 상가/건물 전용 안내 배너 처리
                 let noticeBanner = document.getElementById('commercial-notice');
                 if (!noticeBanner) {
                     noticeBanner = document.createElement('div');
@@ -617,7 +787,7 @@
                 let apiUrl = ""; let priceField = "";
                 if (propType === "공동주택") { apiUrl = "https://api.vworld.kr/ned/data/getApartHousingPriceAttr"; priceField = "pblntfPc"; }
                 else if (propType === "단독주택") { apiUrl = "https://api.vworld.kr/ned/data/getIndvdHousingPriceAttr"; priceField = "pblntfPc"; }
-                else { apiUrl = "https://api.vworld.kr/ned/data/getIndvdLandPriceAttr"; priceField = "pblntfPclnd"; } // 상가/건물 및 토지는 개별공시지가
+                else { apiUrl = "https://api.vworld.kr/ned/data/getIndvdLandPriceAttr"; priceField = "pblntfPclnd"; } 
 
                 const rawHistoryData = []; 
                 const filteredHistoryData = [];
@@ -699,7 +869,6 @@
             }
         }
 
-        // 상가 및 집합건물/일반건물 모두 원활하게 대응하는 대장 조회 함수
         async function fetchDaejangInfo(pnu) {
             if (!pnu || pnu.length !== 19) return;
             
@@ -749,7 +918,6 @@
                 document.getElementById('land-info').innerHTML = landHtml;
             } catch(e) { console.error("❌ 토지대장 에러:", e); }
 
-            // 🌟 원래대로 완벽하게 복구된 프록시 함수 (직접 호출 ➔ 프록시 1 ➔ 프록시 2)
             async function fetchWithProxy(url) {
                 try {
                     const res = await fetch(url);
@@ -770,7 +938,6 @@
             }
 
             try {
-                // 🌟 화면 표시 문구 부드럽게 수정
                 document.getElementById('bldg-info').innerHTML = `<div class="p-4 bg-indigo-50 text-indigo-600 rounded-xl text-center col-span-full font-bold animate-pulse">건축물대장 정보를 불러오는 중입니다...</div>`;
                 let isApiError = false;
                 
@@ -800,7 +967,6 @@
                     let fallbackItem = null;
                     let isFallbackUsed = false;
 
-                    // 상가 호수 또는 아파트 호수 조회용
                     if (rawHoVal) {
                         const hoQueries = [
                             `&hoNm=${encodeURIComponent(rawHoVal + "호")}`,
@@ -839,7 +1005,6 @@
                         } catch(e) {}
                     }
 
-                    // 전유부 조회 실패 시 (일반 상가건물이거나 정보 없음)
                     if (!exposItem && (propType === "공동주택" || propType === "상가/건물")) {
                         exposItem = fallbackItem;
                         isFallbackUsed = true;
@@ -848,7 +1013,6 @@
                     if (exposItem) globalExposItem = exposItem;
 
                     if (exposItem) {
-                        // 구분건물 (상가 101호, 아파트 등)
                         const useAprDay = titleItem ? formatPubDate(titleItem.useAprDay) : '-';
                         const bldNm = titleItem ? (titleItem.bldNm || '-') : '-';
                         let dongHoStr = (exposItem.dongNm ? exposItem.dongNm + " " : "") + (exposItem.hoNm || "");
@@ -871,7 +1035,6 @@
                             <div class="bg-emerald-50 p-3 rounded-lg flex flex-col justify-center"><p class="text-xs text-emerald-800 font-bold mb-1">사용승인일(준공)</p><p class="text-sm font-extrabold text-slate-800">${useAprDay || '-'}</p></div>
                         `;
                     } else if (titleItem) {
-                        // 통건물 상가/일반건물
                         bldgHtml = `
                             <div class="bg-emerald-50 p-3 rounded-lg flex flex-col justify-center"><p class="text-xs text-emerald-800 font-bold mb-1">건물명 / 동명</p><p class="text-sm font-extrabold text-slate-800">${titleItem.bldNm || titleItem.dongNm || '일반건축물'}</p></div>
                             <div class="bg-emerald-50 p-3 rounded-lg flex flex-col justify-center"><p class="text-xs text-emerald-800 font-bold mb-1">주용도 / 주구조</p><p class="text-sm font-extrabold text-slate-800">${titleItem.mainPurpsCdNm || '-'} / ${titleItem.strctCdNm || '-'}</p></div>
@@ -890,9 +1053,6 @@
             } catch(e) { console.error("❌ 건축물대장 에러:", e); }
         }
 
-        // =========================================================================
-        // 모달 및 PDF / 엑셀 다운로드 컨트롤
-        // =========================================================================
         function openDaejangModal() {
             const modal = document.getElementById('daejangModal');
             const addr = document.getElementById('address').value;
@@ -1022,9 +1182,6 @@
             }
         }
 
-        // =========================================================================
-        // 단지 실거래 조회
-        // =========================================================================
         function matchJibun(apiJibunStr, isSan, targetBon, targetBu) {
             if (!apiJibunStr) return false;
             const apiJibuns = String(apiJibunStr).replace(/\s/g, '').split(',');
@@ -1417,7 +1574,6 @@
             XLSX.writeFile(workbook, "강승완세무사_기준시가_연혁.xlsx");
         }
 
-        // 복원된 과거의 완벽하게 동작하던 대량조회 로직 (extractNum 방식 유지)
         async function handleBulkExcel(event) {
             const file = event.target.files[0];
             if (!file) return;
