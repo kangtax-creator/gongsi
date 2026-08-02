@@ -31,7 +31,7 @@
       gtag('config', 'G-97YGLD3SJ9');
     </script>
 </head>
-<body class="bg-[#f3f4f6] font-sans min-h-screen">
+<body class="bg-[#f3f4f6] font-sans min-h-screen flex flex-col">
 
     <!-- 헤더 -->
     <div class="bg-[#0f172a] text-white pt-12 pb-24 px-4">
@@ -50,23 +50,12 @@
         </div>
     </div>
 
-    <!-- 참고용 공식문서 확인 안내 메세지 -->
-    <div class="max-w-6xl mx-auto px-4 mt-6 mb-2 relative z-10 -mt-16">
-        <div class="bg-rose-50 border border-rose-200 text-rose-800 p-4 rounded-xl flex items-start text-sm shadow-md">
-            <svg class="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            <div>
-                <p class="font-bold mb-1">면책 조항 및 주의 안내</p>
-                <p class="leading-relaxed opacity-90 text-xs md:text-sm">본 사이트에서 제공하는 실거래가, 공시가격, 대장 정보 및 <b class="text-rose-900">정비사업현황 등은 공공데이터 기반의 단순 참고용</b>입니다. 실제 거래, 투자 등 <b>주요 의사결정 시에는 반드시 관할 구청 및 국토교통부 등의 공식 원본 문서(대장, 등기부등본 등)를 직접 열람하여 교차 검증</b>하시기 바랍니다.</p>
-            </div>
-        </div>
-    </div>
-
     <!-- 메인 컨텐츠 영역 -->
-    <div class="max-w-6xl mx-auto px-4 pb-12 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start mt-6">
+    <div class="max-w-6xl mx-auto px-4 pb-12 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start -mt-12 flex-1 w-full">
         
         <!-- 왼쪽: 주소 입력 영역 -->
         <div class="space-y-6">
-            <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
+            <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200 relative z-10">
                 <h2 class="text-lg font-extrabold text-slate-800 mb-4 flex items-center">
                     <span class="w-2 h-2 bg-indigo-600 rounded-full mr-2"></span> 대상 부동산 주소 설정
                 </h2>
@@ -106,6 +95,11 @@
                     <button onclick="searchPriceHistory()" id="searchBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition-all">
                         기본 정보 및 공시가격 연혁 조회
                     </button>
+                    
+                    <!-- 🌟 메인 화면 안내 추가 -->
+                    <p class="text-xs text-slate-500 mt-3 bg-slate-50 p-2.5 rounded-lg border border-slate-100 leading-relaxed">
+                        💡 <b>4번 정비사업현황</b> 탭은 위 주소 검색을 하지 않아도 <b>'자치구'나 '사업명'으로 즉시 검색</b>이 가능합니다.
+                    </p>
                 </div>
             </div>
 
@@ -155,7 +149,7 @@
 
         <!-- 오른쪽: 결과 출력 영역 -->
         <div class="lg:col-span-2 space-y-6">
-            <div class="flex space-x-2 border-b border-slate-200 overflow-x-auto whitespace-nowrap hide-scrollbar">
+            <div class="flex space-x-2 border-b border-slate-200 overflow-x-auto whitespace-nowrap hide-scrollbar pt-6 lg:pt-0">
                 <button onclick="switchTab('gongsi')" id="tab-gongsi" class="px-5 py-3 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 focus:outline-none">
                     1. 공시가격 연혁 데이터
                 </button>
@@ -333,13 +327,25 @@
                         <h2 class="text-lg font-extrabold text-slate-800 flex items-center">
                             <span class="w-2 h-2 bg-rose-600 rounded-full mr-2"></span> 서울시 관내 정비사업 진행현황 (조합인가 등)
                         </h2>
-                        <button onclick="fetchSeoulRenewal()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all text-sm">
-                            관할 자치구 사업 스캔
-                        </button>
                     </div>
-                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4">
-                        <p class="text-xs text-slate-600 font-medium">※ 좌측에서 서울시 주소를 검색한 후 스캔 버튼을 누르면 해당 자치구(예: 강남구, 서초구 등)의 재개발/재건축 정비사업 내역을 불러옵니다.</p>
+                    
+                    <!-- 🌟 4번 탭 독립 검색 UI 추가 -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-rose-50 p-4 rounded-xl border border-rose-100 mb-4">
+                        <div>
+                            <label class="block text-xs font-bold text-rose-800 mb-1">자치구 검색</label>
+                            <input type="text" id="renewalGu" placeholder="예: 강남구, 서초" class="w-full bg-white border border-rose-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-200">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-rose-800 mb-1">사업명(구역명) 검색</label>
+                            <div class="flex space-x-2">
+                                <input type="text" id="renewalName" placeholder="예: 은마, 신반포" class="flex-1 bg-white border border-rose-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-200" onkeypress="if(event.key==='Enter') fetchSeoulRenewal()">
+                                <button onclick="fetchSeoulRenewal()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all text-sm whitespace-nowrap">
+                                    스캔
+                                </button>
+                            </div>
+                        </div>
                     </div>
+
                     <div class="overflow-x-auto max-h-[600px] border border-slate-100 rounded-lg">
                         <table class="w-full text-left border-collapse relative">
                             <thead class="sticky top-0 bg-slate-50 shadow-sm z-10">
@@ -349,16 +355,31 @@
                                     <th class="py-3 px-4 min-w-[150px]">사업명(구역명)</th>
                                     <th class="py-3 px-4 whitespace-nowrap">진행단계(인가현황)</th>
                                     <th class="py-3 px-4 min-w-[120px]">대표지번</th>
+                                    <th class="py-3 px-4 text-center whitespace-nowrap">상세</th>
                                 </tr>
                             </thead>
                             <tbody id="renewal-table-body" class="text-xs divide-y divide-slate-100 text-slate-700">
-                                <tr><td colspan="5" class="py-12 text-center text-slate-400 font-medium">주소 검색 후 상단의 스캔 버튼을 눌러주세요.</td></tr>
+                                <tr><td colspan="6" class="py-12 text-center text-slate-400 font-medium">검색 조건을 입력하고 스캔 버튼을 눌러주세요.</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
+        </div>
+    </div>
+
+    <!-- 🌟 하단으로 이동된 면책 조항 및 주의 안내 -->
+    <div class="w-full bg-[#0f172a] border-t border-slate-800 mt-auto py-8 px-4">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center md:items-start gap-4 text-slate-400 text-xs leading-relaxed">
+            <div class="text-rose-400">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div>
+                <p class="font-bold text-slate-300 mb-1 text-sm">면책 조항 및 주의 안내</p>
+                <p>본 사이트에서 제공하는 실거래가, 공시가격, 대장 정보 및 정비사업현황 등은 국토교통부, 서울시 등 공공데이터 기반의 단순 참고용입니다. 실제 거래, 투자 등 주요 의사결정 시에는 반드시 관할 구청 및 국토교통부 등의 공식 원본 문서(대장, 등기부등본 등)를 직접 열람하여 교차 검증하시기 바라며, 본 사이트의 정보 오류로 인한 법적 책임은 지지 않습니다.</p>
+                <p class="mt-2">&copy; 2024 강승완 세무사 (micro-tax). All rights reserved.</p>
+            </div>
         </div>
     </div>
 
@@ -547,38 +568,30 @@
 
         // 🌟 CORS 방지용 글로벌 프록시 함수 🌟
         async function fetchWithProxy(url) {
-            // HTTPS 환경에서 HTTP(서울시 API 등) 직접 호출 시 발생하는 Mixed Content 차단 에러 원천 방지
-            const isMixedContent = window.location.protocol === 'https:' && url.startsWith('http://');
-            
-            // Mixed Content가 아닐 경우에만 직접 호출 시도 (예: 건축물대장 API)
-            if (!isMixedContent) {
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error();
+                return await res.json();
+            } catch(e) {
                 try {
-                    const res = await fetch(url);
-                    if (res.ok) return await res.json();
-                } catch(e) {
-                    console.warn("Direct fetch error, falling back to proxy.");
-                }
-            }
-
-            // 무료 공개 프록시 중 가장 안정적인 서버 목록 (우회 성공할 때까지 순차적으로 시도)
-            const proxies = [
-                `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-                `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-                `https://thingproxy.freeboard.io/fetch/${encodeURI(url)}`
-            ];
-
-            for (let proxyUrl of proxies) {
-                try {
-                    const res = await fetch(proxyUrl);
-                    if (res.ok) {
-                        return await res.json();
+                    // 1순위: allorigins의 /get 방식
+                    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+                    const res2 = await fetch(proxyUrl);
+                    if (!res2.ok) throw new Error();
+                    const data = await res2.json();
+                    return JSON.parse(data.contents);
+                } catch(e2) {
+                    try {
+                        // 2순위: corsproxy.io
+                        const proxyUrl2 = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+                        const res3 = await fetch(proxyUrl2);
+                        return await res3.json();
+                    } catch(e3) {
+                        console.error("API Proxy Error:", e3);
+                        return null; // 에러 방어
                     }
-                } catch(e) {
-                    console.warn(`Proxy failed: ${proxyUrl}`);
                 }
             }
-            
-            throw new Error("모든 프록시 서버 요청이 실패했습니다.");
         }
 
         document.addEventListener("DOMContentLoaded", () => {
@@ -594,6 +607,26 @@
             
             initSigaChart([]); 
         });
+
+        // 🌟 아코디언 메뉴(상세보기) 토글 함수 (전역 스코프 유지) 🌟
+        window.toggleRenewalDates = function(btn) {
+            const mainTr = btn.closest('tr');
+            const detailTr = mainTr.nextElementSibling;
+            
+            if (detailTr && detailTr.classList.contains('detail-row')) {
+                detailTr.classList.toggle('hidden');
+                
+                if (detailTr.classList.contains('hidden')) {
+                    btn.innerHTML = "상세보기 ▼";
+                    btn.classList.remove('bg-indigo-50', 'text-indigo-700', 'border-indigo-300');
+                    btn.classList.add('bg-white', 'text-slate-600', 'border-slate-300');
+                } else {
+                    btn.innerHTML = "닫기 ▲";
+                    btn.classList.remove('bg-white', 'text-slate-600', 'border-slate-300');
+                    btn.classList.add('bg-indigo-50', 'text-indigo-700', 'border-indigo-300');
+                }
+            }
+        };
 
         function switchTab(tab) {
             const tabs = ['gongsi', 'siga', 'daejang', 'renewal'];
@@ -619,6 +652,12 @@
                 oncomplete: function(data) {
                     document.getElementById('address').value = data.roadAddress || data.jibunAddress;
                     closeDaumPostcode();
+                    
+                    // 주소 검색 시 서울 자치구 자동 추출하여 정비사업현황 탭 입력창에 채우기
+                    let match = (data.roadAddress || data.jibunAddress).match(/서울(?:특별시)?\s+([가-힣]+구)/);
+                    if (match && document.getElementById('renewalGu')) {
+                        document.getElementById('renewalGu').value = match[1];
+                    }
                 },
                 width: '100%',
                 height: '100%'
@@ -629,7 +668,6 @@
             const layer = document.getElementById('daum-postcode-layer');
             layer.classList.add('hidden');
             layer.classList.remove('flex');
-            // document.getElementById('daum-postcode-container').innerHTML = '';  <-- 이 줄을 지워주세요!
         }
 
         function extractNum(text) {
@@ -1103,13 +1141,8 @@
             } catch(e) { console.error("❌ 건축물대장 에러:", e); }
         }
 
-        // 🌟 [4] 서울시 정비사업 현황 (정확한 엔드포인트 적용) 🌟
+        // 🌟 [4] 서울시 정비사업 현황 (정확한 엔드포인트 적용 및 독립 검색) 🌟
         async function fetchSeoulRenewal() {
-            if (!globalCurrentPnu || !globalCurrentPnu.startsWith("11")) {
-                alert("서울시 주소를 먼저 검색한 후 기본 정보 조회를 완료해 주세요. (타 지역은 제공되지 않습니다)");
-                return;
-            }
-
             const thead = document.getElementById('renewal-table-head');
             thead.innerHTML = `
                 <th class="py-3 px-4 whitespace-nowrap">자치구</th>
@@ -1144,19 +1177,35 @@
                     return;
                 }
 
-                const addrVal = document.getElementById('address').value || "";
-                let targetGu = "";
-                let match = addrVal.match(/서울(?:특별시)?\s+([가-힣]+구)/);
-                if (match) targetGu = match[1];
+                // 4번 탭 전용 검색창 값 읽기
+                let targetGu = document.getElementById('renewalGu') ? document.getElementById('renewalGu').value.trim().replace(/구$/, '') : "";
+                let targetName = document.getElementById('renewalName') ? document.getElementById('renewalName').value.trim().toLowerCase() : "";
 
-                // 검색한 주소의 자치구명으로 필터링
-                let filteredRows = targetGu ? rows.filter(r => {
-                    let district = r.DISTRICT || r.CGG_NM || r.GU_NM || "";
-                    return district.includes(targetGu);
-                }) : rows;
+                // 입력된 검색 조건으로 필터링
+                let filteredRows = rows;
+                
+                if (targetGu || targetName) {
+                    filteredRows = rows.filter(r => {
+                        let guMatch = true;
+                        let nameMatch = true;
 
-                // 필터링 결과가 없으면 해당 구에 데이터가 없으므로 전체 표시
-                if (filteredRows.length === 0) filteredRows = rows; 
+                        if (targetGu) {
+                            let district = r.DISTRICT || r.CGG_NM || r.GU_NM || "";
+                            guMatch = district.includes(targetGu);
+                        }
+                        if (targetName) {
+                            let name = String(r.ZONE_NM || r.BIZ_NM || r.BIZ_NAME || "").toLowerCase();
+                            nameMatch = name.includes(targetName);
+                        }
+                        
+                        return guMatch && nameMatch;
+                    });
+                }
+
+                if (filteredRows.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-slate-500 font-medium">검색 조건에 맞는 정비사업 내역이 없습니다.</td></tr>`;
+                    return;
+                }
 
                 tbody.innerHTML = "";
                 
@@ -1223,793 +1272,6 @@
                 console.error(e);
                 tbody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-rose-500 font-bold">통신 오류가 발생했습니다. (서울시 열린데이터광장 API 점검 중일 수 있습니다.)</td></tr>`;
             }
-        }
-        
-        // =========================================================================
-        // 모달 및 PDF / 엑셀 다운로드 컨트롤
-        // =========================================================================
-        function openDaejangModal() {
-            const modal = document.getElementById('daejangModal');
-            const addr = document.getElementById('address').value;
-            const dong = document.getElementById('dong').value;
-            const ho = document.getElementById('ho').value;
-            
-            const fullTitle = `${addr} ${dong ? dong+'동' : ''} ${ho ? ho+'호' : ''}`.trim();
-            document.getElementById('modal-address-title').innerText = fullTitle;
-            document.getElementById('pdf-header-address').innerText = fullTitle;
-
-            const titleBody = document.getElementById('modal-title-body');
-            titleBody.innerHTML = '';
-            if (globalTitleItem) {
-                const keys = ["platPlc", "bldNm", "dongNm", "mainPurpsCdNm", "strctCdNm", "platArea", "archArea", "bcRat", "totArea", "vlRatYyArea", "vlRat", "mainBldCnt", "hoCnt", "stndrYear", "useAprDay", "crtnDay"];
-                keys.forEach(k => {
-                    let val = globalTitleItem[k] || '-';
-                    if (k === 'useAprDay' || k === 'crtnDay') { if(val !== '-') val = formatPubDate(val); }
-                    titleBody.innerHTML += `<tr class="hover:bg-slate-50"><td class="py-2 px-4 font-bold text-slate-600 bg-slate-50/50 w-1/3 border-r border-slate-100">${DAEJANG_DICT[k] || k}</td><td class="py-2 px-4 text-slate-800 font-medium">${val}</td></tr>`;
-                });
-            } else {
-                titleBody.innerHTML = `<tr><td class="py-4 text-center text-slate-400">데이터가 없습니다.</td></tr>`;
-            }
-
-            const exposSection = document.getElementById('modal-expos-section');
-            const exposBody = document.getElementById('modal-expos-body');
-            exposBody.innerHTML = '';
-            
-            const propType = document.querySelector('input[name="propType"]:checked').value;
-            if (propType === "공동주택" || propType === "상가/건물") {
-                if (globalExposItem) {
-                    exposSection.classList.remove('hidden');
-                    const keys = ["dongNm", "flrNoNm", "hoNm", "exposPubuseGbCdNm", "area"];
-                    keys.forEach(k => {
-                        let val = globalExposItem[k] || '-';
-                        exposBody.innerHTML += `<tr class="hover:bg-slate-50"><td class="py-2 px-4 font-bold text-slate-600 bg-slate-50/50 w-1/3 border-r border-slate-100">${DAEJANG_DICT[k] || k}</td><td class="py-2 px-4 text-slate-800 font-medium">${val}</td></tr>`;
-                    });
-                } else {
-                    exposSection.classList.add('hidden');
-                }
-            } else {
-                exposSection.classList.add('hidden');
-            }
-
-            const landBody = document.getElementById('modal-land-body');
-            landBody.innerHTML = '';
-            if (globalLandItem) {
-                const keys = ["pnu", "lndcgrCodeNm", "lndpclAr", "prposArea1Nm", "prposArea2Nm", "landUseSittnNm", "tpgrphPitcNm", "tpgrphFrmNm", "roadSideCodeNm"];
-                keys.forEach(k => {
-                    let val = globalLandItem[k] || '-';
-                    if (k === 'lndpclAr' && val !== '-') val = Number(val).toLocaleString();
-                    landBody.innerHTML += `<tr class="hover:bg-slate-50"><td class="py-2 px-4 font-bold text-slate-600 bg-slate-50/50 w-1/3 border-r border-slate-100">${DAEJANG_DICT[k] || k}</td><td class="py-2 px-4 text-slate-800 font-medium">${val}</td></tr>`;
-                });
-            } else {
-                landBody.innerHTML = `<tr><td class="py-4 text-center text-slate-400">데이터가 없습니다.</td></tr>`;
-            }
-
-            const landUseBody = document.getElementById('modal-landuse-body');
-            if (globalLandUseTags && globalLandUseTags.length > 0) {
-                landUseBody.innerHTML = globalLandUseTags.map(t => {
-                    let color = "bg-slate-100 text-slate-700 border border-slate-200"; 
-                    if (t.includes('재개발') || t.includes('재건축') || t.includes('정비구역') || t.includes('촉진지구')) {
-                        color = "bg-rose-100 text-rose-800 font-black border-2 border-rose-400";
-                    } else if (t.includes('상업')) {
-                        color = "bg-purple-100 text-purple-800 font-bold border border-purple-300";
-                    } else if (t.includes('주거')) {
-                        color = "bg-blue-100 text-blue-800 font-bold border border-blue-300";
-                    } else if (t.includes('토지거래계약에관한허가구역')) {
-                        color = "bg-amber-100 text-amber-800 font-black border-2 border-amber-400";
-                    }
-                    return `<span class="inline-block px-3 py-1.5 rounded-lg text-sm mr-2 mb-2 ${color}">${t}</span>`;
-                }).join('');
-            } else {
-                landUseBody.innerHTML = `<span class="text-sm text-slate-400">해당 없음 또는 정보 없음</span>`;
-            }
-
-            const violationSection = document.getElementById('modal-violation-section');
-            const violationBody = document.getElementById('modal-violation-body');
-            violationBody.innerHTML = '';
-            
-            if (globalViolationItems && globalViolationItems.length > 0) {
-                violationSection.classList.remove('hidden');
-                globalViolationItems.forEach(v => {
-                    let vDate = formatPubDate(v.violtBldRegsDay);
-                    let vDetail = v.violtCn;
-                    vDate = vDate ? vDate : '일자 미기재';
-                    vDetail = vDetail ? vDetail : '상세 사유 지자체 전산 미등록 (대장 원본 표제부 확인 요망)';
-                    violationBody.innerHTML += `
-                        <tr class="hover:bg-red-50/50">
-                            <td class="py-3 px-4 font-bold text-red-700 border-b border-red-50 whitespace-nowrap">${vDate}</td>
-                            <td class="py-3 px-4 text-slate-700 font-medium border-b border-red-50 leading-relaxed">${vDetail}</td>
-                        </tr>
-                    `;
-                });
-            } else if (globalIsVioltBld) {
-                violationSection.classList.remove('hidden');
-                violationBody.innerHTML = `<tr><td colspan="2" class="py-4 px-4 text-center text-red-500 font-bold">위반건축물 표시가 있으나, 상세 내역이 전산에 등록되지 않았습니다.</td></tr>`;
-            } else {
-                violationSection.classList.add('hidden');
-            }
-
-            modal.classList.remove('hidden');
-            setTimeout(() => { modal.classList.remove('opacity-0'); }, 10);
-        }
-
-        function closeDaejangModal() {
-            const modal = document.getElementById('daejangModal');
-            modal.classList.add('opacity-0');
-            setTimeout(() => { modal.classList.add('hidden'); }, 300);
-        }
-
-        function downloadDaejangExcel() {
-            if (!globalTitleItem && !globalLandItem && !globalExposItem) {
-                alert("다운로드할 원본 데이터가 없습니다.");
-                return;
-            }
-
-            const workbook = XLSX.utils.book_new();
-
-            function createVerticalSheet(dataItem) {
-                const rows = [];
-                for (let k in dataItem) {
-                    if (typeof dataItem[k] !== 'object') {
-                        let keyName = DAEJANG_DICT[k] || k;
-                        let val = dataItem[k];
-                        if (k === 'useAprDay' || k === 'crtnDay') { if(val && val !== '-') val = formatPubDate(val); }
-                        rows.push({ "항목": keyName, "내용": val });
-                    }
-                }
-                const ws = XLSX.utils.json_to_sheet(rows);
-                ws['!cols'] = [{ wpx: 180 }, { wpx: 350 }]; 
-                return ws;
-            }
-
-            if (globalTitleItem) XLSX.utils.book_append_sheet(workbook, createVerticalSheet(globalTitleItem), "건축물대장_표제부");
-            if (globalExposItem) XLSX.utils.book_append_sheet(workbook, createVerticalSheet(globalExposItem), "건축물대장_전유부");
-            if (globalLandItem) XLSX.utils.book_append_sheet(workbook, createVerticalSheet(globalLandItem), "토지대장_특성");
-            
-            if (globalLandUseTags && globalLandUseTags.length > 0) {
-                const luRows = globalLandUseTags.map((tag, idx) => ({ "연번": idx + 1, "지정_규제_내역": tag }));
-                const ws = XLSX.utils.json_to_sheet(luRows);
-                ws['!cols'] = [{ wpx: 50 }, { wpx: 400 }];
-                XLSX.utils.book_append_sheet(workbook, ws, "토지이용계획_규제");
-            }
-
-            if (globalViolationItems && globalViolationItems.length > 0) {
-                const viRows = globalViolationItems.map(item => {
-                    return {
-                        "동명칭": item.dongNm || '-',
-                        "호명칭": item.hoNm || '-',
-                        "위반건축물등록일자": formatPubDate(item.violtBldRegsDay) || '-',
-                        "위반내용_상세": item.violtCn || '-'
-                    };
-                });
-                const ws = XLSX.utils.json_to_sheet(viRows);
-                ws['!cols'] = [{ wpx: 80 }, { wpx: 80 }, { wpx: 120 }, { wpx: 500 }];
-                XLSX.utils.book_append_sheet(workbook, ws, "위반건축물_적발내역");
-            }
-
-            XLSX.writeFile(workbook, "강승완세무사_대장및규제_추출.xlsx");
-        }
-
-        async function downloadDaejangPDF() {
-            const btn = document.getElementById('pdfBtn');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = "PDF 변환 중... (잠시만 기다려주세요)";
-            
-            const { jsPDF } = window.jspdf;
-            const printArea = document.getElementById('daejang-print-area');
-            const pdfHeader = document.getElementById('pdf-header');
-            
-            const originalOverflow = printArea.style.overflow;
-            printArea.style.overflow = 'visible';
-            pdfHeader.classList.remove('hidden');
-            
-            try {
-                const canvas = await html2canvas(printArea, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
-                const imgData = canvas.toDataURL('image/png');
-                
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-                
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                pdf.save("강승완세무사_대장및규제_추출.pdf");
-            } catch(e) {
-                console.error(e);
-                alert("PDF 생성 중 오류가 발생했습니다.");
-            } finally {
-                printArea.style.overflow = originalOverflow;
-                pdfHeader.classList.add('hidden');
-                btn.innerHTML = originalText;
-            }
-        }
-
-        // =========================================================================
-        // 단지 실거래 조회 및 필터링 기능
-        // =========================================================================
-        function matchJibun(apiJibunStr, isSan, targetBon, targetBu) {
-            if (!apiJibunStr) return false;
-            const apiJibuns = String(apiJibunStr).replace(/\s/g, '').split(',');
-            for (let j of apiJibuns) {
-                let isApiSan = j.includes("산");
-                let cleanJ = j.replace("산", ""); 
-                let parts = cleanJ.split('-'); 
-                let aBon = parseInt(parts[0], 10);
-                let aBu = parts.length > 1 ? parseInt(parts[1], 10) : 0; 
-                if (isSan === isApiSan && targetBon === aBon && targetBu === aBu) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        function parseHybridData(responseText) {
-            let extractedItems = [];
-            try {
-                const jsonObj = JSON.parse(responseText);
-                const findItems = (obj) => {
-                    if (Array.isArray(obj)) return obj;
-                    for (let key in obj) {
-                        if (Array.isArray(obj[key])) return obj[key];
-                        if (typeof obj[key] === 'object' && obj[key] !== null) {
-                            let result = findItems(obj[key]);
-                            if (result) return result;
-                        }
-                    }
-                    return null;
-                };
-                let items = findItems(jsonObj) || (jsonObj.items ? jsonObj.items : [jsonObj]);
-                
-                if (Array.isArray(items) && items.length > 0) {
-                    items.forEach(item => {
-                        extractedItems.push({
-                            dealAmount: String(item.dealAmount || item.거래금액 || item.deposit || item.보증금액 || "0"),
-                            monthly: String(item.monthlyRent || item.월세금액 || "0"),
-                            area: parseFloat(item.excluUseAr || item.전용면적 || "0"),
-                            year: String(item.dealYear || item.년 || ""),
-                            month: String(item.dealMonth || item.월 || ""),
-                            day: String(item.dealDay || item.일 || "1").split('~')[0].trim(),
-                            complexName: String(item.aptNm || item.mhouseNm || item.offiNm || item.단지명 || item.아파트 || item.연립다세대 || item.단지 || ""),
-                            jibun: String(item.jibun || item.지번 || ""),
-                            floor: String(item.floor || item.층 || "-"),
-                            ownershipGbn: String(item.ownershipGbn || item.구분 || "")
-                        });
-                    });
-                    return extractedItems;
-                }
-            } catch (e) {}
-
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(responseText, "text/xml");
-            const xmlItems = xmlDoc.getElementsByTagName("item");
-
-            const getText = (node, tagNames) => {
-                for (let tag of tagNames) {
-                    let el = node.getElementsByTagName(tag)[0];
-                    if (el && el.textContent) return el.textContent;
-                }
-                return "";
-            };
-
-            for (let item of xmlItems) {
-                extractedItems.push({
-                    dealAmount: getText(item, ["dealAmount", "거래금액", "deposit", "보증금액"]) || "0",
-                    monthly: getText(item, ["monthlyRent", "월세금액"]) || "0",
-                    area: parseFloat(getText(item, ["excluUseAr", "전용면적"]) || "0"),
-                    year: getText(item, ["dealYear", "년"]),
-                    month: getText(item, ["dealMonth", "월"]),
-                    day: (getText(item, ["dealDay", "일"]) || "1").split('~')[0].trim(),
-                    complexName: getText(item, ["aptNm", "mhouseNm", "offiNm", "단지명", "아파트", "연립다세대", "단지"]),
-                    jibun: getText(item, ["jibun", "지번"]),
-                    floor: getText(item, ["floor", "층"]) || "-",
-                    ownershipGbn: getText(item, ["ownershipGbn", "구분"]) || ""
-                });
-            }
-            return extractedItems;
-        }
-
-        async function fetchComplexTransactions() {
-            const startMonthInput = document.getElementById('searchStartMonth').value;
-            const endMonthInput = document.getElementById('searchEndMonth').value;
-            const targetType = document.getElementById('sigaTargetType').value;
-            const keywordInput = document.getElementById('searchKeyword').value.replace(/\s/g, '').toLowerCase(); 
-            const btn = document.getElementById('sigaBtn');
-
-            if (!globalCurrentPnu) {
-                alert("먼저 좌측 주소창에서 주소를 검색하고 '기본 정보 및 공시가격 연혁 조회'를 눌러 지역 연동을 완료해 주세요.");
-                return;
-            }
-            if (!startMonthInput || !endMonthInput) {
-                alert("조회 시작 월과 종료 월을 모두 입력해 주세요.");
-                return;
-            }
-
-            btn.innerText = "데이터 초고속 병렬 추출 중 (전체 기간 동시 스캔)...";
-            btn.disabled = true;
-            globalTransactions = [];
-
-            try {
-                const lawdCd = globalCurrentPnu.substring(0, 5);
-                const isSan = globalCurrentPnu.substring(10, 11) === '2';
-                const bon = parseInt(globalCurrentPnu.substring(11, 15), 10);
-                const bu = parseInt(globalCurrentPnu.substring(15, 19), 10);
-                
-                const startD = new Date(startMonthInput + "-01");
-                const endD = new Date(endMonthInput + "-01");
-                let targetMonths = [];
-                let currentD = new Date(startD);
-                
-                while (currentD <= endD) {
-                    targetMonths.push(`${currentD.getFullYear()}${String(currentD.getMonth() + 1).padStart(2, '0')}`);
-                    currentD.setMonth(currentD.getMonth() + 1);
-                }
-
-                let tradeApiPath = "RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade"; 
-                let rentApiPath = "RTMSDataSvcAptRent/getRTMSDataSvcAptRent";
-                let silvApiPath = "RTMSDataSvcSilvTrade/getRTMSDataSvcSilvTrade"; 
-                
-                let includeSilv = (targetType === "APT");
-
-                if (targetType === "RH") {
-                    tradeApiPath = "RTMSDataSvcRhTrade/getRTMSDataSvcRhTrade";
-                    rentApiPath = "RTMSDataSvcRhRent/getRTMSDataSvcRhRent";
-                } else if (targetType === "OFFI") {
-                    tradeApiPath = "RTMSDataSvcOffiTrade/getRTMSDataSvcOffiTrade";
-                    rentApiPath = "RTMSDataSvcOffiRent/getRTMSDataSvcOffiRent";
-                }
-
-                const fetchTasks = targetMonths.map(async (ym) => {
-                    const tradeUrl = `/api/rtms/${tradeApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`;
-                    const rentUrl = `/api/rent/${rentApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`;
-                    const silvUrl = `/api/rtms/${silvApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`;
-                    
-                    try {
-                        const fetchPromises = [
-                            fetch(tradeUrl).then(res => ({res, dataType: 'trade'})).catch(e => ({res: null, dataType: 'trade'})),
-                            fetch(rentUrl).then(res => ({res, dataType: 'rent'})).catch(e => ({res: null, dataType: 'rent'}))
-                        ];
-                        if (includeSilv) fetchPromises.push(fetch(silvUrl).then(res => ({res, dataType: 'silv'})).catch(e => ({res: null, dataType: 'silv'})));
-                        
-                        const responses = await Promise.all(fetchPromises);
-
-                        const processResponse = async (resultObj) => {
-                            if (!resultObj.res || !resultObj.res.ok) return;
-                            const text = await resultObj.res.text();
-                            if (text.includes("SERVICE KEY IS NOT REGISTERED ERROR")) return;
-
-                            const parsedItems = parseHybridData(text);
-
-                            parsedItems.forEach(item => {
-                                let isKeywordMatch = false;
-                                if (keywordInput && item.complexName) {
-                                    let cleanApi = item.complexName.replace(/\s/g, '').toLowerCase();
-                                    if (cleanApi.includes(keywordInput)) isKeywordMatch = true;
-                                }
-
-                                let isJibunValid = matchJibun(item.jibun, isSan, bon, bu);
-                                let isNameValid = false;
-                                
-                                if (globalComplexName && item.complexName) {
-                                    let cleanGlobal = globalComplexName.replace(/\s/g, '').toLowerCase();
-                                    let cleanApi = item.complexName.replace(/\s/g, '').toLowerCase();
-                                    if (cleanApi.includes(cleanGlobal) || cleanGlobal.includes(cleanApi)) {
-                                        isNameValid = true;
-                                    }
-                                }
-
-                                if (resultObj.dataType === 'silv') {
-                                    if (!isKeywordMatch && !isNameValid) return; 
-                                } else {
-                                    if (keywordInput) {
-                                        if (!isKeywordMatch) return;
-                                    } else {
-                                        if (!isJibunValid && !isNameValid) return;
-                                    }
-                                }
-
-                                let parsedAmount = parseInt(item.dealAmount.replace(/,/g, '').trim()) || 0;
-                                let parsedMonthly = parseInt(item.monthly.replace(/,/g, '').trim()) || 0;
-
-                                let finalType = '매매';
-                                if (resultObj.dataType === 'rent') {
-                                    finalType = parsedMonthly > 0 ? '월세' : '전세';
-                                } else if (resultObj.dataType === 'silv') {
-                                    finalType = item.ownershipGbn === '입' ? '입주권' : '분양권';
-                                }
-
-                                globalTransactions.push({
-                                    type: finalType,
-                                    name: item.complexName.trim() || "-",
-                                    date: `${item.year}-${String(item.month).padStart(2, '0')}-${String(item.day).padStart(2, '0')}`,
-                                    floor: item.floor,
-                                    area: item.area || 0,
-                                    amount: parsedAmount * 10000,
-                                    monthlyRent: parsedMonthly * 10000
-                                });
-                            });
-                        };
-                        await Promise.all(responses.map(resObj => processResponse(resObj)));
-                    } catch (e) {}
-                });
-
-                await Promise.all(fetchTasks);
-
-                globalTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
-                
-                populateAreaFilter();
-                
-                currentTransactionFilter = 'all';
-                document.getElementById('areaFilter').value = 'all';
-                applyFilters();
-
-            } catch (err) {
-                alert("조회 중 오류가 발생했습니다.");
-                console.error(err);
-            } finally {
-                btn.innerText = "선택 기간 내 매매 / 전월세 / 분양·입주권 데이터 동시 스캔";
-                btn.disabled = false;
-            }
-        }
-
-        function populateAreaFilter() {
-            const areaSelect = document.getElementById('areaFilter');
-            const uniqueAreas = [...new Set(globalTransactions.map(t => Number(t.area.toFixed(2))))].sort((a, b) => a - b);
-            
-            let html = '<option value="all">전체 면적</option>';
-            uniqueAreas.forEach(area => {
-                if (area > 0) {
-                    html += `<option value="${area}">전용 ${area}㎡</option>`;
-                }
-            });
-            areaSelect.innerHTML = html;
-        }
-
-        function applyFilters() {
-            const selectedArea = document.getElementById('areaFilter').value;
-            
-            let areaFiltered = globalTransactions;
-            if (selectedArea !== 'all') {
-                const targetArea = parseFloat(selectedArea);
-                areaFiltered = areaFiltered.filter(r => Number(r.area.toFixed(2)) === targetArea);
-            }
-
-            let tradeCount = areaFiltered.filter(r => r.type === '매매').length;
-            let rentCount = areaFiltered.filter(r => r.type === '전세' || r.type === '월세').length;
-            let silvCount = areaFiltered.filter(r => r.type === '분양권' || r.type === '입주권').length;
-            
-            document.getElementById('btn-filter-all').innerText = `총 ${areaFiltered.length}건`;
-            document.getElementById('btn-filter-trade').innerText = `매매 ${tradeCount}건`;
-            document.getElementById('btn-filter-rent').innerText = `전월세 ${rentCount}건`;
-            document.getElementById('btn-filter-silv').innerText = `분양·입주권 ${silvCount}건`;
-
-            let finalFiltered = areaFiltered;
-            if (currentTransactionFilter === 'trade') finalFiltered = finalFiltered.filter(r => r.type === '매매');
-            else if (currentTransactionFilter === 'rent') finalFiltered = finalFiltered.filter(r => r.type === '전세' || r.type === '월세');
-            else if (currentTransactionFilter === 'silv') finalFiltered = finalFiltered.filter(r => r.type === '분양권' || r.type === '입주권');
-
-            renderSigaTable(finalFiltered);
-            updateSigaChart(finalFiltered, currentTransactionFilter);
-        }
-
-        function filterTransactions(type) {
-            currentTransactionFilter = type;
-            
-            const btnAll = document.getElementById('btn-filter-all');
-            const btnTrade = document.getElementById('btn-filter-trade');
-            const btnRent = document.getElementById('btn-filter-rent');
-            const btnSilv = document.getElementById('btn-filter-silv');
-
-            btnAll.className = "bg-white text-indigo-700 text-xs px-3 py-1.5 rounded-full font-bold border border-indigo-200 hover:bg-indigo-50 transition-colors shadow-sm focus:outline-none";
-            btnTrade.className = "bg-white text-emerald-700 text-xs px-3 py-1.5 rounded-full font-bold border border-emerald-200 hover:bg-emerald-50 transition-colors shadow-sm focus:outline-none";
-            btnRent.className = "bg-white text-amber-700 text-xs px-3 py-1.5 rounded-full font-bold border border-amber-200 hover:bg-amber-50 transition-colors shadow-sm focus:outline-none";
-            btnSilv.className = "bg-white text-purple-700 text-xs px-3 py-1.5 rounded-full font-bold border border-purple-200 hover:bg-purple-50 transition-colors shadow-sm focus:outline-none";
-
-            if (type === 'all') btnAll.className = "bg-indigo-600 text-white text-xs px-3 py-1.5 rounded-full font-bold border border-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm focus:outline-none";
-            else if (type === 'trade') btnTrade.className = "bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-full font-bold border border-emerald-600 hover:bg-emerald-700 transition-colors shadow-sm focus:outline-none";
-            else if (type === 'rent') btnRent.className = "bg-amber-500 text-white text-xs px-3 py-1.5 rounded-full font-bold border border-amber-500 hover:bg-amber-600 transition-colors shadow-sm focus:outline-none";
-            else if (type === 'silv') btnSilv.className = "bg-purple-600 text-white text-xs px-3 py-1.5 rounded-full font-bold border border-purple-600 hover:bg-purple-700 transition-colors shadow-sm focus:outline-none";
-
-            applyFilters();
-        }
-
-        function renderSigaTable(filtered) {
-            const tbody = document.getElementById('siga-table-body');
-            tbody.innerHTML = "";
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="py-12 text-center text-slate-500 font-medium">선택한 조건에 맞는 실거래가 내역이 없습니다.</td></tr>`;
-            } else {
-                filtered.forEach((row) => {
-                    let typeBadge = '';
-                    if (row.type === '매매') typeBadge = '<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded">매매</span>';
-                    else if (row.type === '전세') typeBadge = '<span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded">전세</span>';
-                    else if (row.type === '월세') typeBadge = '<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded">월세</span>';
-                    else if (row.type === '분양권') typeBadge = '<span class="bg-purple-100 text-purple-800 text-[10px] font-bold px-2 py-0.5 rounded">분양권</span>';
-                    else typeBadge = '<span class="bg-fuchsia-100 text-fuchsia-800 text-[10px] font-bold px-2 py-0.5 rounded">입주권</span>';
-
-                    let amountText = row.amount.toLocaleString() + '원';
-                    let monthlyText = row.monthlyRent > 0 ? row.monthlyRent.toLocaleString() + '원' : '-';
-
-                    tbody.innerHTML += `
-                        <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0">
-                            <td class="py-3 px-4 font-medium text-slate-700">${row.date}</td>
-                            <td class="py-3 px-4">${typeBadge}</td>
-                            <td class="py-3 px-4 text-slate-600 font-medium truncate max-w-[120px]" title="${row.name}">${row.name}</td>
-                            <td class="py-3 px-4 font-mono font-bold text-slate-700">${row.area.toFixed(2)}㎡</td>
-                            <td class="py-3 px-4 text-slate-500">${row.floor}층</td>
-                            <td class="py-3 px-4 font-extrabold text-right ${row.type === '매매' || row.type.includes('권') ? 'text-emerald-600' : 'text-slate-800'}">${amountText}</td>
-                            <td class="py-3 px-4 font-bold text-amber-600 text-right">${monthlyText}</td>
-                        </tr>`;
-                });
-            }
-        }
-
-        function initSigaChart(data) {
-            const ctx = document.getElementById('sigaChart').getContext('2d');
-            if (sigaChartInstance) { sigaChartInstance.destroy(); }
-            sigaChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: { labels: [], datasets: [] },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { 
-                        tooltip: { mode: 'index', intersect: false },
-                        legend: { display: true, position: 'top', labels: { usePointStyle: true, boxWidth: 8 } }
-                    },
-                    interaction: { mode: 'nearest', axis: 'x', intersect: false }
-                }
-            });
-        }
-
-        function updateSigaChart(filteredData, viewType) {
-            if (!sigaChartInstance) return;
-            const chartData = [...filteredData].reverse();
-            sigaChartInstance.data.labels = chartData.map(d => d.date);
-
-            let datasets = [];
-            if (viewType === 'all') {
-                const tradeValues = chartData.map(d => (d.type === '매매') ? d.amount / 10000 : null);
-                const rentOnlyValues = chartData.map(d => (d.type === '전세' && d.monthlyRent === 0) ? d.amount / 10000 : null);
-                const silvValues = chartData.map(d => (d.type === '분양권' || d.type === '입주권') ? d.amount / 10000 : null);
-
-                if (tradeValues.some(v => v !== null)) datasets.push({ label: '매매가 (만원)', data: tradeValues, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', tension: 0.2, fill: false, pointRadius: 4, spanGaps: true });
-                if (rentOnlyValues.some(v => v !== null)) datasets.push({ label: '순수 전세 보증금 (만원)', data: rentOnlyValues, borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', tension: 0.2, fill: false, pointRadius: 4, spanGaps: true });
-                if (silvValues.some(v => v !== null)) datasets.push({ label: '분양·입주권 (만원)', data: silvValues, borderColor: '#9333ea', backgroundColor: 'rgba(147, 51, 234, 0.1)', tension: 0.2, fill: false, pointRadius: 4, spanGaps: true });
-            } else if (viewType === 'trade') {
-                datasets.push({ label: '매매가 (만원)', data: chartData.map(d => d.amount / 10000), borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', tension: 0.2, fill: true, pointRadius: 4 });
-            } else if (viewType === 'rent') {
-                datasets.push({ label: '순수 전세 보증금 (만원)', data: chartData.map(d => (d.type === '전세' && d.monthlyRent === 0) ? d.amount / 10000 : null), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', tension: 0.2, fill: true, pointRadius: 4, spanGaps: true });
-            } else if (viewType === 'silv') {
-                datasets.push({ label: '분양·입주권 프리미엄 포함가 (만원)', data: chartData.map(d => d.amount / 10000), borderColor: '#9333ea', backgroundColor: 'rgba(147, 51, 234, 0.1)', tension: 0.2, fill: true, pointRadius: 4 });
-            }
-
-            sigaChartInstance.data.datasets = datasets;
-            sigaChartInstance.update();
-        }
-
-        function renderChart(data) {
-            const ctx = document.getElementById('priceChart').getContext('2d');
-            if (priceChartInstance) { priceChartInstance.destroy(); }
-            const chartData = [...data].reverse();
-            priceChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: chartData.map(row => row.year),
-                    datasets: [{
-                        label: '고시 기준시가', data: chartData.map(row => row.price),
-                        borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.05)',
-                        borderWidth: 3, pointBackgroundColor: '#ffffff', pointBorderColor: '#4f46e5', pointRadius: 4, fill: true, tension: 0.2
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-            });
-        }
-
-        function renderTags(propType, data) {
-            const container = document.getElementById('tag-container');
-            container.innerHTML = "";
-            data.forEach(row => {
-                let extraInfo = "";
-                if (propType === "공동주택") { extraInfo = `전용면적: ${row.area}㎡`; } 
-                else if (propType === "단독주택" || propType === "상가/건물") { extraInfo = `대지(전체/산정): ${row.landTotal}/${row.landCalc}㎡ │ 건물(전체/산정): ${row.bldTotal}/${row.bldCalc}㎡`; }
-
-                let dateDisplay = `<span class="text-xs text-slate-500 ml-3 pl-3 border-l border-slate-300 font-medium">기준일: ${row.baseDate}</span>`;
-                if(row.pubDate) { dateDisplay += `<span class="text-xs text-slate-500 ml-2 font-medium">/ 공시일: ${row.pubDate}</span>`; }
-                
-                container.innerHTML += `
-                    <div class="flex flex-col bg-white border border-slate-200 rounded-xl px-5 py-4 shadow-sm">
-                        <div class="flex items-center mb-1">
-                            <span class="font-extrabold text-slate-800 text-sm mr-3">${row.year}</span>
-                            <span class="text-indigo-600 font-bold text-base">${row.price.toLocaleString()}<span class="text-sm font-medium ml-1 text-indigo-400">원</span></span>
-                            ${dateDisplay}
-                        </div>
-                        ${extraInfo ? `<span class="text-xs text-slate-400 font-normal mt-1">${extraInfo}</span>` : ""}
-                    </div>`;
-            });
-        }
-
-        function downloadExcel() {
-            if (currentExcelData.length === 0) return;
-            const fullAddress = document.getElementById('address').value;
-            const formattedData = currentExcelData.map(row => {
-                let excelRow = { "대상 주소": fullAddress, "가격기준연도": row.year, "기준일자": row.baseDate, "공시일자": row.pubDate, "기준시가(원)": row.price };
-                if (currentPropType === "공동주택") { excelRow["전용면적(㎡)"] = row.area; } 
-                else if (currentPropType === "단독주택" || currentPropType === "상가/건물") {
-                    excelRow["대지면적_전체(㎡)"] = row.landTotal; excelRow["대지면적_산정(㎡)"] = row.landCalc;
-                    excelRow["건물연면적_전체(㎡)"] = row.bldTotal; excelRow["건물연면적_산정(㎡)"] = row.bldCalc;
-                }
-                return excelRow;
-            });
-            formattedData.push({});
-            formattedData.push({ "대상 주소": "💡 양도세/상속세/증여세 및 부동산 절세 상담:", "가격기준연도": "강승완 세무사", "기준일자": OFFICE_PHONE, "공시일자": "www.micro-tax.com" });
-
-            const worksheet = XLSX.utils.json_to_sheet(formattedData);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "기준시가 연혁");
-            XLSX.writeFile(workbook, "강승완세무사_기준시가_연혁.xlsx");
-        }
-
-        async function handleBulkExcel(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const propType = document.getElementById('bulkPropType').value;
-            const progressContainer = document.getElementById('bulk-progress-container');
-            const progressBar = document.getElementById('bulk-progress-bar');
-            const statusText = document.getElementById('bulk-status-text');
-            const percentageText = document.getElementById('bulk-percentage');
-
-            progressContainer.classList.remove('hidden');
-            statusText.innerText = "데이터 스마트 분석 중...";
-            progressBar.style.width = "0%";
-            percentageText.innerText = "0%";
-
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                    
-                    const validRows = [];
-
-                    for (let i = 0; i < rows.length; i++) {
-                        if (i === 0 && (rows[i][0] === "주소" || rows[i][0] === "대상 주소")) continue;
-                        let rawAddr = rows[i][0] ? String(rows[i][0]).trim() : "";
-                        if (!rawAddr) continue;
-                        let dong = rows[i][1] ? String(rows[i][1]).replace(/\D/g, '') : "";
-                        let ho = rows[i][2] ? String(rows[i][2]).replace(/\D/g, '') : "";
-                        let baseAddr = rawAddr;
-                        let hasDong = rawAddr.includes("동");
-                        let hasHo = rawAddr.includes("호");
-                        let isRoadAddr = rawAddr.includes("로") || rawAddr.includes("길");
-
-                        if ((propType === "auto" || propType === "공동주택") && !dong && !ho) {
-                            if (isRoadAddr || hasDong || hasHo) {
-                                let matchCommaDongHo = rawAddr.match(/,\s*(\d+)\s*(?:동|-)\s*(\d+)\s*(?:호)?\s*$/);
-                                let matchCommaHoOnly = rawAddr.match(/,\s*(?:제)?(\d+)\s*(?:호)?\s*$/);
-                                let matchTextDongHo = rawAddr.match(/(\d+)\s*동\s*(\d+)\s*(?:호)?\s*$/);
-                                let matchTextHoOnly = rawAddr.match(/\s+(?:제)?(\d+)\s*호\s*$/);
-                                if (matchCommaDongHo) { dong = matchCommaDongHo[1]; ho = matchCommaDongHo[2]; baseAddr = rawAddr.split(',')[0].trim(); }
-                                else if (matchCommaHoOnly) { ho = matchCommaHoOnly[1]; baseAddr = rawAddr.split(',')[0].trim(); }
-                                else if (matchTextDongHo) { dong = matchTextDongHo[1]; ho = matchTextDongHo[2]; baseAddr = rawAddr.replace(matchTextDongHo[0], '').trim(); }
-                                else if (matchTextHoOnly) { ho = matchTextHoOnly[1]; baseAddr = rawAddr.replace(matchTextHoOnly[0], '').trim(); }
-                            }
-                        }
-                        validRows.push({ rawAddr, baseAddr, dong, ho });
-                    }
-
-                    if (validRows.length === 0) {
-                        alert("유효한 주소를 식별하지 못했습니다.");
-                        progressContainer.classList.add('hidden');
-                        return;
-                    }
-
-                    const totalCount = validRows.length;
-                    const finalBulkRows = [];
-                    const typesToTry = propType === "auto" ? ["공동주택", "단독주택", "토지"] : [propType];
-
-                    for (let i = 0; i < totalCount; i++) {
-                        const { rawAddr, baseAddr, dong, ho } = validRows[i];
-                        const percent = Math.round(((i + 1) / totalCount) * 100);
-                        statusText.innerText = `대량 전수 스캔 중... (${i + 1}/${totalCount})`;
-                        progressBar.style.width = `${percent}%`;
-                        percentageText.innerText = `${percent}%`;
-
-                        const pnu = await getPnu(baseAddr);
-                        if (!pnu) {
-                            finalBulkRows.push({ "대상 주소": rawAddr, "물건 구분": "오류", "가격기준연도": "오류", "기준시가(원)": "주소 인식 불가능" });
-                            continue;
-                        }
-
-                        let bestHistory = [];
-                        let maxYearBest = 0;
-                        let finalPropType = "없음";
-
-                        for (let probeType of typesToTry) {
-                            let apiUrl = ""; let priceField = "";
-                            if (probeType === "공동주택") { apiUrl = "https://api.vworld.kr/ned/data/getApartHousingPriceAttr"; priceField = "pblntfPc"; }
-                            else if (probeType === "단독주택") { apiUrl = "https://api.vworld.kr/ned/data/getIndvdHousingPriceAttr"; priceField = "pblntfPc"; }
-                            else { apiUrl = "https://api.vworld.kr/ned/data/getIndvdLandPriceAttr"; priceField = "pblntfPclnd"; }
-
-                            try {
-                                let pageNo = 1; let keepFetching = true;
-                                const seenKeys = new Set(); const tempHistory = [];
-
-                                while (keepFetching) {
-                                    const params = new URLSearchParams({ key: VWORLD_KEY, pnu: pnu, format: "json", numOfRows: "1000", pageNo: String(pageNo), domain: DOMAIN });
-                                    const resData = await fetchJSONP(`${apiUrl}?${params.toString()}`);
-                                    let items = [];
-                                    for (const key in resData) {
-                                        if (resData[key] && resData[key].field) {
-                                            items = Array.isArray(resData[key].field) ? resData[key].field : [resData[key].field];
-                                            break;
-                                        }
-                                    }
-                                    if (items.length === 0) break;
-
-                                    for (const item of items) {
-                                        if (probeType === "공동주택") {
-                                            const itemDong = extractNum(item.dongNm);
-                                            const itemHo = extractNum(item.hoNm);
-                                            if (dong && itemDong !== dong) continue;
-                                            if (ho && itemHo !== ho) continue;
-                                        }
-                                        const priceVal = item[priceField] || item.housePc || item.prc || 0;
-                                        const yearVal = item.stdrYear || item.pblntfYear;
-                                        const baseDate = formatBaseDate(item.stdrMt);
-                                        let pubDate = formatPubDate(item.pblntfDe || item.pblntfDate || item.pblntfYmd || item.pblntfDay);
-
-                                        if (priceVal && yearVal) {
-                                            const uniqueKey = `${yearVal}_${priceVal}_${baseDate}_${pubDate}`;
-                                            if (!seenKeys.has(uniqueKey)) {
-                                                seenKeys.add(uniqueKey);
-                                                tempHistory.push({
-                                                    "대상 주소": rawAddr, "물건 구분": probeType, "가격기준연도": `${yearVal}년`, "기준일자": baseDate, "공시일자": pubDate, "기준시가(원)": parseInt(priceVal),
-                                                    "전용면적(㎡)": probeType === "공동주택" ? (item.prvuseAr || item.totArea || "-") : "-",
-                                                    "대지면적_전체(㎡)": probeType === "단독주택" ? (item.ladRegstrAr || item.totPlotAr || "-") : "-",
-                                                    "대지면적_산정(㎡)": probeType === "단독주택" ? (item.calcPlotAr || item.ladRegstrAr || "-") : "-",
-                                                    "건물연면적_전체(㎡)": probeType === "단독주택" ? (item.buldAllTotAr || "-") : "-",
-                                                    "건물연면적_산정(㎡)": probeType === "단독주택" ? (item.calcBuldTotAr || item.buldAllTotAr || "-") : "-"
-                                                });
-                                            }
-                                        }
-                                    }
-                                    if (items.length < 1000) keepFetching = false;
-                                    pageNo++;
-                                }
-                                if (tempHistory.length > 0) {
-                                    let maxYearThisType = Math.max(...tempHistory.map(h => parseInt(h["가격기준연도"])));
-                                    if (maxYearThisType > maxYearBest) {
-                                        maxYearBest = maxYearThisType;
-                                        tempHistory.sort((a, b) => parseInt(b["가격기준연도"]) - parseInt(a["가격기준연도"]));
-                                        bestHistory = tempHistory; finalPropType = probeType;
-                                    }
-                                    if (maxYearThisType >= 2025) break;
-                                }
-                            } catch (err) { console.error(err); }
-                        }
-                        if (bestHistory.length > 0) {
-                            bestHistory = bestHistory.map(row => ({...row, "물건 구분": finalPropType}));
-                            finalBulkRows.push(...bestHistory);
-                        } else {
-                            finalBulkRows.push({ "대상 주소": rawAddr, "물건 구분": "없음", "가격기준연도": "정보 없음" });
-                        }
-                        
-                        await sleep(30); 
-                    }
-
-                    finalBulkRows.push({});
-                    finalBulkRows.push({ "대상 주소": "💡 양도세/상속세/증여세 및 부동산 절세 상담:", "물건 구분": "강승완 세무사", "가격기준연도": OFFICE_PHONE, "기준일자": "www.micro-tax.com" });
-
-                    const bulkWorksheet = XLSX.utils.json_to_sheet(finalBulkRows);
-                    const bulkWorkbook = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(bulkWorkbook, bulkWorksheet, "대량조회_통합결과");
-                    XLSX.writeFile(bulkWorkbook, "강승완세무사_대량_공시가격_추출결과.xlsx");
-                    statusText.innerText = "✅ 대량 전수조사 취합 다운로드 완료!";
-                } catch (err) { alert("엑셀 빌드 실패"); progressContainer.classList.add('hidden'); }
-            };
-            reader.readAsArrayBuffer(file);
         }
     </script>
 </body>
