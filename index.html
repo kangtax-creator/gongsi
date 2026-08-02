@@ -1103,7 +1103,7 @@
             } catch(e) { console.error("❌ 건축물대장 에러:", e); }
         }
 
-        // 🌟 [4] 서울시 정비사업 현황 🌟
+        // 🌟 [4] 서울시 정비사업 현황 (정확한 엔드포인트 적용) 🌟
         async function fetchSeoulRenewal() {
             if (!globalCurrentPnu || !globalCurrentPnu.startsWith("11")) {
                 alert("서울시 주소를 먼저 검색한 후 기본 정보 조회를 완료해 주세요. (타 지역은 제공되지 않습니다)");
@@ -1121,25 +1121,22 @@
             `;
 
             const tbody = document.getElementById('renewal-table-body');
-            tbody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-rose-500 font-bold animate-pulse">정비사업 진행 현황 데이터를 분석 중입니다...</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-rose-500 font-bold animate-pulse">정비사업 진행 현황 데이터를 실시간 스캔 중입니다...</td></tr>`;
 
-            // 🌟 cityBuildInfo (도시조성사업 정보)를 1순위로 고정
-            const url1 = `/api/seoul/${SEOUL_KEY}/json/cityBuildInfo/1/500/`;
+            // 🌟 완벽하게 확인된 서울시 OpenAPI 정확한 서비스명(엔드포인트) 적용
+            const url = `/api/seoul/${SEOUL_KEY}/json/TbSeoulRedevStatus/1/1000/`;
 
             try {
-                let res = await fetch(url1);
+                let res = await fetch(url);
+                if (!res.ok) {
+                    throw new Error("API 통신 오류");
+                }
+                
                 let data = await res.json();
                 let rows = [];
                 
-                if (data.DATA && Array.isArray(data.DATA)) {
-                    rows = data.DATA;
-                } else {
-                    for (let key in data) {
-                        if (data[key] && Array.isArray(data[key].row)) {
-                            rows = data[key].row;
-                            break;
-                        }
-                    }
+                if (data.TbSeoulRedevStatus && Array.isArray(data.TbSeoulRedevStatus.row)) {
+                    rows = data.TbSeoulRedevStatus.row;
                 }
 
                 if (rows.length === 0) {
@@ -1147,70 +1144,44 @@
                     return;
                 }
 
-                // 🌟 스마트 데이터 추출기 (정확한 키 -> 부분 키 순서로 탐색)
-                const getVal = (obj, exactKeys, partialKeys = []) => {
-                    const keys = Object.keys(obj);
-                    for (let kw of exactKeys) {
-                        const matched = keys.find(k => k.toUpperCase() === kw.toUpperCase());
-                        if (matched && obj[matched] != null && String(obj[matched]).trim() !== "") return obj[matched];
-                    }
-                    for (let kw of partialKeys) {
-                        const matched = keys.find(k => k.toUpperCase().includes(kw.toUpperCase()));
-                        if (matched && obj[matched] != null && String(obj[matched]).trim() !== "") return obj[matched];
-                    }
-                    return "-";
-                };
-
-                const formatDate = (val) => {
-                    if (val === "-") return val;
-                    const cleanVal = String(val).trim();
-                    if (cleanVal.length === 8 && !cleanVal.includes("-")) {
-                        return `${cleanVal.substring(0,4)}-${cleanVal.substring(4,6)}-${cleanVal.substring(6,8)}`;
-                    }
-                    return cleanVal;
-                };
-
                 const addrVal = document.getElementById('address').value || "";
                 let targetGu = "";
                 let match = addrVal.match(/서울(?:특별시)?\s+([가-힣]+구)/);
                 if (match) targetGu = match[1];
 
+                // 검색한 주소의 자치구명으로 필터링
                 let filteredRows = targetGu ? rows.filter(r => {
-                    let district = getVal(r, ['DISTRICT', 'CGG_NM', 'GU_NM'], ['CGG', 'GU']);
+                    let district = r.DISTRICT || r.CGG_NM || r.GU_NM || "";
                     return district.includes(targetGu);
                 }) : rows;
 
+                // 필터링 결과가 없으면 해당 구에 데이터가 없으므로 전체 표시
                 if (filteredRows.length === 0) filteredRows = rows; 
 
                 tbody.innerHTML = "";
                 
                 filteredRows.forEach(row => {
-                    // 핵심 정보 추출
-                    let gu = getVal(row, ['DISTRICT', 'CGG_NM', 'GU_NM'], ['CGG', 'GU']);
-                    let type = getVal(row, ['BIZ_TYPE', 'BSNS_KND_NM', 'BIZ_TY_NM'], ['TYPE', 'KND', 'SE_NM']);
-                    let name = getVal(row, ['ZONE_NM', 'BSNS_NM', 'BIZ_NM', 'BIZ_NAME'], ['ZONE', 'BSNS', 'BIZ']);
-                    let step = getVal(row, ['BIZ_STAGE', 'PRGS_STEP_NM', 'PROCS_STEP_NM'], ['STEP', 'STAGE', 'STTUS']);
+                    // 공식 API 문서의 키값을 직접 매핑
+                    let gu = row.DISTRICT || "-";
+                    let type = row.BIZ_TYPE || "-";
+                    let name = row.ZONE_NM || "-";
+                    let step = row.BIZ_STAGE || "-";
                     
-                    let addr = getVal(row, ['JIBUN_ADDR', 'LNM_ADRES', 'RN_ADRES', 'ROAD_ADDR', 'RPY_JIBUN', 'ADDR'], ['JIBUN', 'ROAD', 'ADRES']);
-
-                    // 필드 인식 불가 디버깅용 (실제 배포시엔 주석처리해도 무방)
-                    if (gu === "-" && name === "-" && step === "-") {
-                        name = `🚨필드 인식불가: ${Object.keys(row).slice(0, 3).join(', ')}...`;
-                    }
-
+                    let addr = (row.JIBUN_ADDR && row.JIBUN_ADDR !== "-") ? row.JIBUN_ADDR : (row.ROAD_ADDR || "-");
+                    
                     // 상세 날짜 정보
-                    const d_zone_init = formatDate(getVal(row, ['ZONE_DESIGNATION_INIT_YMD', 'ZONE_APRV_DT', 'ZONE_DE']));
-                    const d_zone_last = formatDate(getVal(row, ['ZONE_DESIGNATION_LAST_YMD']));
-                    const d_prom = formatDate(getVal(row, ['PROMOTION_COMMITTEE_YMD']));
-                    const d_assoc = formatDate(getVal(row, ['ASSOCIATION_ESTABLISHMENT_YMD', 'COMB_ESTB_APRV_DT']));
-                    const d_arch = formatDate(getVal(row, ['ARCHITECTURAL_REVIEW_YMD']));
-                    const d_biz_init = formatDate(getVal(row, ['BIZ_IMPLEMENTATION_INIT_YMD', 'BIZ_EXC_APRV_DT']));
-                    const d_biz_last = formatDate(getVal(row, ['BIZ_IMPLEMENTATION_LAST_YMD']));
-                    const d_mng_init = formatDate(getVal(row, ['MGMT_DISPOSITION_INIT_YMD', 'MNG_DSPS_PLAN_APRV_DT']));
-                    const d_mng_last = formatDate(getVal(row, ['MGMT_DISPOSITION_LAST_YMD']));
-                    const d_mig_start = formatDate(getVal(row, ['MIGRATION_START_YMD']));
-                    const d_mig_end = formatDate(getVal(row, ['MIGRATION_END_YMD']));
-                    const d_const = formatDate(getVal(row, ['CONSTRUCTION_START_YMD']));
+                    const d_zone_init = row.ZONE_DESIGNATION_INIT_YMD || "-";
+                    const d_zone_last = row.ZONE_DESIGNATION_LAST_YMD || "-";
+                    const d_prom = row.PROMOTION_COMMITTEE_YMD || "-";
+                    const d_assoc = row.ASSOCIATION_ESTABLISHMENT_YMD || "-";
+                    const d_arch = row.ARCHITECTURAL_REVIEW_YMD || "-";
+                    const d_biz_init = row.BIZ_IMPLEMENTATION_INIT_YMD || "-";
+                    const d_biz_last = row.BIZ_IMPLEMENTATION_LAST_YMD || "-";
+                    const d_mng_init = row.MGMT_DISPOSITION_INIT_YMD || "-";
+                    const d_mng_last = row.MGMT_DISPOSITION_LAST_YMD || "-";
+                    const d_mig_start = row.MIGRATION_START_YMD || "-";
+                    const d_mig_end = row.MIGRATION_END_YMD || "-";
+                    const d_const = row.CONSTRUCTION_START_YMD || "-";
 
                     let mainTr = document.createElement('tr');
                     mainTr.className = "hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0";
