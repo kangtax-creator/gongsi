@@ -1110,7 +1110,6 @@
                 return;
             }
 
-            // 테이블 헤더를 5가지 핵심 정보 + '상세' 버튼 영역으로 원복 및 수정
             const thead = document.getElementById('renewal-table-head');
             thead.innerHTML = `
                 <th class="py-3 px-4 whitespace-nowrap">자치구</th>
@@ -1124,7 +1123,6 @@
             const tbody = document.getElementById('renewal-table-body');
             tbody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-rose-500 font-bold animate-pulse">정비사업 진행 현황 데이터를 분석 중입니다...</td></tr>`;
 
-            // 🌟 Vercel 자체 프록시 경로 사용
             const url1 = `/api/seoul/${SEOUL_KEY}/json/upisRebuild/1/500/`;
             const url2 = `/api/seoul/${SEOUL_KEY}/json/cityBuildInfo/1/500/`;
 
@@ -1133,12 +1131,9 @@
                 let data = await res1.json();
                 let rows = [];
                 
-                // 1. "DATA" 키 안에 배열이 있는 경우 (제공된 JSON 파일 포맷 대응)
                 if (data.DATA && Array.isArray(data.DATA)) {
                     rows = data.DATA;
-                } 
-                // 2. 서울시 일반적인 OpenAPI 포맷인 경우
-                else {
+                } else {
                     for (let key in data) {
                         if (data[key] && Array.isArray(data[key].row)) {
                             rows = data[key].row;
@@ -1147,7 +1142,6 @@
                     }
                 }
 
-                // 데이터가 없을 경우 플랜 B (cityBuildInfo) 호출
                 if (rows.length === 0) {
                      let res2 = await fetch(url2);
                      let fallbackData = await res2.json();
@@ -1167,46 +1161,68 @@
                     return;
                 }
 
+                // 🌟 스마트 데이터 추출기 (대소문자/유사단어 자동 스캔)
+                const getVal = (obj, keywordList) => {
+                    const keys = Object.keys(obj);
+                    for (let kw of keywordList) {
+                        const upperKw = kw.toUpperCase();
+                        const matchedKey = keys.find(k => k.toUpperCase() === upperKw || k.toUpperCase().includes(upperKw));
+                        if (matchedKey && obj[matchedKey] !== null && String(obj[matchedKey]).trim() !== "") {
+                            return obj[matchedKey];
+                        }
+                    }
+                    return "-";
+                };
+
+                const formatDate = (val) => {
+                    if (val === "-") return val;
+                    if (val.length === 8 && !val.includes("-")) {
+                        return `${val.substring(0,4)}-${val.substring(4,6)}-${val.substring(6,8)}`;
+                    }
+                    return val;
+                };
+
                 const addrVal = document.getElementById('address').value || "";
                 let targetGu = "";
                 let match = addrVal.match(/서울(?:특별시)?\s+([가-힣]+구)/);
                 if (match) targetGu = match[1];
 
                 let filteredRows = targetGu ? rows.filter(r => {
-                    let district = r.district || r.CGG_NM || r.GU_NM || "";
+                    let district = getVal(r, ['DISTRICT', 'CGG_NM', 'GU_NM', 'CGG']);
                     return district.includes(targetGu);
                 }) : rows;
 
-                if (filteredRows.length === 0) filteredRows = rows; // if no match, show all
+                if (filteredRows.length === 0) filteredRows = rows; 
 
                 tbody.innerHTML = "";
                 
                 filteredRows.forEach(row => {
-                    // 핵심 정보 추출
-                    let gu = row.district || row.CGG_NM || row.GU_NM || "-";
-                    let type = row.biz_type || row.BIZ_TY_NM || row.BIZ_TYPE_NM || "-";
-                    let name = row.zone_nm || row.BIZ_NM || row.BIZ_NAME || "-";
-                    let step = row.biz_stage || row.PROCS_STEP_NM || row.PRGS_STEP_NM || "-";
-                    
-                    let addr = (row.jibun_addr && row.jibun_addr !== "-") ? row.jibun_addr : (row.road_addr || "-");
-                    if (addr === "-" && row.RPY_JIBUN) addr = row.RPY_JIBUN; 
-                    if (addr === "-" && row.ADDR) addr = row.ADDR;
+                    // 핵심 정보 유연한 매핑
+                    let gu = getVal(row, ['DISTRICT', 'CGG_NM', 'GU_NM', 'CGG']);
+                    let type = getVal(row, ['BIZ_TYPE', 'BSNS_KND_NM', 'BIZ_TY_NM', 'BSNS_KND']);
+                    let name = getVal(row, ['ZONE_NM', 'BSNS_NM', 'BIZ_NM', 'BIZ_NAME']);
+                    let step = getVal(row, ['BIZ_STAGE', 'PROCS_STEP_NM', 'PRGS_STEP_NM', 'PROCS_STEP']);
+                    let addr = getVal(row, ['JIBUN_ADDR', 'ROAD_ADDR', 'LOC_ZIBUN', 'LOC_ROAD_NM', 'ADDR', 'RPY_JIBUN']);
 
-                    // 상세 날짜 정보 추출 (JSON 키 매핑)
-                    const d_zone_init = row.zone_designation_init_ymd || "-";
-                    const d_zone_last = row.zone_designation_last_ymd || "-";
-                    const d_prom = row.promotion_committee_ymd || "-";
-                    const d_assoc = row.association_establishment_ymd || "-";
-                    const d_arch = row.architectural_review_ymd || "-";
-                    const d_biz_init = row.biz_implementation_init_ymd || "-";
-                    const d_biz_last = row.biz_implementation_last_ymd || "-";
-                    const d_mng_init = row.mgmt_disposition_init_ymd || "-";
-                    const d_mng_last = row.mgmt_disposition_last_ymd || "-";
-                    const d_mig_start = row.migration_start_ymd || "-";
-                    const d_mig_end = row.migration_end_ymd || "-";
-                    const d_const = row.construction_start_ymd || "-";
+                    // 만약 이름도, 구도 못 뽑아내면 디버깅용으로 실제 키값을 화면에 뿌림
+                    if (gu === "-" && name === "-" && step === "-") {
+                        name = `🚨필드 인식불가: ${Object.keys(row).join(', ')}`;
+                    }
 
-                    // 1. 핵심 정보를 담은 메인 행 (보이는 영역)
+                    // 상세 날짜 정보 유연한 매핑
+                    let d_zone_init = formatDate(getVal(row, ['ZONE_DESIGNATION_INIT_YMD', 'ZONE_APRV_DT', 'ZONE_DE']));
+                    let d_zone_last = formatDate(getVal(row, ['ZONE_DESIGNATION_LAST_YMD']));
+                    let d_prom = formatDate(getVal(row, ['PROMOTION_COMMITTEE_YMD']));
+                    let d_assoc = formatDate(getVal(row, ['ASSOCIATION_ESTABLISHMENT_YMD', 'COMB_ESTB_APRV_DT']));
+                    let d_arch = formatDate(getVal(row, ['ARCHITECTURAL_REVIEW_YMD']));
+                    let d_biz_init = formatDate(getVal(row, ['BIZ_IMPLEMENTATION_INIT_YMD', 'BIZ_EXC_APRV_DT']));
+                    let d_biz_last = formatDate(getVal(row, ['BIZ_IMPLEMENTATION_LAST_YMD']));
+                    let d_mng_init = formatDate(getVal(row, ['MGMT_DISPOSITION_INIT_YMD', 'MNG_DSPS_PLAN_APRV_DT']));
+                    let d_mng_last = formatDate(getVal(row, ['MGMT_DISPOSITION_LAST_YMD']));
+                    let d_mig_start = formatDate(getVal(row, ['MIGRATION_START_YMD']));
+                    let d_mig_end = formatDate(getVal(row, ['MIGRATION_END_YMD']));
+                    let d_const = formatDate(getVal(row, ['CONSTRUCTION_START_YMD']));
+
                     let mainTr = document.createElement('tr');
                     mainTr.className = "hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0";
                     mainTr.innerHTML = `
@@ -1220,7 +1236,6 @@
                         </td>
                     `;
                     
-                    // 2. 날짜 상세 정보를 담은 숨김 행 (아코디언 영역)
                     let detailTr = document.createElement('tr');
                     detailTr.className = "hidden bg-slate-50 border-b border-slate-200 detail-row";
                     detailTr.innerHTML = `
@@ -1249,27 +1264,7 @@
                 tbody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-rose-500 font-bold">통신 오류가 발생했습니다. (서울시 열린데이터광장 API 점검 중일 수 있습니다.)</td></tr>`;
             }
         }
-
-        // 🌟 아코디언 메뉴(상세보기) 토글 함수 🌟
-        function toggleRenewalDates(btn) {
-            const mainTr = btn.closest('tr');
-            const detailTr = mainTr.nextElementSibling;
-            
-            if (detailTr && detailTr.classList.contains('detail-row')) {
-                detailTr.classList.toggle('hidden');
-                
-                if (detailTr.classList.contains('hidden')) {
-                    btn.innerHTML = "상세보기 ▼";
-                    btn.classList.remove('bg-indigo-50', 'text-indigo-700', 'border-indigo-300');
-                    btn.classList.add('bg-white', 'text-slate-600', 'border-slate-300');
-                } else {
-                    btn.innerHTML = "닫기 ▲";
-                    btn.classList.remove('bg-white', 'text-slate-600', 'border-slate-300');
-                    btn.classList.add('bg-indigo-50', 'text-indigo-700', 'border-indigo-300');
-                }
-            }
-        }
-
+        
         // =========================================================================
         // 모달 및 PDF / 엑셀 다운로드 컨트롤
         // =========================================================================
