@@ -1,16 +1,16 @@
 {
   "rewrites": [
     {
-      "source": "/api/rtms/:path*",
-      "destination": "http://openapi.molit.go.kr/OpenAPI_ToolInstallPackage/1.0/rtms/:path*"
+      "source": "/api/rtms/(.*)",
+      "destination": "http://openapi.molit.go.kr/OpenAPI_ToolInstallPackage/1.0/rtms/$1"
     },
     {
-      "source": "/api/rent/:path*",
-      "destination": "http://openapi.molit.go.kr/OpenAPI_ToolInstallPackage/1.0/rent/:path*"
+      "source": "/api/rent/(.*)",
+      "destination": "http://openapi.molit.go.kr/OpenAPI_ToolInstallPackage/1.0/rent/$1"
     },
     {
-      "source": "/api/seoul/:path*",
-      "destination": "http://openapi.seoul.go.kr:8088/:path*"
+      "source": "/api/seoul/(.*)",
+      "destination": "http://openapi.seoul.go.kr:8088/$1"
     }
   ]
 }
