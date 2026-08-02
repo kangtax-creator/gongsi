@@ -547,30 +547,38 @@
 
         // 🌟 CORS 방지용 글로벌 프록시 함수 🌟
         async function fetchWithProxy(url) {
-            try {
-                const res = await fetch(url);
-                if (!res.ok) throw new Error();
-                return await res.json();
-            } catch(e) {
+            // HTTPS 환경에서 HTTP(서울시 API 등) 직접 호출 시 발생하는 Mixed Content 차단 에러 원천 방지
+            const isMixedContent = window.location.protocol === 'https:' && url.startsWith('http://');
+            
+            // Mixed Content가 아닐 경우에만 직접 호출 시도 (예: 건축물대장 API)
+            if (!isMixedContent) {
                 try {
-                    // 1순위: allorigins의 /get 방식 (CORS 완벽 우회 및 JSON 래핑)
-                    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-                    const res2 = await fetch(proxyUrl);
-                    if (!res2.ok) throw new Error();
-                    const data = await res2.json();
-                    return JSON.parse(data.contents);
-                } catch(e2) {
-                    try {
-                        // 2순위: corsproxy.io
-                        const proxyUrl2 = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-                        const res3 = await fetch(proxyUrl2);
-                        return await res3.json();
-                    } catch(e3) {
-                        console.error("API Proxy Error:", e3);
-                        return null; // 에러 방어
-                    }
+                    const res = await fetch(url);
+                    if (res.ok) return await res.json();
+                } catch(e) {
+                    console.warn("Direct fetch error, falling back to proxy.");
                 }
             }
+
+            // 무료 공개 프록시 중 가장 안정적인 서버 목록 (우회 성공할 때까지 순차적으로 시도)
+            const proxies = [
+                `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+                `https://thingproxy.freeboard.io/fetch/${encodeURI(url)}`
+            ];
+
+            for (let proxyUrl of proxies) {
+                try {
+                    const res = await fetch(proxyUrl);
+                    if (res.ok) {
+                        return await res.json();
+                    }
+                } catch(e) {
+                    console.warn(`Proxy failed: ${proxyUrl}`);
+                }
+            }
+            
+            throw new Error("모든 프록시 서버 요청이 실패했습니다.");
         }
 
         document.addEventListener("DOMContentLoaded", () => {
