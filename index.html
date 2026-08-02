@@ -1105,30 +1105,26 @@
             const tbody = document.getElementById('renewal-table-body');
             tbody.innerHTML = `<tr><td colspan="5" class="py-12 text-center text-rose-500 font-bold animate-pulse">정비사업 진행 현황 데이터를 분석 중입니다...</td></tr>`;
 
-            // url endpoint - upisRebuild
-            const url1 = `http://openapi.seoul.go.kr:8088/${SEOUL_KEY}/json/upisRebuild/1/500/`;
-            const url2 = `http://openapi.seoul.go.kr:8088/${SEOUL_KEY}/json/cityBuildInfo/1/500/`;
+            // 서울시 OpenAPI 호출 (제공해주신 JSON 구조인 DATA 배열을 포함하는 API)
+            // 데이터셋 이름에 따라 upisRebuild 또는 cityBuildInfo 적용
+            const url = `http://openapi.seoul.go.kr:8088/${SEOUL_KEY}/json/cityBuildInfo/1/500/`;
 
             try {
-                let data = await fetchWithProxy(url1);
+                let data = await fetchWithProxy(url);
                 let rows = [];
                 
-                // Generic extraction to find 'row' array
-                for (let key in data) {
-                    if (data[key] && Array.isArray(data[key].row)) {
-                        rows = data[key].row;
-                        break;
-                    }
-                }
-
-                if (rows.length === 0) {
-                     let fallbackData = await fetchWithProxy(url2);
-                     for (let key in fallbackData) {
-                        if (fallbackData[key] && Array.isArray(fallbackData[key].row)) {
-                            rows = fallbackData[key].row;
+                // 1. 제공해주신 JSON 파일처럼 "DATA" 키 안에 배열이 있는 경우
+                if (data.DATA && Array.isArray(data.DATA)) {
+                    rows = data.DATA;
+                } 
+                // 2. 서울시 일반적인 OpenAPI 포맷인 경우 (예: data.cityBuildInfo.row)
+                else {
+                    for (let key in data) {
+                        if (data[key] && Array.isArray(data[key].row)) {
+                            rows = data[key].row;
                             break;
                         }
-                     }
+                    }
                 }
 
                 if (rows.length === 0) {
@@ -1136,32 +1132,34 @@
                     return;
                 }
 
+                // 현재 검색된 주소에서 자치구 추출
                 const addrVal = document.getElementById('address').value || "";
                 let targetGu = "";
                 let match = addrVal.match(/서울(?:특별시)?\s+([가-힣]+구)/);
                 if (match) targetGu = match[1];
 
+                // 자치구명으로 필터링 (JSON의 'district' 또는 'CGG_NM' 활용)
                 let filteredRows = targetGu ? rows.filter(r => {
-                    let jsonStr = JSON.stringify(r);
-                    return jsonStr.includes(targetGu);
+                    let district = r.district || r.CGG_NM || r.GU_NM || "";
+                    return district.includes(targetGu);
                 }) : rows;
 
-                if (filteredRows.length === 0) filteredRows = rows; // if no match, show all
-
-                const getField = (row, possibleNames) => {
-                    for (let n of possibleNames) {
-                        if (row[n] !== undefined) return row[n];
-                    }
-                    return "-";
-                };
+                // 필터링 결과가 없으면 전체 표시
+                if (filteredRows.length === 0) filteredRows = rows; 
 
                 tbody.innerHTML = "";
+                
                 filteredRows.forEach(row => {
-                    let gu = getField(row, ["CGG_NM", "GU_NM", "ATDRN_NM", "LOGVM"]);
-                    let type = getField(row, ["BIZ_TY_NM", "BIZ_TYPE_NM", "BSNS_KND_NM", "SE_NM", "RPT_TYPE"]);
-                    let name = getField(row, ["BIZ_NM", "BIZ_NAME", "ZONE_NM", "BSNS_NM"]);
-                    let step = getField(row, ["PROCS_STEP_NM", "PRGS_STEP_NM", "PRT_STEP_NM", "OPERTN_PROGRS_STTUS_NM"]);
-                    let addr = getField(row, ["RPY_JIBUN", "ADDR", "LNM_ADRES", "LNM_ADDR", "LOC"]);
+                    // JSON 파일의 소문자 키와 OpenAPI의 대문자 키를 모두 커버하도록 매핑
+                    let gu = row.district || row.CGG_NM || row.GU_NM || "-";
+                    let type = row.biz_type || row.BIZ_TY_NM || row.BIZ_TYPE_NM || "-";
+                    let name = row.zone_nm || row.BIZ_NM || row.BIZ_NAME || "-";
+                    let step = row.biz_stage || row.PROCS_STEP_NM || row.PRGS_STEP_NM || "-";
+                    
+                    // 지번 주소를 우선적으로 가져오고 없으면 도로명 주소 사용
+                    let addr = (row.jibun_addr && row.jibun_addr !== "-") ? row.jibun_addr : (row.road_addr || "-");
+                    if (addr === "-" && row.RPY_JIBUN) addr = row.RPY_JIBUN; 
+                    if (addr === "-" && row.ADDR) addr = row.ADDR;
 
                     let tr = document.createElement('tr');
                     tr.className = "hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0";
