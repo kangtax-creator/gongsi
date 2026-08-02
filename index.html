@@ -602,7 +602,7 @@
             initSigaChart([]); 
         });
 
-        // 🌟 아코디언 메뉴(상세보기) 토글 함수 🌟
+        // 🌟 아코디언 메뉴(상세보기) 토글 함수 (전역 스코프 유지) 🌟
         window.toggleRenewalDates = function(btn) {
             const mainTr = btn.closest('tr');
             const detailTr = mainTr.nextElementSibling;
