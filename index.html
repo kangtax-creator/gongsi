@@ -96,7 +96,6 @@
                         기본 정보 및 공시가격 연혁 조회
                     </button>
                     
-                    <!-- 🌟 메인 화면 안내 추가 -->
                     <p class="text-xs text-slate-500 mt-3 bg-slate-50 p-2.5 rounded-lg border border-slate-100 leading-relaxed">
                         💡 <b>4번 정비사업현황</b> 탭은 위 주소 검색을 하지 않아도 <b>'자치구'나 '사업명'으로 즉시 검색</b>이 가능합니다.
                     </p>
@@ -273,7 +272,7 @@
                 </div>
             </div>
 
-            <!-- 탭 3: 대장 및 규제 정보 영역 -->
+            <!-- 🌟 탭 3: 대장 및 규제 정보 영역 -->
             <div id="content-daejang" class="hidden space-y-6">
                 <!-- 건축물대장 -->
                 <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
@@ -329,7 +328,7 @@
                         </h2>
                     </div>
                     
-                    <!-- 🌟 4번 탭 독립 검색 UI 추가 -->
+                    <!-- 🌟 4번 탭 독립 검색 UI -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-rose-50 p-4 rounded-xl border border-rose-100 mb-4">
                         <div>
                             <label class="block text-xs font-bold text-rose-800 mb-1">자치구 검색</label>
@@ -503,8 +502,6 @@
         const DATA_GO_KR_KEY = "83a79624397baf59da6f5daea52c9c0478aceccf3f20b707e26f9866c85f7b8f";
         const DOMAIN = window.location.origin; 
         const OFFICE_PHONE = "02-2679-0679"; 
-        
-        // 새로 추가된 서울시 정비사업 API 인증키
         const SEOUL_KEY = "456353517878676138305274595667";
 
         let priceChartInstance = null;
@@ -574,7 +571,6 @@
                 return await res.json();
             } catch(e) {
                 try {
-                    // 1순위: allorigins의 /get 방식
                     const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
                     const res2 = await fetch(proxyUrl);
                     if (!res2.ok) throw new Error();
@@ -582,13 +578,11 @@
                     return JSON.parse(data.contents);
                 } catch(e2) {
                     try {
-                        // 2순위: corsproxy.io
                         const proxyUrl2 = `https://corsproxy.io/?${encodeURIComponent(url)}`;
                         const res3 = await fetch(proxyUrl2);
                         return await res3.json();
                     } catch(e3) {
-                        console.error("API Proxy Error:", e3);
-                        return null; // 에러 방어
+                        return null; 
                     }
                 }
             }
@@ -608,7 +602,7 @@
             initSigaChart([]); 
         });
 
-        // 🌟 아코디언 메뉴(상세보기) 토글 함수 (전역 스코프 유지) 🌟
+        // 🌟 아코디언 메뉴(상세보기) 토글 함수 🌟
         window.toggleRenewalDates = function(btn) {
             const mainTr = btn.closest('tr');
             const detailTr = mainTr.nextElementSibling;
@@ -653,7 +647,6 @@
                     document.getElementById('address').value = data.roadAddress || data.jibunAddress;
                     closeDaumPostcode();
                     
-                    // 주소 검색 시 서울 자치구 자동 추출하여 정비사업현황 탭 입력창에 채우기
                     let match = (data.roadAddress || data.jibunAddress).match(/서울(?:특별시)?\s+([가-힣]+구)/);
                     if (match && document.getElementById('renewalGu')) {
                         document.getElementById('renewalGu').value = match[1];
@@ -1141,7 +1134,7 @@
             } catch(e) { console.error("❌ 건축물대장 에러:", e); }
         }
 
-        // 🌟 [4] 서울시 정비사업 현황 (정확한 엔드포인트 적용 및 독립 검색) 🌟
+        // 🌟 [4] 서울시 정비사업 현황 🌟
         async function fetchSeoulRenewal() {
             const thead = document.getElementById('renewal-table-head');
             thead.innerHTML = `
@@ -1156,7 +1149,6 @@
             const tbody = document.getElementById('renewal-table-body');
             tbody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-rose-500 font-bold animate-pulse">정비사업 진행 현황 데이터를 실시간 스캔 중입니다...</td></tr>`;
 
-            // 🌟 완벽하게 확인된 서울시 OpenAPI 정확한 서비스명(엔드포인트) 적용
             const url = `/api/seoul/${SEOUL_KEY}/json/TbSeoulRedevStatus/1/1000/`;
 
             try {
@@ -1177,11 +1169,9 @@
                     return;
                 }
 
-                // 4번 탭 전용 검색창 값 읽기
                 let targetGu = document.getElementById('renewalGu') ? document.getElementById('renewalGu').value.trim().replace(/구$/, '') : "";
                 let targetName = document.getElementById('renewalName') ? document.getElementById('renewalName').value.trim().toLowerCase() : "";
 
-                // 입력된 검색 조건으로 필터링
                 let filteredRows = rows;
                 
                 if (targetGu || targetName) {
@@ -1210,15 +1200,12 @@
                 tbody.innerHTML = "";
                 
                 filteredRows.forEach(row => {
-                    // 공식 API 문서의 키값을 직접 매핑
                     let gu = row.DISTRICT || "-";
                     let type = row.BIZ_TYPE || "-";
                     let name = row.ZONE_NM || "-";
                     let step = row.BIZ_STAGE || "-";
-                    
                     let addr = (row.JIBUN_ADDR && row.JIBUN_ADDR !== "-") ? row.JIBUN_ADDR : (row.ROAD_ADDR || "-");
                     
-                    // 상세 날짜 정보
                     const d_zone_init = row.ZONE_DESIGNATION_INIT_YMD || "-";
                     const d_zone_last = row.ZONE_DESIGNATION_LAST_YMD || "-";
                     const d_prom = row.PROMOTION_COMMITTEE_YMD || "-";
