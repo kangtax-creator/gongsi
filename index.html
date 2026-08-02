@@ -629,7 +629,7 @@
             const layer = document.getElementById('daum-postcode-layer');
             layer.classList.add('hidden');
             layer.classList.remove('flex');
-            document.getElementById('daum-postcode-container').innerHTML = ''; 
+            // document.getElementById('daum-postcode-container').innerHTML = '';  <-- 이 줄을 지워주세요!
         }
 
         function extractNum(text) {
@@ -1123,12 +1123,12 @@
             const tbody = document.getElementById('renewal-table-body');
             tbody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-rose-500 font-bold animate-pulse">정비사업 진행 현황 데이터를 분석 중입니다...</td></tr>`;
 
-            const url1 = `/api/seoul/${SEOUL_KEY}/json/upisRebuild/1/500/`;
-            const url2 = `/api/seoul/${SEOUL_KEY}/json/cityBuildInfo/1/500/`;
+            // 🌟 cityBuildInfo (도시조성사업 정보)를 1순위로 고정
+            const url1 = `/api/seoul/${SEOUL_KEY}/json/cityBuildInfo/1/500/`;
 
             try {
-                let res1 = await fetch(url1);
-                let data = await res1.json();
+                let res = await fetch(url1);
+                let data = await res.json();
                 let rows = [];
                 
                 if (data.DATA && Array.isArray(data.DATA)) {
@@ -1143,43 +1143,31 @@
                 }
 
                 if (rows.length === 0) {
-                     let res2 = await fetch(url2);
-                     let fallbackData = await res2.json();
-                     for (let key in fallbackData) {
-                        if (fallbackData[key] && Array.isArray(fallbackData[key].row)) {
-                            rows = fallbackData[key].row;
-                            break;
-                        } else if (key === 'DATA' && Array.isArray(fallbackData[key])) {
-                            rows = fallbackData[key];
-                            break;
-                        }
-                     }
-                }
-
-                if (rows.length === 0) {
                     tbody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-slate-400">데이터가 없거나 현재 제공되지 않습니다.</td></tr>`;
                     return;
                 }
 
-                // 🌟 스마트 데이터 추출기 (대소문자/유사단어 자동 스캔)
-                const getVal = (obj, keywordList) => {
+                // 🌟 스마트 데이터 추출기 (정확한 키 -> 부분 키 순서로 탐색)
+                const getVal = (obj, exactKeys, partialKeys = []) => {
                     const keys = Object.keys(obj);
-                    for (let kw of keywordList) {
-                        const upperKw = kw.toUpperCase();
-                        const matchedKey = keys.find(k => k.toUpperCase() === upperKw || k.toUpperCase().includes(upperKw));
-                        if (matchedKey && obj[matchedKey] !== null && String(obj[matchedKey]).trim() !== "") {
-                            return obj[matchedKey];
-                        }
+                    for (let kw of exactKeys) {
+                        const matched = keys.find(k => k.toUpperCase() === kw.toUpperCase());
+                        if (matched && obj[matched] != null && String(obj[matched]).trim() !== "") return obj[matched];
+                    }
+                    for (let kw of partialKeys) {
+                        const matched = keys.find(k => k.toUpperCase().includes(kw.toUpperCase()));
+                        if (matched && obj[matched] != null && String(obj[matched]).trim() !== "") return obj[matched];
                     }
                     return "-";
                 };
 
                 const formatDate = (val) => {
                     if (val === "-") return val;
-                    if (val.length === 8 && !val.includes("-")) {
-                        return `${val.substring(0,4)}-${val.substring(4,6)}-${val.substring(6,8)}`;
+                    const cleanVal = String(val).trim();
+                    if (cleanVal.length === 8 && !cleanVal.includes("-")) {
+                        return `${cleanVal.substring(0,4)}-${cleanVal.substring(4,6)}-${cleanVal.substring(6,8)}`;
                     }
-                    return val;
+                    return cleanVal;
                 };
 
                 const addrVal = document.getElementById('address').value || "";
@@ -1188,7 +1176,7 @@
                 if (match) targetGu = match[1];
 
                 let filteredRows = targetGu ? rows.filter(r => {
-                    let district = getVal(r, ['DISTRICT', 'CGG_NM', 'GU_NM', 'CGG']);
+                    let district = getVal(r, ['DISTRICT', 'CGG_NM', 'GU_NM'], ['CGG', 'GU']);
                     return district.includes(targetGu);
                 }) : rows;
 
@@ -1197,31 +1185,32 @@
                 tbody.innerHTML = "";
                 
                 filteredRows.forEach(row => {
-                    // 핵심 정보 유연한 매핑
-                    let gu = getVal(row, ['DISTRICT', 'CGG_NM', 'GU_NM', 'CGG']);
-                    let type = getVal(row, ['BIZ_TYPE', 'BSNS_KND_NM', 'BIZ_TY_NM', 'BSNS_KND']);
-                    let name = getVal(row, ['ZONE_NM', 'BSNS_NM', 'BIZ_NM', 'BIZ_NAME']);
-                    let step = getVal(row, ['BIZ_STAGE', 'PROCS_STEP_NM', 'PRGS_STEP_NM', 'PROCS_STEP']);
-                    let addr = getVal(row, ['JIBUN_ADDR', 'ROAD_ADDR', 'LOC_ZIBUN', 'LOC_ROAD_NM', 'ADDR', 'RPY_JIBUN']);
+                    // 핵심 정보 추출
+                    let gu = getVal(row, ['DISTRICT', 'CGG_NM', 'GU_NM'], ['CGG', 'GU']);
+                    let type = getVal(row, ['BIZ_TYPE', 'BSNS_KND_NM', 'BIZ_TY_NM'], ['TYPE', 'KND', 'SE_NM']);
+                    let name = getVal(row, ['ZONE_NM', 'BSNS_NM', 'BIZ_NM', 'BIZ_NAME'], ['ZONE', 'BSNS', 'BIZ']);
+                    let step = getVal(row, ['BIZ_STAGE', 'PRGS_STEP_NM', 'PROCS_STEP_NM'], ['STEP', 'STAGE', 'STTUS']);
+                    
+                    let addr = getVal(row, ['JIBUN_ADDR', 'LNM_ADRES', 'RN_ADRES', 'ROAD_ADDR', 'RPY_JIBUN', 'ADDR'], ['JIBUN', 'ROAD', 'ADRES']);
 
-                    // 만약 이름도, 구도 못 뽑아내면 디버깅용으로 실제 키값을 화면에 뿌림
+                    // 필드 인식 불가 디버깅용 (실제 배포시엔 주석처리해도 무방)
                     if (gu === "-" && name === "-" && step === "-") {
-                        name = `🚨필드 인식불가: ${Object.keys(row).join(', ')}`;
+                        name = `🚨필드 인식불가: ${Object.keys(row).slice(0, 3).join(', ')}...`;
                     }
 
-                    // 상세 날짜 정보 유연한 매핑
-                    let d_zone_init = formatDate(getVal(row, ['ZONE_DESIGNATION_INIT_YMD', 'ZONE_APRV_DT', 'ZONE_DE']));
-                    let d_zone_last = formatDate(getVal(row, ['ZONE_DESIGNATION_LAST_YMD']));
-                    let d_prom = formatDate(getVal(row, ['PROMOTION_COMMITTEE_YMD']));
-                    let d_assoc = formatDate(getVal(row, ['ASSOCIATION_ESTABLISHMENT_YMD', 'COMB_ESTB_APRV_DT']));
-                    let d_arch = formatDate(getVal(row, ['ARCHITECTURAL_REVIEW_YMD']));
-                    let d_biz_init = formatDate(getVal(row, ['BIZ_IMPLEMENTATION_INIT_YMD', 'BIZ_EXC_APRV_DT']));
-                    let d_biz_last = formatDate(getVal(row, ['BIZ_IMPLEMENTATION_LAST_YMD']));
-                    let d_mng_init = formatDate(getVal(row, ['MGMT_DISPOSITION_INIT_YMD', 'MNG_DSPS_PLAN_APRV_DT']));
-                    let d_mng_last = formatDate(getVal(row, ['MGMT_DISPOSITION_LAST_YMD']));
-                    let d_mig_start = formatDate(getVal(row, ['MIGRATION_START_YMD']));
-                    let d_mig_end = formatDate(getVal(row, ['MIGRATION_END_YMD']));
-                    let d_const = formatDate(getVal(row, ['CONSTRUCTION_START_YMD']));
+                    // 상세 날짜 정보
+                    const d_zone_init = formatDate(getVal(row, ['ZONE_DESIGNATION_INIT_YMD', 'ZONE_APRV_DT', 'ZONE_DE']));
+                    const d_zone_last = formatDate(getVal(row, ['ZONE_DESIGNATION_LAST_YMD']));
+                    const d_prom = formatDate(getVal(row, ['PROMOTION_COMMITTEE_YMD']));
+                    const d_assoc = formatDate(getVal(row, ['ASSOCIATION_ESTABLISHMENT_YMD', 'COMB_ESTB_APRV_DT']));
+                    const d_arch = formatDate(getVal(row, ['ARCHITECTURAL_REVIEW_YMD']));
+                    const d_biz_init = formatDate(getVal(row, ['BIZ_IMPLEMENTATION_INIT_YMD', 'BIZ_EXC_APRV_DT']));
+                    const d_biz_last = formatDate(getVal(row, ['BIZ_IMPLEMENTATION_LAST_YMD']));
+                    const d_mng_init = formatDate(getVal(row, ['MGMT_DISPOSITION_INIT_YMD', 'MNG_DSPS_PLAN_APRV_DT']));
+                    const d_mng_last = formatDate(getVal(row, ['MGMT_DISPOSITION_LAST_YMD']));
+                    const d_mig_start = formatDate(getVal(row, ['MIGRATION_START_YMD']));
+                    const d_mig_end = formatDate(getVal(row, ['MIGRATION_END_YMD']));
+                    const d_const = formatDate(getVal(row, ['CONSTRUCTION_START_YMD']));
 
                     let mainTr = document.createElement('tr');
                     mainTr.className = "hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0";
