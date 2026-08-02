@@ -1,12 +1,12 @@
 {
   "rewrites": [
     {
-      "source": "/api/rtms/(.*)",
-      "destination": "http://openapi.molit.go.kr/OpenAPI_ToolInstallPackage/1.0/rtms/$1"
+      "source": "/api/rtms/:path*",
+      "destination": "https://apis.data.go.kr/1613000/:path*"
     },
     {
-      "source": "/api/rent/(.*)",
-      "destination": "http://openapi.molit.go.kr/OpenAPI_ToolInstallPackage/1.0/rent/$1"
+      "source": "/api/rent/:path*",
+      "destination": "https://apis.data.go.kr/1613000/:path*"
     },
     {
       "source": "/api/seoul/(.*)",
