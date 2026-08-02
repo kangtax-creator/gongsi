@@ -3,30 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>부동산 원클릭 스캐너</title>
-    
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏢</text></svg>">
+    <title>부동산 공시가격 & 단지 내 실거래(매매/임대/분양권) 통합 조회 | 강승완 세무사</title>
     
     <meta name="keywords" content="부동산 공시가격, 연도별 기준시가, 실거래가, 매매가, 전세가, 월세, 분양권, 상속세, 증여세, 양도소득세, 강승완 세무사, micro-tax">
     <meta property="og:type" content="website">
     <meta property="og:title" content="부동산 원클릭 스캐너">
     <meta property="og:description" content="여러 물건지도 한번에! - 부동산(가격/정보) 원클릭 스캐너">
+    <meta property="og:url" content="https://gongsi-ten.vercel.app">
+    <meta property="og:image" content="https://gongsi-ten.vercel.app/thumbnail.jpg">
     
+    <!-- 필수 라이브러리 추가 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <!-- 구글 애널리틱스 (GA4) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-97YGLD3SJ9"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-97YGLD3SJ9');
+    </script>
 </head>
 <body class="bg-[#f3f4f6] font-sans min-h-screen">
 
     <!-- 헤더 -->
-    <div class="bg-[#0f172a] text-white pt-12 pb-24 px-4 relative overflow-hidden">
-        <div class="max-w-6xl mx-auto relative z-10">
+    <div class="bg-[#0f172a] text-white pt-12 pb-24 px-4">
+        <div class="max-w-6xl mx-auto">
             <p class="text-indigo-400 font-bold text-sm mb-2 tracking-wider">세무/부동산 데이터 리서치 시스템</p>
             <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight mb-4">부동산 원클릭 스캐너</h1>
-            <p class="text-slate-400 text-sm md:text-base">출처: 국토교통부 실거래가 및 공시시스템 (VWORLD) · 자동 동기화</p>
+            <p class="text-slate-400 text-sm md:text-base">출처: 국토교통부 실거래가 시스템 및 공동주택가격 공시시스템 (VWORLD) · 자동 동기화</p>
             
             <a href="https://www.micro-tax.com" target="_blank" class="mt-8 border border-slate-700 bg-slate-800/50 hover:bg-slate-700 rounded-xl p-4 flex justify-between items-center max-w-md transition-all cursor-pointer group no-underline">
                 <div>
@@ -38,8 +48,8 @@
         </div>
     </div>
 
-    <!-- 🌟 메인 컨텐츠 영역 (z-index 수정으로 메뉴 겹침 완벽 해결) -->
-    <div class="max-w-6xl mx-auto px-4 -mt-12 pb-8 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start relative z-20">
+    <!-- 메인 컨텐츠 영역 -->
+    <div class="max-w-6xl mx-auto px-4 -mt-12 pb-12 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
         <!-- 왼쪽: 주소 입력 영역 -->
         <div class="space-y-6">
@@ -132,16 +142,14 @@
 
         <!-- 오른쪽: 결과 출력 영역 -->
         <div class="lg:col-span-2 space-y-6">
-            
-            <!-- 🌟 어두운 배경에 맞게 밝은 글씨로 수정된 탭 메뉴 -->
-            <div class="flex space-x-2 border-b border-slate-700 overflow-x-auto whitespace-nowrap hide-scrollbar">
-                <button onclick="switchTab('gongsi')" id="tab-gongsi" class="px-5 py-3 text-sm font-bold border-b-2 border-indigo-400 text-indigo-400 focus:outline-none transition-colors">
+            <div class="flex space-x-2 border-b border-slate-200 overflow-x-auto whitespace-nowrap hide-scrollbar">
+                <button onclick="switchTab('gongsi')" id="tab-gongsi" class="px-5 py-3 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 focus:outline-none">
                     1. 공시가격 연혁 데이터
                 </button>
-                <button onclick="switchTab('siga')" id="tab-siga" class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-white focus:outline-none transition-colors">
+                <button onclick="switchTab('siga')" id="tab-siga" class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none">
                     2. 단지 내 매매/전월세 조회
                 </button>
-                <button onclick="switchTab('daejang')" id="tab-daejang" class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-white focus:outline-none transition-colors">
+                <button onclick="switchTab('daejang')" id="tab-daejang" class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none">
                     3. 건축물 / 토지 대장
                 </button>
             </div>
@@ -293,18 +301,6 @@
                     </div>
                 </div>
 
-                <!-- 🌟 서울시 정비사업 (재개발/재건축) 진행 단계 -->
-                <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
-                    <h2 class="text-lg font-extrabold text-slate-800 mb-4 flex items-center">
-                        <span class="w-2 h-2 bg-rose-500 rounded-full mr-2"></span> 정비사업 추진 현황 <span class="text-xs font-medium text-slate-400 ml-2">(서울시 한정)</span>
-                    </h2>
-                    <div id="rebuild-info" class="text-sm">
-                        <div class="p-4 bg-slate-50 rounded-xl text-center text-slate-500">
-                            좌측에서 주소를 검색하시면 데이터가 자동으로 불러와집니다.
-                        </div>
-                    </div>
-                </div>
-
                 <!-- 상세 열람 버튼 컨테이너 -->
                 <div id="daejang-action-buttons" class="hidden mt-6">
                     <button onclick="openDaejangModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 rounded-xl shadow-md transition-all flex justify-center items-center">
@@ -314,16 +310,6 @@
                 </div>
             </div>
 
-        </div>
-    </div>
-    
-    <!-- 🌟 공식문서 확인 안내 (면책 조항) -->
-    <div class="max-w-6xl mx-auto px-4 pb-12">
-        <div class="bg-slate-100/80 border border-slate-200 p-4 rounded-xl text-center">
-            <p class="text-xs text-slate-500 font-medium">
-                본 시스템에서 제공하는 정보는 정부 공공데이터(API)를 기반으로 실시간 가공된 <span class="font-bold text-slate-600">참고용 데이터</span>입니다.<br>
-                실제 세무 신고, 계약, 권리관계 판정 등 <span class="font-bold text-rose-500">주요 의사결정 시에는 반드시 정부24, 대법원 인터넷등기소 등의 공식 발급 문서를 최종 확인</span>하시기 바랍니다.
-            </p>
         </div>
     </div>
 
@@ -396,28 +382,6 @@
                     </div>
                 </div>
 
-                <!-- 모달 내 정비사업 상세 영역 -->
-                <div id="modal-rebuild-section" class="bg-white border border-rose-200 rounded-xl overflow-hidden shadow-sm hidden">
-                    <div class="bg-rose-50 px-4 py-3 border-b border-rose-200 flex items-center">
-                        <span class="w-2 h-2 bg-rose-500 rounded-full mr-2"></span>
-                        <h4 class="font-bold text-rose-800 text-sm">서울시 정비사업(재개발·재건축) 진행 현황</h4>
-                    </div>
-                    <div class="p-0">
-                        <table class="w-full text-left border-collapse text-xs md:text-sm">
-                            <thead class="bg-rose-50/50 text-rose-800 text-[11px]">
-                                <tr>
-                                    <th class="py-2 px-4 border-b border-rose-100 w-1/3">구역명 및 단계</th>
-                                    <th class="py-2 px-4 border-b border-rose-100">조합설립</th>
-                                    <th class="py-2 px-4 border-b border-rose-100">사업시행</th>
-                                    <th class="py-2 px-4 border-b border-rose-100">관리처분</th>
-                                </tr>
-                            </thead>
-                            <tbody id="modal-rebuild-body" class="divide-y divide-rose-50 text-slate-800">
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
                 <!-- 위반건축물 상세 영역 -->
                 <div id="modal-violation-section" class="bg-white border border-red-200 rounded-xl overflow-hidden shadow-sm hidden">
                     <div class="bg-red-50 px-4 py-3 border-b border-red-200 flex items-center">
@@ -452,7 +416,7 @@
         </div>
     </div>
 
-    <!-- 🌟 주소 검색 레이어 -->
+    <!-- 🌟 네이버 블로그/아이폰 팝업 차단 완벽 우회용: 전체화면 주소 레이어 -->
     <div id="daum-postcode-layer" class="fixed inset-0 z-[9999] hidden bg-white flex-col">
         <div class="flex justify-between items-center bg-slate-800 p-4 shadow-md">
             <h3 class="font-bold text-white text-lg">주소 검색</h3>
@@ -467,10 +431,6 @@
     <script>
         const VWORLD_KEY = "75321A8E-275D-32A6-82AC-B9D0D8E551FE";
         const DATA_GO_KR_KEY = "83a79624397baf59da6f5daea52c9c0478aceccf3f20b707e26f9866c85f7b8f";
-        
-        // 🌟 세무사님이 부여받으신 상세 API용 새 인증키 적용!
-        const SEOUL_API_KEY = "456353517878676138305274595667"; 
-        
         const DOMAIN = window.location.origin; 
         const OFFICE_PHONE = "02-2679-0679"; 
         
@@ -481,7 +441,6 @@
         let currentPropType = "";
         let globalCurrentPnu = ""; 
         let globalComplexName = ""; 
-        let globalSearchAddress = ""; 
         
         let globalTransactions = [];
         let currentTransactionFilter = 'all';
@@ -493,8 +452,6 @@
         let globalLandUseTags = [];
         let globalViolationItems = [];
         let globalIsVioltBld = false;
-        
-        let globalRebuildItems = []; // 정비사업 데이터 저장용
 
         const DAEJANG_DICT = {
             "pnu": "고유번호(PNU)", "lndcgrCodeNm": "지목", "lndcgrCode": "지목코드", "lndpclAr": "대지면적(㎡)",
@@ -550,17 +507,16 @@
             initSigaChart([]); 
         });
 
-        // 🌟 탭 색상 수정 완벽 반영!
         function switchTab(tab) {
             const tabs = ['gongsi', 'siga', 'daejang'];
             tabs.forEach(t => {
                 const btn = document.getElementById('tab-' + t);
                 const content = document.getElementById('content-' + t);
                 if (t === tab) {
-                    btn.className = "px-5 py-3 text-sm font-bold border-b-2 border-indigo-400 text-indigo-400 focus:outline-none transition-colors";
+                    btn.className = "px-5 py-3 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 focus:outline-none";
                     content.classList.remove('hidden');
                 } else {
-                    btn.className = "px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-white focus:outline-none transition-colors";
+                    btn.className = "px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none";
                     content.classList.add('hidden');
                 }
             });
@@ -600,24 +556,14 @@
             return `${mt}월01일`;
         }
 
-        // 날짜 정리 함수 (20240101 이나 2024-01-01 00:00:00 등을 통일)
         function formatPubDate(rawDate) {
-            if (!rawDate || rawDate === '-' || String(rawDate).trim() === 'null') return '-';
-            const str = String(rawDate).split(' ')[0].replace(/\D/g, '');
-            if(str.length >= 8) {
-                return `${str.substring(0,4)}-${str.substring(4,6)}-${str.substring(6,8)}`;
+            if (rawDate && String(rawDate).length >= 8) {
+                const str = String(rawDate).replace(/\D/g, '');
+                if(str.length >= 8) {
+                    return `${str.substring(0,4)}-${str.substring(4,6)}-${str.substring(6,8)}`;
+                }
             }
             return rawDate;
-        }
-
-        // 객체에서 키워드로 값을 찾는 스마트 스캐너 함수
-        function findKey(obj, keywords) {
-            if(!obj) return null;
-            for(let k in obj) {
-                let upperK = k.toUpperCase();
-                if(keywords.some(kw => upperK.includes(kw))) return obj[k];
-            }
-            return null;
         }
 
         function fetchJSONP(url) {
@@ -669,16 +615,6 @@
                 return cleanApi && cleanTarget && cleanApi.includes(cleanTarget);
             }
         }
-        
-        function extractGuDong(address) {
-            let gu = "", dong = "";
-            const words = address.split(" ");
-            words.forEach(w => {
-                if (w.endsWith("구") && w.length >= 2) gu = w;
-                if (w.endsWith("동") && w.length >= 2) dong = w;
-            });
-            return { gu, dong };
-        }
 
         async function searchPriceHistory() {
             const address = document.getElementById('address').value;
@@ -688,7 +624,6 @@
             const btn = document.getElementById('searchBtn');
 
             if (!address) { alert("주소를 먼저 입력해 주세요."); return; }
-            globalSearchAddress = address;
 
             btn.innerText = "부동산 데이터 조회 중...";
             btn.disabled = true;
@@ -821,7 +756,6 @@
             globalLandUseTags = [];
             globalViolationItems = [];
             globalIsVioltBld = false;
-            globalRebuildItems = [];
 
             document.getElementById('daejang-action-buttons').classList.add('hidden');
             
@@ -835,7 +769,7 @@
             const rawDongVal = extractNum(document.getElementById('dong').value);
             const rawHoVal = extractNum(document.getElementById('ho').value);
 
-            // [1] 토지대장
+            // 🌟 [1] 토지대장 조회 (VWORLD)
             try {
                 const LAND_KEY = "0F6B55A5-3A01-34CF-9C24-AF454E09531E";
                 const landUrl = `https://api.vworld.kr/ned/data/getLandCharacteristics?key=${LAND_KEY}&pnu=${pnu}&format=json&domain=${DOMAIN}`;
@@ -865,11 +799,12 @@
                     `;
                 }
                 document.getElementById('land-info').innerHTML = landHtml;
-            } catch(e) {}
+            } catch(e) { console.error("❌ 토지대장 에러:", e); }
 
-            // [2] 토지이용계획
+            // 🌟 [2] 토지이용계획(규제/정비구역) 조회 (VWORLD)
             try {
                 document.getElementById('land-use-info').innerHTML = `<div class="p-4 bg-purple-50 text-purple-600 rounded-xl text-center font-bold animate-pulse">규제 및 정비구역 스캔 중...</div>`;
+                
                 const LAND_USE_KEY = "C0746A7C-9541-323C-A7E6-AF3204C46479";
                 const useUrl = `https://api.vworld.kr/ned/data/getLandUseAttr?key=${LAND_USE_KEY}&pnu=${pnu}&format=json&domain=${DOMAIN}`;
                 const useData = await fetchJSONP(useUrl);
@@ -887,6 +822,7 @@
                 if (field && field.length > 0) {
                     const tags = [...new Set(field.map(f => f.prposAreaDstrcCodeNm).filter(Boolean))];
                     globalLandUseTags = tags; 
+                    
                     if (tags.length > 0) {
                         let tagsHtml = tags.map(t => {
                             let color = "bg-slate-100 text-slate-700 border border-slate-200"; 
@@ -906,7 +842,11 @@
                         
                         useHtml = `
                             <div class="p-4 bg-purple-50 rounded-xl border border-purple-100 shadow-sm">
-                                <p class="text-[10px] text-purple-500 mb-3">※ 토지거래허가구역은 외국인·법인 대상 제한구역(수도권 대부분)도 원본대로 표출됩니다.</p>
+                                <p class="text-xs text-purple-800 font-bold mb-1 flex items-center">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    국토부 토지이용계획 지정 내역 (세무 이슈 자동 스캔)
+                                </p>
+                                <p class="text-[10px] text-purple-500 mb-3 ml-5">※ 토지거래허가구역은 외국인·법인 대상 제한구역(수도권 대부분)도 원본대로 표출됩니다.</p>
                                 <div>${tagsHtml}</div>
                             </div>
                         `;
@@ -914,23 +854,35 @@
                 }
                 document.getElementById('land-use-info').innerHTML = useHtml;
             } catch(e) { 
+                console.error("❌ 토지이용계획 에러:", e); 
                 document.getElementById('land-use-info').innerHTML = `<div class="p-4 bg-amber-50 rounded-xl text-center text-amber-700 text-xs font-bold border border-amber-200">데이터가 없거나 응답이 지연되었습니다.</div>`;
             }
 
-            // [3] 건축물대장 
+            // 🌟 [3] 건축물대장 (프록시 사용) - CORS 방지 강력 버전
             async function fetchWithProxy(url) {
                 try {
-                    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-                    const res = await fetch(proxyUrl);
+                    const res = await fetch(url);
                     if (!res.ok) throw new Error();
-                    const data = await res.json();
-                    return JSON.parse(data.contents);
+                    return await res.json();
                 } catch(e) {
                     try {
-                        const proxyUrl2 = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-                        const res2 = await fetch(proxyUrl2);
-                        return await res2.json();
-                    } catch(e2) { return null; }
+                        // 1순위: allorigins의 /get 방식 (CORS 완벽 우회 및 JSON 래핑)
+                        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+                        const res2 = await fetch(proxyUrl);
+                        if (!res2.ok) throw new Error();
+                        const data = await res2.json();
+                        return JSON.parse(data.contents);
+                    } catch(e2) {
+                        try {
+                            // 2순위: corsproxy.io
+                            const proxyUrl2 = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+                            const res3 = await fetch(proxyUrl2);
+                            return await res3.json();
+                        } catch(e3) {
+                            console.error("API Proxy Error:", e3);
+                            return null; // 에러 방어
+                        }
+                    }
                 }
             }
 
@@ -1009,6 +961,7 @@
 
                     if (exposItem) globalExposItem = exposItem;
 
+                    // 🌟 [4] 위반건축물 데이터 정밀 스캔
                     const violtUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrWclfInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=100&pageNo=1&_type=json`;
                     
                     let vArr = [];
@@ -1022,8 +975,10 @@
                     globalViolationItems = vArr.filter(i => {
                         let dOk = true; 
                         let hOk = true;
+                        
                         if (rawDongVal) dOk = isMatch(i.dongNm, rawDongVal) || isMatch(i.bldNm, rawDongVal);
                         if (rawHoVal) hOk = isMatch(i.hoNm, rawHoVal);
+                        
                         return dOk && hOk;
                     });
 
@@ -1035,11 +990,25 @@
                     }
 
                     let warningHtml = "";
+                    
                     if (globalIsVioltBld) {
-                        warningHtml += `<div class="bg-red-50 border border-red-400 p-3 rounded-xl col-span-full mb-2 animate-pulse shadow-sm"><p class="text-sm text-red-800 font-black flex items-center">위반건축물 등재 물건입니다!</p></div>`;
+                        warningHtml += `
+                            <div class="bg-red-50 border border-red-400 p-3 rounded-xl col-span-full mb-2 animate-pulse shadow-sm">
+                                <p class="text-sm text-red-800 font-black flex items-center">
+                                    <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                    위반건축물 등재 물건입니다!
+                                </p>
+                            </div>
+                        `;
                     }
+
                     if (isFallbackUsed && (rawDongVal || rawHoVal)) {
-                        warningHtml += `<div class="bg-amber-50 border border-amber-200 p-2.5 rounded-lg col-span-full mb-1"><p class="text-xs text-amber-700 font-bold">⚠️ 입력하신 동·호수를 찾지 못했습니다</p></div>`;
+                        warningHtml += `
+                            <div class="bg-amber-50 border border-amber-200 p-2.5 rounded-lg col-span-full mb-1">
+                                <p class="text-xs text-amber-700 font-bold">⚠️ 입력하신 동·호수를 찾지 못했습니다</p>
+                                <p class="text-[10px] text-amber-600 mt-0.5 leading-relaxed">입력하신 <b>[${rawDongVal ? rawDongVal+'동' : ''} ${rawHoVal ? rawHoVal+'호' : ''}]</b>가 해당 건축물대장에 등록되어 있지 않거나 표기 방식이 다를 수 있습니다. (아래는 임시 참고용 세대 정보입니다.)</p>
+                            </div>
+                        `;
                     }
 
                     if (exposItem) {
@@ -1065,89 +1034,8 @@
                 }
 
                 document.getElementById('bldg-info').innerHTML = bldgHtml;
-                
-                // 🌟 [5] 신규: 서울시 정비사업 추진현황 상세 스캐너 (스마트 키 매칭 적용)
-                document.getElementById('rebuild-info').innerHTML = `<div class="p-4 bg-rose-50 text-rose-600 rounded-xl text-center font-bold animate-pulse">상세 정비사업 데이터 스캔 중...</div>`;
-                
-                let isSeoul = globalSearchAddress.includes("서울");
-                if (isSeoul) {
-                    const { gu, dong } = extractGuDong(globalSearchAddress);
-                    let rebuildHtml = `<div class="p-4 bg-slate-50 rounded-xl text-center text-slate-500">해당 동에 진행 중인 정비사업 내역이 없습니다.</div>`;
-                    
-                    if (dong) {
-                        let allProjects = [];
-                        // 서울시 API는 정확한 서비스명을 알아내기 위해 여러 엔드포인트를 시도합니다.
-                        const possibleServices = ['SeoulJeongbiProjectStep', 'ListUpisJeongbi', 'upisRebuild', 'cityBuildInfo', 'cleanupSttusInfo', 'SeoulJeongbiProjectStatus'];
-                        
-                        for(let svc of possibleServices) {
-                            const rebuildUrl = `http://openapi.seoul.go.kr:8088/${SEOUL_API_KEY}/json/${svc}/1/1000/`;
-                            try {
-                                const rbJson = await fetchWithProxy(rebuildUrl);
-                                if (rbJson && rbJson[svc] && rbJson[svc].row) {
-                                    allProjects = rbJson[svc].row;
-                                    break; 
-                                }
-                            } catch (e) {}
-                        }
 
-                        if(allProjects.length > 0) {
-                            // 동(Dong) 이름으로 필터링 및 스마트 키 맵핑
-                            globalRebuildItems = allProjects.filter(p => {
-                                let addr = String(findKey(p, ['ADDR', 'WICHI', '위치', '주소', 'PSTN']) || "");
-                                let nm = String(findKey(p, ['NM', '구역명', '사업명', 'RGN']) || "");
-                                return (addr.includes(dong) || nm.includes(dong));
-                            }).map(p => {
-                                return {
-                                    name: findKey(p, ['NM', '구역명', '사업명', 'RGN']) || '구역명 미상',
-                                    step: findKey(p, ['STEP', '추진단계', '상태', 'PROGRESS']) || '진행단계 확인불가',
-                                    type: findKey(p, ['TYPE', '유형', '사업방법', 'SCLSF']) || '-',
-                                    addr: findKey(p, ['ADDR', 'WICHI', '위치', '주소', 'PSTN']) || '-',
-                                    dt_johap: findKey(p, ['JOHAP', '조합설립', 'COMB']) || '-',
-                                    dt_sihaeng: findKey(p, ['SIHAENG', '사업시행', 'BIZ_APP']) || '-',
-                                    dt_gwanri: findKey(p, ['GWANRI', '관리처분', 'MNG_DISP', '처분']) || '-'
-                                };
-                            });
-
-                            if (globalRebuildItems.length > 0) {
-                                rebuildHtml = globalRebuildItems.map(p => `
-                                    <div class="mb-4 p-4 bg-white border border-rose-200 rounded-xl shadow-sm">
-                                        <div class="flex justify-between items-center mb-2">
-                                            <span class="font-extrabold text-rose-700 text-[15px]">${p.name}</span>
-                                            <span class="bg-rose-100 text-rose-800 text-xs font-bold px-2 py-1 rounded shadow-sm">${p.step}</span>
-                                        </div>
-                                        <div class="text-xs text-slate-600 space-y-1 mb-3 border-b border-rose-50 pb-3">
-                                            <p><span class="font-bold text-slate-400 inline-block w-8">구분:</span> ${p.type}</p>
-                                            <p><span class="font-bold text-slate-400 inline-block w-8">위치:</span> <span class="truncate max-w-[200px] inline-block align-bottom" title="${p.addr}">${p.addr}</span></p>
-                                        </div>
-                                        <div class="grid grid-cols-3 gap-2 text-center">
-                                            <div class="bg-slate-50 border border-slate-100 p-2 rounded-lg">
-                                                <p class="text-[10px] text-slate-500 font-bold mb-0.5">조합설립인가</p>
-                                                <p class="font-extrabold text-slate-700 text-xs">${formatPubDate(p.dt_johap)}</p>
-                                            </div>
-                                            <div class="bg-slate-50 border border-slate-100 p-2 rounded-lg">
-                                                <p class="text-[10px] text-slate-500 font-bold mb-0.5">사업시행인가</p>
-                                                <p class="font-extrabold text-slate-700 text-xs">${formatPubDate(p.dt_sihaeng)}</p>
-                                            </div>
-                                            <div class="bg-slate-50 border border-slate-100 p-2 rounded-lg">
-                                                <p class="text-[10px] text-slate-500 font-bold mb-0.5">관리처분인가</p>
-                                                <p class="font-extrabold text-slate-700 text-xs">${formatPubDate(p.dt_gwanri)}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                `).join('');
-                            } else {
-                                rebuildHtml = `<div class="p-4 bg-slate-50 rounded-xl text-center text-slate-500">해당 동에 일치하는 정비사업 내역이 없습니다.</div>`;
-                            }
-                        } else {
-                            rebuildHtml = `<div class="p-4 bg-amber-50 rounded-xl text-center text-amber-700 text-xs font-bold border border-amber-200">정비사업 API 응답 지연 또는 인증 오류입니다.</div>`;
-                        }
-                    }
-                    document.getElementById('rebuild-info').innerHTML = rebuildHtml;
-                } else {
-                    document.getElementById('rebuild-info').innerHTML = `<div class="p-4 bg-slate-50 rounded-xl text-center text-slate-500">정비사업 조회는 <b>서울특별시 소재지</b>만 지원됩니다.</div>`;
-                }
-
-                if(globalTitleItem || globalLandItem || globalExposItem || globalRebuildItems.length > 0) {
+                if(globalTitleItem || globalLandItem || globalExposItem) {
                     document.getElementById('daejang-action-buttons').classList.remove('hidden');
                 }
 
@@ -1232,31 +1120,6 @@
                 landUseBody.innerHTML = `<span class="text-sm text-slate-400">해당 없음 또는 정보 없음</span>`;
             }
 
-            // 🌟 모달 내 정비사업 상세 내역 렌더링
-            const rebuildSection = document.getElementById('modal-rebuild-section');
-            const rebuildBody = document.getElementById('modal-rebuild-body');
-            rebuildBody.innerHTML = '';
-            
-            if (globalRebuildItems && globalRebuildItems.length > 0) {
-                rebuildSection.classList.remove('hidden');
-                globalRebuildItems.forEach(p => {
-                    rebuildBody.innerHTML += `
-                        <tr class="hover:bg-rose-50/50">
-                            <td class="py-3 px-4 text-slate-700 border-b border-rose-50 w-1/3">
-                                <span class="font-extrabold text-rose-700 block mb-1 text-[13px]">${p.name}</span>
-                                <span class="bg-rose-100 text-rose-800 text-[10px] font-bold px-2 py-0.5 rounded mr-1">${p.step}</span>
-                                <span class="text-[10px] text-slate-500">${p.type}</span>
-                            </td>
-                            <td class="py-3 px-2 text-slate-700 font-bold border-b border-rose-50 text-center">${formatPubDate(p.dt_johap)}</td>
-                            <td class="py-3 px-2 text-slate-700 font-bold border-b border-rose-50 text-center">${formatPubDate(p.dt_sihaeng)}</td>
-                            <td class="py-3 px-2 text-slate-700 font-bold border-b border-rose-50 text-center">${formatPubDate(p.dt_gwanri)}</td>
-                        </tr>
-                    `;
-                });
-            } else {
-                rebuildSection.classList.add('hidden');
-            }
-
             const violationSection = document.getElementById('modal-violation-section');
             const violationBody = document.getElementById('modal-violation-body');
             violationBody.innerHTML = '';
@@ -1293,7 +1156,7 @@
         }
 
         function downloadDaejangExcel() {
-            if (!globalTitleItem && !globalLandItem && !globalExposItem && globalRebuildItems.length === 0) {
+            if (!globalTitleItem && !globalLandItem && !globalExposItem) {
                 alert("다운로드할 원본 데이터가 없습니다.");
                 return;
             }
@@ -1324,22 +1187,6 @@
                 const ws = XLSX.utils.json_to_sheet(luRows);
                 ws['!cols'] = [{ wpx: 50 }, { wpx: 400 }];
                 XLSX.utils.book_append_sheet(workbook, ws, "토지이용계획_규제");
-            }
-
-            // 🌟 엑셀 - 정비사업 탭 다운로드 강화
-            if (globalRebuildItems && globalRebuildItems.length > 0) {
-                const rbRows = globalRebuildItems.map(p => ({
-                    "정비구역명": p.name || '-',
-                    "사업유형": p.type || '-',
-                    "현재진행단계": p.step || '-',
-                    "위치상세": p.addr || '-',
-                    "조합설립인가일": formatPubDate(p.dt_johap),
-                    "사업시행인가일": formatPubDate(p.dt_sihaeng),
-                    "관리처분인가일": formatPubDate(p.dt_gwanri)
-                }));
-                const ws = XLSX.utils.json_to_sheet(rbRows);
-                ws['!cols'] = [{ wpx: 180 }, { wpx: 100 }, { wpx: 120 }, { wpx: 250 }, { wpx: 90 }, { wpx: 90 }, { wpx: 90 }];
-                XLSX.utils.book_append_sheet(workbook, ws, "서울시_정비사업_상세현황");
             }
 
             if (globalViolationItems && globalViolationItems.length > 0) {
