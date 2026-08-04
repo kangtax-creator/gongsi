@@ -1949,31 +1949,129 @@ if (includeSilv) fetchPromises.push(fetch(silvUrl).then(res => ({res, dataType: 
         }
 
         async function downloadDaejangPDF() {
-            const btn = document.getElementById('pdfBtn');
-            btn.innerText = "PDF 생성 중... 잠시만 기다려주세요";
-            document.getElementById('pdf-header').classList.remove('hidden');
-            const printArea = document.getElementById('daejang-print-area');
-            
-            try {
-                const canvas = await html2canvas(printArea, { scale: 2, useCORS: true });
-                const imgData = canvas.toDataURL('image/png');
-                const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-                
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                pdf.save(`건축물_토지대장_${document.getElementById('address').value}.pdf`);
-            } catch(e) {
-                alert("PDF 생성 중 오류가 발생했습니다.");
-            } finally {
-                document.getElementById('pdf-header').classList.add('hidden');
-                btn.innerHTML = `<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg> 현재 화면 PDF 저장`;
-            }
+    const btn = document.getElementById('pdfBtn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = "PDF 변환 중... (잠시만 기다려주세요)";
+    
+    const { jsPDF } = window.jspdf;
+    const printArea = document.getElementById('daejang-print-area');
+    const pdfHeader = document.getElementById('pdf-header');
+    
+    // 🌟 1. 캡처를 위해 임시로 스크롤과 높이 제한 해제
+    const originalOverflow = printArea.style.overflow;
+    const originalHeight = printArea.style.height;
+    const originalMaxHeight = printArea.style.maxHeight;
+    
+    printArea.style.overflow = 'visible';
+    printArea.style.height = printArea.scrollHeight + 'px';
+    printArea.style.maxHeight = 'none';
+    
+    // 부모 모달 창의 높이 제한(max-h-[90vh])도 잠시 해제
+    const modalDiv = printArea.parentElement;
+    const originalModalMaxHeight = modalDiv.style.maxHeight;
+    modalDiv.style.maxHeight = 'none';
+
+    pdfHeader.classList.remove('hidden');
+    
+    try {
+        // 브라우저가 화면을 쫙 펼칠 시간을 아주 잠깐(0.1초) 줍니다.
+        await new Promise(r => setTimeout(r, 100));
+
+        const canvas = await html2canvas(printArea, { 
+            scale: 2, 
+            backgroundColor: '#ffffff', 
+            useCORS: true,
+            windowWidth: printArea.scrollWidth,
+            windowHeight: printArea.scrollHeight
+        });
+        
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        let heightLeft = pdfHeight;
+        let position = 0;
+
+        // 🌟 2. 내용이 길면 A4 여러 장으로 자동 분할 생성
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+        heightLeft -= pageHeight;
+
+        while (heightLeft > 0) {
+            position = heightLeft - pdfHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+            heightLeft -= pageHeight;
         }
 
+        pdf.save(`강승완세무사_대장및규제_${document.getElementById('address').value}.pdf`);
+    } catch(e) {
+        console.error(e);
+        alert("PDF 생성 중 오류가 발생했습니다.");
+    } finally {
+        // 🌟 3. 작업이 끝나면 원래 디자인(스크롤)으로 완벽하게 복구
+        printArea.style.overflow = originalOverflow;
+        printArea.style.height = originalHeight;
+        printArea.style.maxHeight = originalMaxHeight;
+        modalDiv.style.maxHeight = originalModalMaxHeight;
+        
+        pdfHeader.classList.add('hidden');
+        btn.innerHTML = originalText;
+    }
+}
+        
         function downloadDaejangExcel() {
-            alert("엑셀 다운로드 기능은 추가 구성이 필요합니다. 현재는 PDF 저장을 이용해 주세요.");
+    if (!globalTitleItem && !globalLandItem && !globalExposItem) {
+        alert("다운로드할 원본 데이터가 없습니다.");
+        return;
+    }
+
+    const workbook = XLSX.utils.book_new();
+
+    // 세로형 데이터(객체)를 엑셀 표로 변환해주는 헬퍼 함수
+    function createVerticalSheet(dataItem) {
+        const rows = [];
+        for (let k in dataItem) {
+            if (typeof dataItem[k] !== 'object') {
+                let keyName = DAEJANG_DICT[k] || k;
+                let val = dataItem[k];
+                if (k === 'useAprDay' || k === 'crtnDay') { if(val && val !== '-') val = formatPubDate(val); }
+                rows.push({ "항목": keyName, "내용": val });
+            }
         }
+        const ws = XLSX.utils.json_to_sheet(rows);
+        ws['!cols'] = [{ wpx: 180 }, { wpx: 350 }]; 
+        return ws;
+    }
+
+    if (globalTitleItem) XLSX.utils.book_append_sheet(workbook, createVerticalSheet(globalTitleItem), "건축물대장_표제부");
+    if (globalExposItem) XLSX.utils.book_append_sheet(workbook, createVerticalSheet(globalExposItem), "건축물대장_전유부");
+    if (globalLandItem) XLSX.utils.book_append_sheet(workbook, createVerticalSheet(globalLandItem), "토지대장_특성");
+    
+    if (globalLandUseTags && globalLandUseTags.length > 0) {
+        const luRows = globalLandUseTags.map((tag, idx) => ({ "연번": idx + 1, "지정_규제_내역": tag }));
+        const ws = XLSX.utils.json_to_sheet(luRows);
+        ws['!cols'] = [{ wpx: 50 }, { wpx: 400 }];
+        XLSX.utils.book_append_sheet(workbook, ws, "토지이용계획_규제");
+    }
+
+    if (globalViolationItems && globalViolationItems.length > 0) {
+        const viRows = globalViolationItems.map(item => {
+            return {
+                "동명칭": item.dongNm || '-',
+                "호명칭": item.hoNm || '-',
+                "위반건축물등록일자": formatPubDate(item.violtBldRegsDay) || '-',
+                "위반내용_상세": item.violtCn || '-'
+            };
+        });
+        const ws = XLSX.utils.json_to_sheet(viRows);
+        ws['!cols'] = [{ wpx: 80 }, { wpx: 80 }, { wpx: 120 }, { wpx: 500 }];
+        XLSX.utils.book_append_sheet(workbook, ws, "위반건축물_적발내역");
+    }
+
+    XLSX.writeFile(workbook, `강승완세무사_대장및규제_${document.getElementById('address').value}.xlsx`);
+}
     </script>
 </body>
 </html>
