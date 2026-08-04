@@ -1176,7 +1176,7 @@
                         extractedItems.push({
                             dealAmount: String(item.dealAmount || item.거래금액 || item.deposit || item.보증금액 || "0"),
                             monthly: String(item.monthlyRent || item.월세금액 || "0"),
-                            area: String(item.excluUseAr || item.전용면적 || "0"),
+                            area: parseFloat(item.excluUseAr || item.전용면적 || "0"),
                             year: String(item.dealYear || item.년 || ""),
                             month: String(item.dealMonth || item.월 || ""),
                             day: String(item.dealDay || item.일 || "1").split('~')[0].trim(),
@@ -1206,7 +1206,7 @@
                 extractedItems.push({
                     dealAmount: getText(item, ["dealAmount", "거래금액", "deposit", "보증금액"]) || "0",
                     monthly: getText(item, ["monthlyRent", "월세금액"]) || "0",
-                    area: getText(item, ["excluUseAr", "전용면적"]) || "0",
+                    area: parseFloat(getText(item, ["excluUseAr", "전용면적"]) || "0"),
                     year: getText(item, ["dealYear", "년"]),
                     month: getText(item, ["dealMonth", "월"]),
                     day: (getText(item, ["dealDay", "일"]) || "1").split('~')[0].trim(),
