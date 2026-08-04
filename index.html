@@ -1386,7 +1386,7 @@
         }
 
     } catch (err) {
-        alert("조회 중 오류가 발생했습니다.");
+        alert("🚨 에러 추적 팝업입니다! 이 내용을 복사해서 알려주세요:\n\n" + err.message + "\n\n" + err.stack);
         console.error(err);
     } finally {
         btn.innerText = "선택 기간 내 매매 / 전월세 / 분양·입주권 데이터 동시 스캔";
