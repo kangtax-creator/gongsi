@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>부동산 원클릭 스캐너</title>
-    <!-- 파비콘 추가 -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏢</text></svg>">
+    <title>부동산 공시가격 & 단지 내 실거래(매매/임대/분양권) 통합 조회 | 강승완 세무사</title>
     
     <meta name="keywords" content="부동산 공시가격, 연도별 기준시가, 실거래가, 매매가, 전세가, 월세, 분양권, 상속세, 증여세, 양도소득세, 강승완 세무사, micro-tax">
     <meta property="og:type" content="website">
@@ -50,19 +48,8 @@
         </div>
     </div>
 
-    <!-- 참고용 공식문서 확인 안내 메세지 -->
-    <div class="max-w-6xl mx-auto px-4 mt-6 mb-2 relative z-10 -mt-16">
-        <div class="bg-rose-50 border border-rose-200 text-rose-800 p-4 rounded-xl flex items-start text-sm shadow-md">
-            <svg class="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            <div>
-                <p class="font-bold mb-1">면책 조항 및 주의 안내</p>
-                <p class="leading-relaxed opacity-90 text-xs md:text-sm">본 사이트에서 제공하는 실거래가, 공시가격, 대장 정보 및 <b class="text-rose-900">정비사업현황 등은 공공데이터 기반의 단순 참고용</b>입니다. 실제 거래, 투자 등 <b>주요 의사결정 시에는 반드시 관할 구청 및 국토교통부 등의 공식 원본 문서(대장, 등기부등본 등)를 직접 열람하여 교차 검증</b>하시기 바랍니다.</p>
-            </div>
-        </div>
-    </div>
-
     <!-- 메인 컨텐츠 영역 -->
-    <div class="max-w-6xl mx-auto px-4 pb-12 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start mt-6">
+    <div class="max-w-6xl mx-auto px-4 -mt-12 pb-12 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
         <!-- 왼쪽: 주소 입력 영역 -->
         <div class="space-y-6">
@@ -94,8 +81,8 @@
                     </div>
 
                     <div class="flex space-x-2">
-                        <input type="text" id="address" readonly onclick="execDaumPostcode()" placeholder="여기를 터치하여 주소 검색" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none cursor-pointer">
-                        <button type="button" onclick="execDaumPostcode()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-transform active:scale-95 whitespace-nowrap">주소 검색</button>
+                        <input type="text" id="address" readonly placeholder="주소 검색 버튼을 클릭하세요" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none">
+                        <button onclick="execDaumPostcode()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap">주소 검색</button>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
@@ -164,9 +151,6 @@
                 </button>
                 <button onclick="switchTab('daejang')" id="tab-daejang" class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none">
                     3. 건축물 / 토지 대장
-                </button>
-                <button onclick="switchTab('renewal')" id="tab-renewal" class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none">
-                    4. 정비사업현황
                 </button>
             </div>
 
@@ -279,7 +263,7 @@
                 </div>
             </div>
 
-            <!-- 탭 3: 대장 및 규제 정보 영역 -->
+            <!-- 🌟 탭 3: 대장 및 규제 정보 영역 -->
             <div id="content-daejang" class="hidden space-y-6">
                 <!-- 건축물대장 -->
                 <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
@@ -305,7 +289,7 @@
                     </div>
                 </div>
 
-                <!-- 토지이용계획 (규제 및 정비구역) -->
+                <!-- 🌟 토지이용계획 (규제 및 정비구역) -->
                 <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
                     <h2 class="text-lg font-extrabold text-slate-800 mb-4 flex items-center">
                         <span class="w-2 h-2 bg-purple-600 rounded-full mr-2"></span> 토지이용계획 (용도지역 및 핵심 규제)
@@ -321,41 +305,8 @@
                 <div id="daejang-action-buttons" class="hidden mt-6">
                     <button onclick="openDaejangModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 rounded-xl shadow-md transition-all flex justify-center items-center">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                        대장 원본 및 규제/위반 상세 내역 열람 (엑셀/PDF 변환)
+                        대장 원본 및 규제 상세 내역 열람 (엑셀/PDF 변환)
                     </button>
-                </div>
-            </div>
-
-            <!-- 🌟 탭 4: 서울시 정비사업현황 영역 -->
-            <div id="content-renewal" class="hidden space-y-6">
-                <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-lg font-extrabold text-slate-800 flex items-center">
-                            <span class="w-2 h-2 bg-rose-600 rounded-full mr-2"></span> 서울시 관내 정비사업 진행현황 (조합인가 등)
-                        </h2>
-                        <button onclick="fetchSeoulRenewal()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all text-sm">
-                            관할 자치구 사업 스캔
-                        </button>
-                    </div>
-                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4">
-                        <p class="text-xs text-slate-600 font-medium">※ 좌측에서 서울시 주소를 검색한 후 스캔 버튼을 누르면 해당 자치구(예: 강남구, 서초구 등)의 재개발/재건축 정비사업 내역을 불러옵니다.</p>
-                    </div>
-                    <div class="overflow-x-auto max-h-[600px] border border-slate-100 rounded-lg">
-                        <table class="w-full text-left border-collapse relative">
-                            <thead class="sticky top-0 bg-slate-50 shadow-sm z-10">
-                                <tr class="border-b border-slate-200 text-slate-500 text-[11px] font-bold uppercase tracking-wider" id="renewal-table-head">
-                                    <th class="py-3 px-4 whitespace-nowrap">자치구</th>
-                                    <th class="py-3 px-4 whitespace-nowrap">사업구분</th>
-                                    <th class="py-3 px-4 min-w-[150px]">사업명(구역명)</th>
-                                    <th class="py-3 px-4 whitespace-nowrap">진행단계(인가현황)</th>
-                                    <th class="py-3 px-4 min-w-[120px]">대표지번</th>
-                                </tr>
-                            </thead>
-                            <tbody id="renewal-table-body" class="text-xs divide-y divide-slate-100 text-slate-700">
-                                <tr><td colspan="5" class="py-12 text-center text-slate-400 font-medium">주소 검색 후 상단의 스캔 버튼을 눌러주세요.</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
                 </div>
             </div>
 
@@ -397,9 +348,9 @@
 
                 <!-- 전유부 영역 -->
                 <div id="modal-expos-section" class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hidden">
-                    <div class="bg-emerald-50 px-4 py-3 border-b border-slate-200 flex items-center">
-                        <span class="w-2 h-2 bg-emerald-500 rounded-full mr-2"></span>
-                        <h4 class="font-bold text-emerald-800 text-sm">건축물대장 (전유부 / 세대 전용면적)</h4>
+                    <div class="bg-indigo-50 px-4 py-3 border-b border-slate-200 flex items-center">
+                        <span class="w-2 h-2 bg-indigo-500 rounded-full mr-2"></span>
+                        <h4 class="font-bold text-indigo-800 text-sm">건축물대장 (전유부 / 세대 전용면적)</h4>
                     </div>
                     <div class="p-0">
                         <table class="w-full text-left border-collapse text-xs md:text-sm">
@@ -421,17 +372,18 @@
                     </div>
                 </div>
 
-                <!-- 토지이용계획 영역 -->
+                <!-- 🌟 [신규] 토지이용계획 영역 -->
                 <div id="modal-landuse-section" class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                     <div class="bg-purple-50 px-4 py-3 border-b border-slate-200 flex items-center">
                         <span class="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
                         <h4 class="font-bold text-purple-800 text-sm">토지이용계획 (용도지역 및 규제 지정내역)</h4>
                     </div>
                     <div class="p-4" id="modal-landuse-body">
+                        <!-- 태그들이 들어감 -->
                     </div>
                 </div>
 
-                <!-- 위반건축물 상세 영역 -->
+                <!-- 🌟 [신규] 위반건축물 상세 영역 -->
                 <div id="modal-violation-section" class="bg-white border border-red-200 rounded-xl overflow-hidden shadow-sm hidden">
                     <div class="bg-red-50 px-4 py-3 border-b border-red-200 flex items-center">
                         <span class="w-2 h-2 bg-red-600 rounded-full mr-2 animate-pulse"></span>
@@ -446,6 +398,7 @@
                                 </tr>
                             </thead>
                             <tbody id="modal-violation-body" class="divide-y divide-red-50 text-slate-800">
+                                <!-- 위반 내역이 들어감 -->
                             </tbody>
                         </table>
                     </div>
@@ -455,7 +408,7 @@
             <div class="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-end rounded-b-2xl gap-2">
                 <button onclick="downloadDaejangExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-sm transition-all text-sm flex items-center">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                    엑셀 다운로드 (모든 내역 포함)
+                    엑셀 다운로드 (규제/위반내역 포함)
                 </button>
                 <button onclick="downloadDaejangPDF()" id="pdfBtn" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-sm transition-all text-sm flex items-center">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -465,17 +418,6 @@
         </div>
     </div>
 
-    <!-- 🌟 네이버 블로그/아이폰 팝업 차단 완벽 우회용: 전체화면 주소 레이어 -->
-    <div id="daum-postcode-layer" class="fixed inset-0 z-[9999] hidden bg-white flex-col">
-        <div class="flex justify-between items-center bg-slate-800 p-4 shadow-md">
-            <h3 class="font-bold text-white text-lg">주소 검색</h3>
-            <button type="button" onclick="closeDaumPostcode()" class="text-white hover:text-slate-300 p-1 cursor-pointer">
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-        </div>
-        <div id="daum-postcode-container" class="w-full flex-1 relative overflow-hidden" style="-webkit-overflow-scrolling:touch;"></div>
-    </div>
-
     <!-- 자바스크립트 영역 -->
     <script>
         const VWORLD_KEY = "75321A8E-275D-32A6-82AC-B9D0D8E551FE";
@@ -483,9 +425,6 @@
         const DOMAIN = window.location.origin; 
         const OFFICE_PHONE = "02-2679-0679"; 
         
-        // 새로 추가된 서울시 정비사업 API 인증키
-        const SEOUL_KEY = "456353517878676138305274595667";
-
         let priceChartInstance = null;
         let sigaChartInstance = null; 
         
@@ -501,6 +440,7 @@
         let globalExposItem = null;
         let globalLandItem = null;
 
+        // 🌟 [추가] 토지이용계획 및 위반건축물 전역 변수
         let globalLandUseTags = [];
         let globalViolationItems = [];
         let globalIsVioltBld = false;
@@ -545,34 +485,6 @@
 
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-        // 🌟 CORS 방지용 글로벌 프록시 함수 🌟
-        async function fetchWithProxy(url) {
-            try {
-                const res = await fetch(url);
-                if (!res.ok) throw new Error();
-                return await res.json();
-            } catch(e) {
-                try {
-                    // 1순위: allorigins의 /get 방식 (CORS 완벽 우회 및 JSON 래핑)
-                    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-                    const res2 = await fetch(proxyUrl);
-                    if (!res2.ok) throw new Error();
-                    const data = await res2.json();
-                    return JSON.parse(data.contents);
-                } catch(e2) {
-                    try {
-                        // 2순위: corsproxy.io
-                        const proxyUrl2 = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-                        const res3 = await fetch(proxyUrl2);
-                        return await res3.json();
-                    } catch(e3) {
-                        console.error("API Proxy Error:", e3);
-                        return null; // 에러 방어
-                    }
-                }
-            }
-        }
-
         document.addEventListener("DOMContentLoaded", () => {
             const today = new Date();
             let yyyy = today.getFullYear();
@@ -588,7 +500,7 @@
         });
 
         function switchTab(tab) {
-            const tabs = ['gongsi', 'siga', 'daejang', 'renewal'];
+            const tabs = ['gongsi', 'siga', 'daejang'];
             tabs.forEach(t => {
                 const btn = document.getElementById('tab-' + t);
                 const content = document.getElementById('content-' + t);
@@ -603,25 +515,11 @@
         }
 
         function execDaumPostcode() {
-            const layer = document.getElementById('daum-postcode-layer');
-            const container = document.getElementById('daum-postcode-container');
-            layer.classList.remove('hidden');
-            layer.classList.add('flex');
             new daum.Postcode({
                 oncomplete: function(data) {
                     document.getElementById('address').value = data.roadAddress || data.jibunAddress;
-                    closeDaumPostcode();
-                },
-                width: '100%',
-                height: '100%'
-            }).embed(container);
-        }
-
-        function closeDaumPostcode() {
-            const layer = document.getElementById('daum-postcode-layer');
-            layer.classList.add('hidden');
-            layer.classList.remove('flex');
-            document.getElementById('daum-postcode-container').innerHTML = ''; 
+                }
+            }).open();
         }
 
         function extractNum(text) {
@@ -849,7 +747,7 @@
             const rawDongVal = extractNum(document.getElementById('dong').value);
             const rawHoVal = extractNum(document.getElementById('ho').value);
 
-            // 🌟 [1] 토지대장 조회 (VWORLD)
+            // 🌟 [1] 토지대장 조회 (VWORLD - 프록시 없이 JSONP 직통 연결)
             try {
                 const LAND_KEY = "0F6B55A5-3A01-34CF-9C24-AF454E09531E";
                 const landUrl = `https://api.vworld.kr/ned/data/getLandCharacteristics?key=${LAND_KEY}&pnu=${pnu}&format=json&domain=${DOMAIN}`;
@@ -881,7 +779,7 @@
                 document.getElementById('land-info').innerHTML = landHtml;
             } catch(e) { console.error("❌ 토지대장 에러:", e); }
 
-            // 🌟 [2] 토지이용계획(규제/정비구역) 조회 (VWORLD)
+            // 🌟 [2] 토지이용계획(규제/정비구역) 조회 (VWORLD - 프록시 없이 JSONP 직통 연결)
             try {
                 document.getElementById('land-use-info').innerHTML = `<div class="p-4 bg-purple-50 text-purple-600 rounded-xl text-center font-bold animate-pulse">규제 및 정비구역 스캔 중...</div>`;
                 
@@ -901,7 +799,7 @@
 
                 if (field && field.length > 0) {
                     const tags = [...new Set(field.map(f => f.prposAreaDstrcCodeNm).filter(Boolean))];
-                    globalLandUseTags = tags; 
+                    globalLandUseTags = tags; // 전역 저장 (모달창 엑셀 변환용)
                     
                     if (tags.length > 0) {
                         let tagsHtml = tags.map(t => {
@@ -922,11 +820,10 @@
                         
                         useHtml = `
                             <div class="p-4 bg-purple-50 rounded-xl border border-purple-100 shadow-sm">
-                                <p class="text-xs text-purple-800 font-bold mb-1 flex items-center">
+                                <p class="text-xs text-purple-800 font-bold mb-3 flex items-center">
                                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                    국토부 토지이용계획 지정 내역 (세무 이슈 자동 스캔)
+                                    국토부 지정 내역 (세무 이슈 자동 스캔)
                                 </p>
-                                <p class="text-[10px] text-purple-500 mb-3 ml-5">※ 토지거래허가구역은 외국인·법인 대상 제한구역(수도권 대부분)도 원본대로 표출됩니다.</p>
                                 <div>${tagsHtml}</div>
                             </div>
                         `;
@@ -938,13 +835,31 @@
                 document.getElementById('land-use-info').innerHTML = `<div class="p-4 bg-amber-50 rounded-xl text-center text-amber-700 text-xs font-bold border border-amber-200">데이터가 없거나 응답이 지연되었습니다.</div>`;
             }
 
-            // 🌟 [3] 건축물대장
+            // 🌟 [3] 건축물대장 (프록시 사용)
+            async function fetchWithProxy(url) {
+                try {
+                    const res = await fetch(url);
+                    if (!res.ok) throw new Error();
+                    return await res.json();
+                } catch(e) {
+                    try {
+                        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+                        const res2 = await fetch(proxyUrl);
+                        if (!res2.ok) throw new Error();
+                        return await res2.json();
+                    } catch(e2) {
+                        const proxyUrl2 = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+                        const res3 = await fetch(proxyUrl2);
+                        return await res3.json();
+                    }
+                }
+            }
+
             try {
                 document.getElementById('bldg-info').innerHTML = `<div class="p-4 bg-indigo-50 text-indigo-600 rounded-xl text-center col-span-full font-bold animate-pulse">건축물대장 정보를 불러오는 중입니다...</div>`;
-                
                 let isApiError = false;
-                let titleItem = null;
                 
+                let titleItem = null;
                 const titleUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=500&pageNo=1&_type=json`;
                 try {
                     const titleJson = await fetchWithProxy(titleUrl);
@@ -962,13 +877,14 @@
                 if(titleItem) globalTitleItem = titleItem;
 
                 let bldgHtml = `<div class="p-4 bg-slate-50 rounded-xl text-center col-span-full text-slate-500">건축물대장 정보가 없습니다.</div>`;
-                let exposItem = null;
-                let fallbackItem = null;
-                let isFallbackUsed = false;
 
                 if (isApiError) {
                     bldgHtml = `<div class="p-4 bg-amber-50 border border-amber-200 rounded-xl text-center col-span-full text-amber-700 font-medium">건축물대장 API 오류가 발생했습니다.</div>`;
                 } else {
+                    let exposItem = null;
+                    let fallbackItem = null;
+                    let isFallbackUsed = false;
+
                     if (rawHoVal) {
                         const hoQueries = [
                             `&hoNm=${encodeURIComponent(rawHoVal + "호")}`,
@@ -1014,47 +930,42 @@
 
                     if (exposItem) globalExposItem = exposItem;
 
-                    // 🌟 [4] 위반건축물 데이터 정밀 스캔
-                    const violtUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrWclfInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=100&pageNo=1&_type=json`;
+                    // 🌟 [4] 위반건축물 데이터 스캔 및 배너 추가
+                    globalIsVioltBld = (titleItem?.violtBldYn === '1' || exposItem?.violtBldYn === '1');
                     
-                    let vArr = [];
+                    const violtUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrWclfInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=100&pageNo=1&_type=json`;
                     try {
                         const violtJson = await fetchWithProxy(violtUrl);
                         if (violtJson?.response?.body?.items?.item) {
-                            vArr = Array.isArray(violtJson.response.body.items.item) ? violtJson.response.body.items.item : [violtJson.response.body.items.item];
+                            const vArr = Array.isArray(violtJson.response.body.items.item) ? violtJson.response.body.items.item : [violtJson.response.body.items.item];
+                            globalViolationItems = vArr.filter(i => {
+                                let dOk = true; let hOk = true;
+                                if (rawDongVal) dOk = isMatch(i.dongNm, rawDongVal) || isMatch(i.bldNm, rawDongVal);
+                                if (rawHoVal) hOk = isMatch(i.hoNm, rawHoVal);
+                                return dOk && hOk;
+                            });
+                            // 호수 매칭 실패시 전체 위반내역을 일단 담아둠
+                            if(globalViolationItems.length === 0 && vArr.length > 0 && !rawHoVal) {
+                                globalViolationItems = vArr; 
+                            }
                         }
                     } catch(e){}
 
-                    globalViolationItems = vArr.filter(i => {
-                        let dOk = true; 
-                        let hOk = true;
-                        
-                        if (rawDongVal) dOk = isMatch(i.dongNm, rawDongVal) || isMatch(i.bldNm, rawDongVal);
-                        if (rawHoVal) hOk = isMatch(i.hoNm, rawHoVal);
-                        
-                        return dOk && hOk;
-                    });
-
-                    globalIsVioltBld = false;
-                    if (globalViolationItems.length > 0) {
-                        globalIsVioltBld = true;
-                    } else if (titleItem?.violtBldYn === '1' || exposItem?.violtBldYn === '1') {
-                        globalIsVioltBld = true;
-                    }
-
                     let warningHtml = "";
                     
-                    if (globalIsVioltBld) {
+                    // 위반건축물 배너 (가장 위)
+                    if (globalIsVioltBld || globalViolationItems.length > 0) {
                         warningHtml += `
                             <div class="bg-red-50 border border-red-400 p-3 rounded-xl col-span-full mb-2 animate-pulse shadow-sm">
                                 <p class="text-sm text-red-800 font-black flex items-center">
                                     <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                                    위반건축물 등재 물건입니다!
+                                    위반건축물 등재 물건입니다! (취득세 중과 및 비과세 배제 등 세무 리스크 주의)
                                 </p>
                             </div>
                         `;
                     }
 
+                    // 호수 매칭 오류 배너
                     if (isFallbackUsed && (rawDongVal || rawHoVal)) {
                         warningHtml += `
                             <div class="bg-amber-50 border border-amber-200 p-2.5 rounded-lg col-span-full mb-1">
@@ -1087,99 +998,12 @@
                 }
 
                 document.getElementById('bldg-info').innerHTML = bldgHtml;
-
+                
                 if(globalTitleItem || globalLandItem || globalExposItem) {
                     document.getElementById('daejang-action-buttons').classList.remove('hidden');
                 }
 
             } catch(e) { console.error("❌ 건축물대장 에러:", e); }
-        }
-
-        // 🌟 [4] 서울시 정비사업 현황 🌟
-        async function fetchSeoulRenewal() {
-            if (!globalCurrentPnu || !globalCurrentPnu.startsWith("11")) {
-                alert("서울시 주소를 먼저 검색한 후 기본 정보 조회를 완료해 주세요. (타 지역은 제공되지 않습니다)");
-                return;
-            }
-
-            const tbody = document.getElementById('renewal-table-body');
-            tbody.innerHTML = `<tr><td colspan="5" class="py-12 text-center text-rose-500 font-bold animate-pulse">정비사업 진행 현황 데이터를 분석 중입니다...</td></tr>`;
-
-            // url endpoint - upisRebuild
-            const url1 = `http://openapi.seoul.go.kr:8088/${SEOUL_KEY}/json/upisRebuild/1/500/`;
-            const url2 = `http://openapi.seoul.go.kr:8088/${SEOUL_KEY}/json/cityBuildInfo/1/500/`;
-
-            try {
-                let data = await fetchWithProxy(url1);
-                let rows = [];
-                
-                // Generic extraction to find 'row' array
-                for (let key in data) {
-                    if (data[key] && Array.isArray(data[key].row)) {
-                        rows = data[key].row;
-                        break;
-                    }
-                }
-
-                if (rows.length === 0) {
-                     let fallbackData = await fetchWithProxy(url2);
-                     for (let key in fallbackData) {
-                        if (fallbackData[key] && Array.isArray(fallbackData[key].row)) {
-                            rows = fallbackData[key].row;
-                            break;
-                        }
-                     }
-                }
-
-                if (rows.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" class="py-12 text-center text-slate-400">데이터가 없거나 현재 제공되지 않습니다.</td></tr>`;
-                    return;
-                }
-
-                const addrVal = document.getElementById('address').value || "";
-                let targetGu = "";
-                let match = addrVal.match(/서울(?:특별시)?\s+([가-힣]+구)/);
-                if (match) targetGu = match[1];
-
-                let filteredRows = targetGu ? rows.filter(r => {
-                    let jsonStr = JSON.stringify(r);
-                    return jsonStr.includes(targetGu);
-                }) : rows;
-
-                if (filteredRows.length === 0) filteredRows = rows; // if no match, show all
-
-                const getField = (row, possibleNames) => {
-                    for (let n of possibleNames) {
-                        if (row[n] !== undefined) return row[n];
-                    }
-                    return "-";
-                };
-
-                tbody.innerHTML = "";
-                filteredRows.forEach(row => {
-                    let gu = getField(row, ["CGG_NM", "GU_NM", "ATDRN_NM", "LOGVM"]);
-                    let type = getField(row, ["BIZ_TY_NM", "BIZ_TYPE_NM", "BSNS_KND_NM", "SE_NM", "RPT_TYPE"]);
-                    let name = getField(row, ["BIZ_NM", "BIZ_NAME", "ZONE_NM", "BSNS_NM"]);
-                    let step = getField(row, ["PROCS_STEP_NM", "PRGS_STEP_NM", "PRT_STEP_NM", "OPERTN_PROGRS_STTUS_NM"]);
-                    let addr = getField(row, ["RPY_JIBUN", "ADDR", "LNM_ADRES", "LNM_ADDR", "LOC"]);
-
-                    let tr = document.createElement('tr');
-                    tr.className = "hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0";
-                    
-                    tr.innerHTML = `
-                        <td class="py-3 px-4 font-bold text-slate-600">${gu}</td>
-                        <td class="py-3 px-4"><span class="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-2 py-0.5 rounded">${type}</span></td>
-                        <td class="py-3 px-4 text-slate-800 font-extrabold max-w-[200px] truncate" title="${name}">${name}</td>
-                        <td class="py-3 px-4 font-bold text-rose-600">${step}</td>
-                        <td class="py-3 px-4 text-slate-500 text-[11px] max-w-[150px] truncate" title="${addr}">${addr}</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-
-            } catch (e) {
-                console.error(e);
-                tbody.innerHTML = `<tr><td colspan="5" class="py-12 text-center text-rose-500 font-bold">통신 오류가 발생했습니다. (서울시 열린데이터광장 API 점검 중일 수 있습니다.)</td></tr>`;
-            }
         }
 
         // =========================================================================
@@ -1241,6 +1065,7 @@
                 landBody.innerHTML = `<tr><td class="py-4 text-center text-slate-400">데이터가 없습니다.</td></tr>`;
             }
 
+            // 🌟 토지이용계획 렌더링
             const landUseBody = document.getElementById('modal-landuse-body');
             if (globalLandUseTags && globalLandUseTags.length > 0) {
                 landUseBody.innerHTML = globalLandUseTags.map(t => {
@@ -1260,6 +1085,7 @@
                 landUseBody.innerHTML = `<span class="text-sm text-slate-400">해당 없음 또는 정보 없음</span>`;
             }
 
+            // 🌟 위반건축물 렌더링
             const violationSection = document.getElementById('modal-violation-section');
             const violationBody = document.getElementById('modal-violation-body');
             violationBody.innerHTML = '';
@@ -1267,10 +1093,8 @@
             if (globalViolationItems && globalViolationItems.length > 0) {
                 violationSection.classList.remove('hidden');
                 globalViolationItems.forEach(v => {
-                    let vDate = formatPubDate(v.violtBldRegsDay);
-                    let vDetail = v.violtCn;
-                    vDate = vDate ? vDate : '일자 미기재';
-                    vDetail = vDetail ? vDetail : '상세 사유 지자체 전산 미등록 (대장 원본 표제부 확인 요망)';
+                    let vDate = formatPubDate(v.violtBldRegsDay) || '-';
+                    let vDetail = v.violtCn || '내용 없음';
                     violationBody.innerHTML += `
                         <tr class="hover:bg-red-50/50">
                             <td class="py-3 px-4 font-bold text-red-700 border-b border-red-50 whitespace-nowrap">${vDate}</td>
@@ -1280,7 +1104,7 @@
                 });
             } else if (globalIsVioltBld) {
                 violationSection.classList.remove('hidden');
-                violationBody.innerHTML = `<tr><td colspan="2" class="py-4 px-4 text-center text-red-500 font-bold">위반건축물 표시가 있으나, 상세 내역이 전산에 등록되지 않았습니다.</td></tr>`;
+                violationBody.innerHTML = `<tr><td colspan="2" class="py-4 px-4 text-center text-red-500 font-bold">위반건축물이나 상세 내역(사유)이 전산에 등록되지 않았습니다.</td></tr>`;
             } else {
                 violationSection.classList.add('hidden');
             }
@@ -1322,6 +1146,7 @@
             if (globalExposItem) XLSX.utils.book_append_sheet(workbook, createVerticalSheet(globalExposItem), "건축물대장_전유부");
             if (globalLandItem) XLSX.utils.book_append_sheet(workbook, createVerticalSheet(globalLandItem), "토지대장_특성");
             
+            // 🌟 엑셀 - 토지이용계획 탭 추가
             if (globalLandUseTags && globalLandUseTags.length > 0) {
                 const luRows = globalLandUseTags.map((tag, idx) => ({ "연번": idx + 1, "지정_규제_내역": tag }));
                 const ws = XLSX.utils.json_to_sheet(luRows);
@@ -1329,6 +1154,7 @@
                 XLSX.utils.book_append_sheet(workbook, ws, "토지이용계획_규제");
             }
 
+            // 🌟 엑셀 - 위반건축물 탭 추가
             if (globalViolationItems && globalViolationItems.length > 0) {
                 const viRows = globalViolationItems.map(item => {
                     return {
@@ -1360,6 +1186,7 @@
             pdfHeader.classList.remove('hidden');
             
             try {
+                // PDF는 현재 모달 화면(daejang-print-area) 안에 토지이용/위반건축물이 이미 들어있으므로 html2canvas가 통째로 캡처합니다.
                 const canvas = await html2canvas(printArea, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
                 const imgData = canvas.toDataURL('image/png');
                 
