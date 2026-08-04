@@ -1276,10 +1276,10 @@
                     
                     try {
                         const fetchPromises = [
-                            fetch(tradeUrl).then(res => ({res, dataType: 'trade'})).catch(e => ({res: null, dataType: 'trade'})),
-                            fetch(rentUrl).then(res => ({res, dataType: 'rent'})).catch(e => ({res: null, dataType: 'rent'}))
-                        ];
-                        if (includeSilv) fetchPromises.push(fetch(silvUrl).then(res => ({res, dataType: 'silv'})).catch(e => ({res: null, dataType: 'silv'})));
+    fetch(tradeUrl).then(res => ({res, dataType: 'trade'})).catch(e => { alert("매매 통신 에러: " + e.message); return {res: null, dataType: 'trade'}; }),
+    fetch(rentUrl).then(res => ({res, dataType: 'rent'})).catch(e => { alert("전월세 통신 에러: " + e.message); return {res: null, dataType: 'rent'}; })
+];
+if (includeSilv) fetchPromises.push(fetch(silvUrl).then(res => ({res, dataType: 'silv'})).catch(e => { alert("분양권 통신 에러: " + e.message); return {res: null, dataType: 'silv'}; }));
                         
                         const responses = await Promise.all(fetchPromises);
 
