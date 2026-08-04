@@ -1270,23 +1270,33 @@
                 }
 
                 const fetchTasks = targetMonths.map(async (ym) => {
-    const tradeUrl = `/api/rtms/${tradeApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`;
-    const rentUrl = `/api/rent/${rentApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`;
-    const silvUrl = `/api/rtms/${silvApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`;
-    
-    try {
-        const fetchPromises = [
-            fetch(tradeUrl).then(res => ({res, dataType: 'trade'})).catch(e => ({res: null, dataType: 'trade'})),
-            fetch(rentUrl).then(res => ({res, dataType: 'rent'})).catch(e => ({res: null, dataType: 'rent'}))
-        ];
-        if (includeSilv) fetchPromises.push(fetch(silvUrl).then(res => ({res, dataType: 'silv'})).catch(e => ({res: null, dataType: 'silv'})));
-        
-        const responses = await Promise.all(fetchPromises);
+                    const tradeUrl = `/api/rtms/${tradeApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`;
+                    const rentUrl = `/api/rent/${rentApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`;
+                    const silvUrl = `/api/rtms/${silvApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`;
+                    
+                    try {
+                        const fetchPromises = [
+                            fetch(tradeUrl).then(res => ({res, dataType: 'trade'})).catch(e => ({res: null, dataType: 'trade'})),
+                            fetch(rentUrl).then(res => ({res, dataType: 'rent'})).catch(e => ({res: null, dataType: 'rent'}))
+                        ];
+                        if (includeSilv) fetchPromises.push(fetch(silvUrl).then(res => ({res, dataType: 'silv'})).catch(e => ({res: null, dataType: 'silv'})));
+                        
+                        const responses = await Promise.all(fetchPromises);
 
-        const processResponse = async (resultObj) => {
-            if (!resultObj.res || !resultObj.res.ok) return;
-            const text = await resultObj.res.text();
-            if (text.includes("SERVICE KEY IS NOT REGISTERED ERROR")) return;
+                        const processResponse = async (resultObj) => {
+                            if (!resultObj.res) return;
+                            
+                            // 🚨 Vercel 서버나 국토부 서버 에러(404, 500 등) 발생 시 확실하게 경고창을 띄웁니다!
+                            if (!resultObj.res.ok) {
+                                alert(`실거래가 서버 통신 에러가 발생했습니다. (상태코드: ${resultObj.res.status})\nvercel.json 배포 상태를 다시 확인해 주세요.`);
+                                return;
+                            }
+                            
+                            const text = await resultObj.res.text();
+                            if (text.includes("SERVICE KEY IS NOT REGISTERED ERROR")) {
+                                alert("국토부 API 인증키 에러입니다! (트래픽 한도 초과 또는 키 만료)");
+                                return;
+                            }
 
                             const parsedItems = parseHybridData(text);
 
@@ -1333,7 +1343,7 @@
                                     name: item.complexName.trim() || "-",
                                     date: `${item.year}-${String(item.month).padStart(2, '0')}-${String(item.day).padStart(2, '0')}`,
                                     floor: item.floor,
-                                    area: item.area || 0,
+                                    area: parseFloat(item.area) || 0,
                                     amount: parsedAmount * 10000,
                                     monthlyRent: parsedMonthly * 10000
                                 });
