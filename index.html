@@ -320,202 +320,7 @@
                 </div>
             </div>
 
-            // =========================================================================
-        // 모달 및 PDF / 엑셀 다운로드 컨트롤 (누락 복구)
-        // =========================================================================
-        function openDaejangModal() {
-            const modal = document.getElementById('daejangModal');
-            const addr = document.getElementById('address').value;
-            const dong = document.getElementById('dong').value;
-            const ho = document.getElementById('ho').value;
             
-            const fullTitle = `${addr} ${dong ? dong+'동' : ''} ${ho ? ho+'호' : ''}`.trim();
-            document.getElementById('modal-address-title').innerText = fullTitle;
-            document.getElementById('pdf-header-address').innerText = fullTitle;
-
-            const titleBody = document.getElementById('modal-title-body');
-            titleBody.innerHTML = '';
-            if (globalTitleItem) {
-                const keys = ["platPlc", "bldNm", "dongNm", "mainPurpsCdNm", "strctCdNm", "platArea", "archArea", "bcRat", "totArea", "vlRatYyArea", "vlRat", "mainBldCnt", "hoCnt", "stndrYear", "useAprDay", "crtnDay"];
-                keys.forEach(k => {
-                    let val = globalTitleItem[k] || '-';
-                    if (k === 'useAprDay' || k === 'crtnDay') { if(val !== '-') val = formatPubDate(val); }
-                    titleBody.innerHTML += `<tr class="hover:bg-slate-50"><td class="py-2 px-4 font-bold text-slate-600 bg-slate-50/50 w-1/3 border-r border-slate-100">${DAEJANG_DICT[k] || k}</td><td class="py-2 px-4 text-slate-800 font-medium">${val}</td></tr>`;
-                });
-            } else {
-                titleBody.innerHTML = `<tr><td class="py-4 text-center text-slate-400">데이터가 없습니다.</td></tr>`;
-            }
-
-            const exposSection = document.getElementById('modal-expos-section');
-            const exposBody = document.getElementById('modal-expos-body');
-            exposBody.innerHTML = '';
-            
-            const propType = document.querySelector('input[name="propType"]:checked').value;
-            if (propType === "공동주택" || propType === "상가/건물") {
-                if (globalExposItem) {
-                    exposSection.classList.remove('hidden');
-                    const keys = ["dongNm", "flrNoNm", "hoNm", "exposPubuseGbCdNm", "area"];
-                    keys.forEach(k => {
-                        let val = globalExposItem[k] || '-';
-                        exposBody.innerHTML += `<tr class="hover:bg-slate-50"><td class="py-2 px-4 font-bold text-slate-600 bg-slate-50/50 w-1/3 border-r border-slate-100">${DAEJANG_DICT[k] || k}</td><td class="py-2 px-4 text-slate-800 font-medium">${val}</td></tr>`;
-                    });
-                } else {
-                    exposSection.classList.add('hidden');
-                }
-            } else {
-                exposSection.classList.add('hidden');
-            }
-
-            const landBody = document.getElementById('modal-land-body');
-            landBody.innerHTML = '';
-            if (globalLandItem) {
-                const keys = ["pnu", "lndcgrCodeNm", "lndpclAr", "prposArea1Nm", "prposArea2Nm", "landUseSittnNm", "tpgrphPitcNm", "tpgrphFrmNm", "roadSideCodeNm"];
-                keys.forEach(k => {
-                    let val = globalLandItem[k] || '-';
-                    if (k === 'lndpclAr' && val !== '-') val = Number(val).toLocaleString();
-                    landBody.innerHTML += `<tr class="hover:bg-slate-50"><td class="py-2 px-4 font-bold text-slate-600 bg-slate-50/50 w-1/3 border-r border-slate-100">${DAEJANG_DICT[k] || k}</td><td class="py-2 px-4 text-slate-800 font-medium">${val}</td></tr>`;
-                });
-            } else {
-                landBody.innerHTML = `<tr><td class="py-4 text-center text-slate-400">데이터가 없습니다.</td></tr>`;
-            }
-
-            const landUseBody = document.getElementById('modal-landuse-body');
-            if (globalLandUseTags && globalLandUseTags.length > 0) {
-                landUseBody.innerHTML = globalLandUseTags.map(t => {
-                    let color = "bg-slate-100 text-slate-700 border border-slate-200"; 
-                    if (t.includes('재개발') || t.includes('재건축') || t.includes('정비구역') || t.includes('촉진지구')) {
-                        color = "bg-rose-100 text-rose-800 font-black border-2 border-rose-400";
-                    } else if (t.includes('상업')) {
-                        color = "bg-purple-100 text-purple-800 font-bold border border-purple-300";
-                    } else if (t.includes('주거')) {
-                        color = "bg-blue-100 text-blue-800 font-bold border border-blue-300";
-                    } else if (t.includes('토지거래계약에관한허가구역')) {
-                        color = "bg-amber-100 text-amber-800 font-black border-2 border-amber-400";
-                    }
-                    return `<span class="inline-block px-3 py-1.5 rounded-lg text-sm mr-2 mb-2 ${color}">${t}</span>`;
-                }).join('');
-            } else {
-                landUseBody.innerHTML = `<span class="text-sm text-slate-400">해당 없음 또는 정보 없음</span>`;
-            }
-
-            const violationSection = document.getElementById('modal-violation-section');
-            const violationBody = document.getElementById('modal-violation-body');
-            violationBody.innerHTML = '';
-            
-            if (globalViolationItems && globalViolationItems.length > 0) {
-                violationSection.classList.remove('hidden');
-                globalViolationItems.forEach(v => {
-                    let vDate = formatPubDate(v.violtBldRegsDay);
-                    let vDetail = v.violtCn;
-                    vDate = vDate ? vDate : '일자 미기재';
-                    vDetail = vDetail ? vDetail : '상세 사유 지자체 전산 미등록 (대장 원본 표제부 확인 요망)';
-                    violationBody.innerHTML += `
-                        <tr class="hover:bg-red-50/50">
-                            <td class="py-3 px-4 font-bold text-red-700 border-b border-red-50 whitespace-nowrap">${vDate}</td>
-                            <td class="py-3 px-4 text-slate-700 font-medium border-b border-red-50 leading-relaxed">${vDetail}</td>
-                        </tr>
-                    `;
-                });
-            } else if (globalIsVioltBld) {
-                violationSection.classList.remove('hidden');
-                violationBody.innerHTML = `<tr><td colspan="2" class="py-4 px-4 text-center text-red-500 font-bold">위반건축물 표시가 있으나, 상세 내역이 전산에 등록되지 않았습니다.</td></tr>`;
-            } else {
-                violationSection.classList.add('hidden');
-            }
-
-            modal.classList.remove('hidden');
-            setTimeout(() => { modal.classList.remove('opacity-0'); }, 10);
-        }
-
-        function closeDaejangModal() {
-            const modal = document.getElementById('daejangModal');
-            modal.classList.add('opacity-0');
-            setTimeout(() => { modal.classList.add('hidden'); }, 300);
-        }
-
-        function downloadDaejangExcel() {
-            if (!globalTitleItem && !globalLandItem && !globalExposItem) {
-                alert("다운로드할 원본 데이터가 없습니다.");
-                return;
-            }
-
-            const workbook = XLSX.utils.book_new();
-
-            function createVerticalSheet(dataItem) {
-                const rows = [];
-                for (let k in dataItem) {
-                    if (typeof dataItem[k] !== 'object') {
-                        let keyName = DAEJANG_DICT[k] || k;
-                        let val = dataItem[k];
-                        if (k === 'useAprDay' || k === 'crtnDay') { if(val && val !== '-') val = formatPubDate(val); }
-                        rows.push({ "항목": keyName, "내용": val });
-                    }
-                }
-                const ws = XLSX.utils.json_to_sheet(rows);
-                ws['!cols'] = [{ wpx: 180 }, { wpx: 350 }]; 
-                return ws;
-            }
-
-            if (globalTitleItem) XLSX.utils.book_append_sheet(workbook, createVerticalSheet(globalTitleItem), "건축물대장_표제부");
-            if (globalExposItem) XLSX.utils.book_append_sheet(workbook, createVerticalSheet(globalExposItem), "건축물대장_전유부");
-            if (globalLandItem) XLSX.utils.book_append_sheet(workbook, createVerticalSheet(globalLandItem), "토지대장_특성");
-            
-            if (globalLandUseTags && globalLandUseTags.length > 0) {
-                const luRows = globalLandUseTags.map((tag, idx) => ({ "연번": idx + 1, "지정_규제_내역": tag }));
-                const ws = XLSX.utils.json_to_sheet(luRows);
-                ws['!cols'] = [{ wpx: 50 }, { wpx: 400 }];
-                XLSX.utils.book_append_sheet(workbook, ws, "토지이용계획_규제");
-            }
-
-            if (globalViolationItems && globalViolationItems.length > 0) {
-                const viRows = globalViolationItems.map(item => {
-                    return {
-                        "동명칭": item.dongNm || '-',
-                        "호명칭": item.hoNm || '-',
-                        "위반건축물등록일자": formatPubDate(item.violtBldRegsDay) || '-',
-                        "위반내용_상세": item.violtCn || '-'
-                    };
-                });
-                const ws = XLSX.utils.json_to_sheet(viRows);
-                ws['!cols'] = [{ wpx: 80 }, { wpx: 80 }, { wpx: 120 }, { wpx: 500 }];
-                XLSX.utils.book_append_sheet(workbook, ws, "위반건축물_적발내역");
-            }
-
-            XLSX.writeFile(workbook, "강승완세무사_대장및규제_추출.xlsx");
-        }
-
-        async function downloadDaejangPDF() {
-            const btn = document.getElementById('pdfBtn');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = "PDF 변환 중... (잠시만 기다려주세요)";
-            
-            const { jsPDF } = window.jspdf;
-            const printArea = document.getElementById('daejang-print-area');
-            const pdfHeader = document.getElementById('pdf-header');
-            
-            const originalOverflow = printArea.style.overflow;
-            printArea.style.overflow = 'visible';
-            pdfHeader.classList.remove('hidden');
-            
-            try {
-                const canvas = await html2canvas(printArea, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
-                const imgData = canvas.toDataURL('image/png');
-                
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-                
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                pdf.save("강승완세무사_대장및규제_추출.pdf");
-            } catch(e) {
-                console.error(e);
-                alert("PDF 생성 중 오류가 발생했습니다.");
-            } finally {
-                printArea.style.overflow = originalOverflow;
-                pdfHeader.classList.add('hidden');
-                btn.innerHTML = originalText;
-            }
-        }
 
             <!-- 🌟 탭 4: 서울시 정비사업현황 영역 -->
             <div id="content-renewal" class="hidden space-y-6">
@@ -1920,6 +1725,203 @@
                 } catch (err) { alert("엑셀 빌드 실패"); progressContainer.classList.add('hidden'); }
             };
             reader.readAsArrayBuffer(file);
+        }
+
+        // =========================================================================
+        // 모달 및 PDF / 엑셀 다운로드 컨트롤 (누락 복구)
+        // =========================================================================
+        function openDaejangModal() {
+            const modal = document.getElementById('daejangModal');
+            const addr = document.getElementById('address').value;
+            const dong = document.getElementById('dong').value;
+            const ho = document.getElementById('ho').value;
+            
+            const fullTitle = `${addr} ${dong ? dong+'동' : ''} ${ho ? ho+'호' : ''}`.trim();
+            document.getElementById('modal-address-title').innerText = fullTitle;
+            document.getElementById('pdf-header-address').innerText = fullTitle;
+
+            const titleBody = document.getElementById('modal-title-body');
+            titleBody.innerHTML = '';
+            if (globalTitleItem) {
+                const keys = ["platPlc", "bldNm", "dongNm", "mainPurpsCdNm", "strctCdNm", "platArea", "archArea", "bcRat", "totArea", "vlRatYyArea", "vlRat", "mainBldCnt", "hoCnt", "stndrYear", "useAprDay", "crtnDay"];
+                keys.forEach(k => {
+                    let val = globalTitleItem[k] || '-';
+                    if (k === 'useAprDay' || k === 'crtnDay') { if(val !== '-') val = formatPubDate(val); }
+                    titleBody.innerHTML += `<tr class="hover:bg-slate-50"><td class="py-2 px-4 font-bold text-slate-600 bg-slate-50/50 w-1/3 border-r border-slate-100">${DAEJANG_DICT[k] || k}</td><td class="py-2 px-4 text-slate-800 font-medium">${val}</td></tr>`;
+                });
+            } else {
+                titleBody.innerHTML = `<tr><td class="py-4 text-center text-slate-400">데이터가 없습니다.</td></tr>`;
+            }
+
+            const exposSection = document.getElementById('modal-expos-section');
+            const exposBody = document.getElementById('modal-expos-body');
+            exposBody.innerHTML = '';
+            
+            const propType = document.querySelector('input[name="propType"]:checked').value;
+            if (propType === "공동주택" || propType === "상가/건물") {
+                if (globalExposItem) {
+                    exposSection.classList.remove('hidden');
+                    const keys = ["dongNm", "flrNoNm", "hoNm", "exposPubuseGbCdNm", "area"];
+                    keys.forEach(k => {
+                        let val = globalExposItem[k] || '-';
+                        exposBody.innerHTML += `<tr class="hover:bg-slate-50"><td class="py-2 px-4 font-bold text-slate-600 bg-slate-50/50 w-1/3 border-r border-slate-100">${DAEJANG_DICT[k] || k}</td><td class="py-2 px-4 text-slate-800 font-medium">${val}</td></tr>`;
+                    });
+                } else {
+                    exposSection.classList.add('hidden');
+                }
+            } else {
+                exposSection.classList.add('hidden');
+            }
+
+            const landBody = document.getElementById('modal-land-body');
+            landBody.innerHTML = '';
+            if (globalLandItem) {
+                const keys = ["pnu", "lndcgrCodeNm", "lndpclAr", "prposArea1Nm", "prposArea2Nm", "landUseSittnNm", "tpgrphPitcNm", "tpgrphFrmNm", "roadSideCodeNm"];
+                keys.forEach(k => {
+                    let val = globalLandItem[k] || '-';
+                    if (k === 'lndpclAr' && val !== '-') val = Number(val).toLocaleString();
+                    landBody.innerHTML += `<tr class="hover:bg-slate-50"><td class="py-2 px-4 font-bold text-slate-600 bg-slate-50/50 w-1/3 border-r border-slate-100">${DAEJANG_DICT[k] || k}</td><td class="py-2 px-4 text-slate-800 font-medium">${val}</td></tr>`;
+                });
+            } else {
+                landBody.innerHTML = `<tr><td class="py-4 text-center text-slate-400">데이터가 없습니다.</td></tr>`;
+            }
+
+            const landUseBody = document.getElementById('modal-landuse-body');
+            if (globalLandUseTags && globalLandUseTags.length > 0) {
+                landUseBody.innerHTML = globalLandUseTags.map(t => {
+                    let color = "bg-slate-100 text-slate-700 border border-slate-200"; 
+                    if (t.includes('재개발') || t.includes('재건축') || t.includes('정비구역') || t.includes('촉진지구')) {
+                        color = "bg-rose-100 text-rose-800 font-black border-2 border-rose-400";
+                    } else if (t.includes('상업')) {
+                        color = "bg-purple-100 text-purple-800 font-bold border border-purple-300";
+                    } else if (t.includes('주거')) {
+                        color = "bg-blue-100 text-blue-800 font-bold border border-blue-300";
+                    } else if (t.includes('토지거래계약에관한허가구역')) {
+                        color = "bg-amber-100 text-amber-800 font-black border-2 border-amber-400";
+                    }
+                    return `<span class="inline-block px-3 py-1.5 rounded-lg text-sm mr-2 mb-2 ${color}">${t}</span>`;
+                }).join('');
+            } else {
+                landUseBody.innerHTML = `<span class="text-sm text-slate-400">해당 없음 또는 정보 없음</span>`;
+            }
+
+            const violationSection = document.getElementById('modal-violation-section');
+            const violationBody = document.getElementById('modal-violation-body');
+            violationBody.innerHTML = '';
+            
+            if (globalViolationItems && globalViolationItems.length > 0) {
+                violationSection.classList.remove('hidden');
+                globalViolationItems.forEach(v => {
+                    let vDate = formatPubDate(v.violtBldRegsDay);
+                    let vDetail = v.violtCn;
+                    vDate = vDate ? vDate : '일자 미기재';
+                    vDetail = vDetail ? vDetail : '상세 사유 지자체 전산 미등록 (대장 원본 표제부 확인 요망)';
+                    violationBody.innerHTML += `
+                        <tr class="hover:bg-red-50/50">
+                            <td class="py-3 px-4 font-bold text-red-700 border-b border-red-50 whitespace-nowrap">${vDate}</td>
+                            <td class="py-3 px-4 text-slate-700 font-medium border-b border-red-50 leading-relaxed">${vDetail}</td>
+                        </tr>
+                    `;
+                });
+            } else if (globalIsVioltBld) {
+                violationSection.classList.remove('hidden');
+                violationBody.innerHTML = `<tr><td colspan="2" class="py-4 px-4 text-center text-red-500 font-bold">위반건축물 표시가 있으나, 상세 내역이 전산에 등록되지 않았습니다.</td></tr>`;
+            } else {
+                violationSection.classList.add('hidden');
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => { modal.classList.remove('opacity-0'); }, 10);
+        }
+
+        function closeDaejangModal() {
+            const modal = document.getElementById('daejangModal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+        }
+
+        function downloadDaejangExcel() {
+            if (!globalTitleItem && !globalLandItem && !globalExposItem) {
+                alert("다운로드할 원본 데이터가 없습니다.");
+                return;
+            }
+
+            const workbook = XLSX.utils.book_new();
+
+            function createVerticalSheet(dataItem) {
+                const rows = [];
+                for (let k in dataItem) {
+                    if (typeof dataItem[k] !== 'object') {
+                        let keyName = DAEJANG_DICT[k] || k;
+                        let val = dataItem[k];
+                        if (k === 'useAprDay' || k === 'crtnDay') { if(val && val !== '-') val = formatPubDate(val); }
+                        rows.push({ "항목": keyName, "내용": val });
+                    }
+                }
+                const ws = XLSX.utils.json_to_sheet(rows);
+                ws['!cols'] = [{ wpx: 180 }, { wpx: 350 }]; 
+                return ws;
+            }
+
+            if (globalTitleItem) XLSX.utils.book_append_sheet(workbook, createVerticalSheet(globalTitleItem), "건축물대장_표제부");
+            if (globalExposItem) XLSX.utils.book_append_sheet(workbook, createVerticalSheet(globalExposItem), "건축물대장_전유부");
+            if (globalLandItem) XLSX.utils.book_append_sheet(workbook, createVerticalSheet(globalLandItem), "토지대장_특성");
+            
+            if (globalLandUseTags && globalLandUseTags.length > 0) {
+                const luRows = globalLandUseTags.map((tag, idx) => ({ "연번": idx + 1, "지정_규제_내역": tag }));
+                const ws = XLSX.utils.json_to_sheet(luRows);
+                ws['!cols'] = [{ wpx: 50 }, { wpx: 400 }];
+                XLSX.utils.book_append_sheet(workbook, ws, "토지이용계획_규제");
+            }
+
+            if (globalViolationItems && globalViolationItems.length > 0) {
+                const viRows = globalViolationItems.map(item => {
+                    return {
+                        "동명칭": item.dongNm || '-',
+                        "호명칭": item.hoNm || '-',
+                        "위반건축물등록일자": formatPubDate(item.violtBldRegsDay) || '-',
+                        "위반내용_상세": item.violtCn || '-'
+                    };
+                });
+                const ws = XLSX.utils.json_to_sheet(viRows);
+                ws['!cols'] = [{ wpx: 80 }, { wpx: 80 }, { wpx: 120 }, { wpx: 500 }];
+                XLSX.utils.book_append_sheet(workbook, ws, "위반건축물_적발내역");
+            }
+
+            XLSX.writeFile(workbook, "강승완세무사_대장및규제_추출.xlsx");
+        }
+
+        async function downloadDaejangPDF() {
+            const btn = document.getElementById('pdfBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "PDF 변환 중... (잠시만 기다려주세요)";
+            
+            const { jsPDF } = window.jspdf;
+            const printArea = document.getElementById('daejang-print-area');
+            const pdfHeader = document.getElementById('pdf-header');
+            
+            const originalOverflow = printArea.style.overflow;
+            printArea.style.overflow = 'visible';
+            pdfHeader.classList.remove('hidden');
+            
+            try {
+                const canvas = await html2canvas(printArea, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+                const imgData = canvas.toDataURL('image/png');
+                
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save("강승완세무사_대장및규제_추출.pdf");
+            } catch(e) {
+                console.error(e);
+                alert("PDF 생성 중 오류가 발생했습니다.");
+            } finally {
+                printArea.style.overflow = originalOverflow;
+                pdfHeader.classList.add('hidden');
+                btn.innerHTML = originalText;
+            }
         }
 
         // 🌟 [4] 서울시 정비사업 현황 🌟
