@@ -1277,9 +1277,9 @@
                 }
 
                 const fetchTasks = targetMonths.map(async (ym) => {
-                    const tradeUrl = `/api/rtms/${tradeApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`;
-                    const rentUrl = `/api/rent/${rentApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`;
-                    const silvUrl = `/api/rtms/${silvApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`;
+                    const tradeUrl = `/api/rtms/${tradeApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`;
+const rentUrl = `/api/rent/${rentApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`;
+const silvUrl = `/api/rtms/${silvApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`;
                     
                     try {
                         const fetchPromises = [
