@@ -1284,15 +1284,9 @@
         const responses = await Promise.all(fetchPromises);
 
         const processResponse = async (resultObj) => {
-            if (!resultObj.res || !resultObj.res.ok) {
-                alert("서버 연결 실패! Vercel 또는 국토부 서버 에러입니다.");
-                return;
-            }
+            if (!resultObj.res || !resultObj.res.ok) return;
             const text = await resultObj.res.text();
-            if (text.includes("SERVICE KEY IS NOT REGISTERED ERROR")) {
-                alert("인증키 에러! (트래픽 초과 또는 키 만료)");
-                return;
-            }
+            if (text.includes("SERVICE KEY IS NOT REGISTERED ERROR")) return;
 
                             const parsedItems = parseHybridData(text);
 
