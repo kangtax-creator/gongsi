@@ -1381,12 +1381,13 @@
                 sigaChartInstance.update();
             }
         } else {
-            updateFilterCounts();
-            filterTransactions('all');
+            populateAreaFilter();
+            currentTransactionFilter = 'all';
+            document.getElementById('areaFilter').value = 'all';
+            applyFilters();
         }
 
     } catch (err) {
-        alert("🚨 에러 추적 팝업입니다! 이 내용을 복사해서 알려주세요:\n\n" + err.message + "\n\n" + err.stack);
         console.error(err);
     } finally {
         btn.innerText = "선택 기간 내 매매 / 전월세 / 분양·입주권 데이터 동시 스캔";
