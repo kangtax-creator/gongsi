@@ -1240,33 +1240,23 @@
                 return;
             }
 
-            btn.innerText = "안전 우회망으로 데이터 추출 중...";
+            btn.innerText = "데이터 안전 스캔 중 (과부하 방지 순차 추출)...";
             btn.disabled = true;
             globalTransactions = [];
             let hasApiServerIssue = false; 
 
-            // 🌟 방탄 통신 함수 (Vercel IP 차단 시 해외 우회로 자동 탐색)
-            async function safeFetchText(fullUrl, vercelUrl) {
+            // 🌟 1. 무한 대기(프리징) 방지용 타임아웃 함수 도입 (8초 넘으면 자동 패스)
+            async function fetchWithTimeout(url, timeout = 8000) {
+                const controller = new AbortController();
+                const id = setTimeout(() => controller.abort(), timeout);
                 try {
-                    // 1순위: allorigins raw (XML 데이터를 파싱 오류 없이 원본 그대로 가져옴)
-                    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(fullUrl)}`;
-                    const res = await fetch(proxyUrl);
-                    if (res.ok) {
-                        const text = await res.text();
-                        if (text && !text.includes("HTTP_ERROR") && !text.includes("<errMsg>")) return text;
-                    }
-                } catch(e) {}
-
-                try {
-                    // 2순위: 기존 Vercel 서버 (차단이 풀렸을 때 대비)
-                    const res = await fetch(vercelUrl);
-                    if (res.ok) {
-                        const text = await res.text();
-                        if (text && !text.includes("HTTP_ERROR") && !text.includes("<errMsg>")) return text;
-                    }
-                } catch(e) {}
-                
-                return null; 
+                    const response = await fetch(url, { signal: controller.signal });
+                    clearTimeout(id);
+                    return response;
+                } catch (error) {
+                    clearTimeout(id);
+                    throw error;
+                }
             }
 
             try {
@@ -1299,36 +1289,34 @@
                     rentApiPath = "RTMSDataSvcOffiRent/getRTMSDataSvcOffiRent";
                 }
 
+                // 🌟 2. 병렬 폭격을 막고 한 달 단위로 하나씩 Vercel로 순차 요청
                 for (const ym of targetMonths) {
                     btn.innerText = `${ym.substring(0,4)}년 ${ym.substring(4,6)}월 실거래가 스캔 중...`;
                     
                     const urlsToFetch = [
-                        { 
-                            fullUrl: `https://apis.data.go.kr/1613000/${tradeApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`, 
-                            vercelUrl: `/api/rtms/${tradeApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
-                            type: 'trade' 
-                        },
-                        { 
-                            fullUrl: `https://apis.data.go.kr/1613000/${rentApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
-                            vercelUrl: `/api/rent/${rentApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
-                            type: 'rent' 
-                        }
+                        { url: `/api/rtms/${tradeApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`, type: 'trade' },
+                        { url: `/api/rent/${rentApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`, type: 'rent' }
                     ];
                     if (includeSilv) {
-                        urlsToFetch.push({ 
-                            fullUrl: `https://apis.data.go.kr/1613000/${silvApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
-                            vercelUrl: `/api/rtms/${silvApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
-                            type: 'silv' 
-                        });
+                        urlsToFetch.push({ url: `/api/rtms/${silvApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`, type: 'silv' });
                     }
 
                     for (const req of urlsToFetch) {
                         try {
-                            const text = await safeFetchText(req.fullUrl, req.vercelUrl);
-                            
-                            if (!text) {
-                                hasApiServerIssue = true; // 🚨 누락되었던 에러 체크 정상화
+                            const res = await fetchWithTimeout(req.url, 8000); // 8초 안에 응답 안 오면 강제 컷
+                            if (!res.ok) {
+                                hasApiServerIssue = true;
                                 continue;
+                            }
+                            const text = await res.text();
+                            
+                            // 에러가 감지되면 조용히 건너뜀 (팝업 무한 반복 방지)
+                            if (text.includes("SERVICE KEY IS NOT REGISTERED ERROR") || text.includes("LIMITED")) {
+                                hasApiServerIssue = true;
+                                break; 
+                            }
+                            if (text.includes("HTTP_ERROR") || text.includes("<errMsg>")) {
+                                continue; 
                             }
 
                             const parsedItems = parseHybridData(text);
@@ -1382,10 +1370,12 @@
                                 });
                             });
                         } catch (e) {
-                            console.error(e);
+                            console.error(`${ym}월 ${req.type} 통신 에러/타임아웃:`, e);
                         }
+                        // 🌟 3. 한 개 요청할 때마다 0.05초 대기 (국토부 방화벽 차단 회피)
                         await sleep(50);
                     }
+                    // 한 달치 다하면 0.1초 대기 후 다음 달로
                     await sleep(100); 
                 } // end for loop
 
@@ -1412,6 +1402,7 @@
                 }
 
             } catch (err) {
+                alert("조회 중 오류가 발생했습니다.");
                 console.error(err);
             } finally {
                 btn.innerText = "선택 기간 내 매매 / 전월세 / 분양·입주권 데이터 동시 스캔";
