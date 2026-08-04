@@ -31,7 +31,7 @@
       gtag('config', 'G-97YGLD3SJ9');
     </script>
 </head>
-<body class="bg-[#f3f4f6] font-sans min-h-screen flex flex-col">
+<body class="bg-[#f3f4f6] font-sans min-h-screen">
 
     <!-- 헤더 -->
     <div class="bg-[#0f172a] text-white pt-12 pb-24 px-4">
@@ -50,12 +50,23 @@
         </div>
     </div>
 
+    <!-- 참고용 공식문서 확인 안내 메세지 -->
+    <div class="max-w-6xl mx-auto px-4 mt-6 mb-2 relative z-10 -mt-16">
+        <div class="bg-rose-50 border border-rose-200 text-rose-800 p-4 rounded-xl flex items-start text-sm shadow-md">
+            <svg class="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <div>
+                <p class="font-bold mb-1">면책 조항 및 주의 안내</p>
+                <p class="leading-relaxed opacity-90 text-xs md:text-sm">본 사이트에서 제공하는 실거래가, 공시가격, 대장 정보 및 <b class="text-rose-900">정비사업현황 등은 공공데이터 기반의 단순 참고용</b>입니다. 실제 거래, 투자 등 <b>주요 의사결정 시에는 반드시 관할 구청 및 국토교통부 등의 공식 원본 문서(대장, 등기부등본 등)를 직접 열람하여 교차 검증</b>하시기 바랍니다.</p>
+            </div>
+        </div>
+    </div>
+
     <!-- 메인 컨텐츠 영역 -->
-    <div class="max-w-6xl mx-auto px-4 pb-12 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start -mt-12 flex-1 w-full">
+    <div class="max-w-6xl mx-auto px-4 pb-12 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start mt-6">
         
         <!-- 왼쪽: 주소 입력 영역 -->
         <div class="space-y-6">
-            <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200 relative z-10">
+            <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
                 <h2 class="text-lg font-extrabold text-slate-800 mb-4 flex items-center">
                     <span class="w-2 h-2 bg-indigo-600 rounded-full mr-2"></span> 대상 부동산 주소 설정
                 </h2>
@@ -95,10 +106,6 @@
                     <button onclick="searchPriceHistory()" id="searchBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition-all">
                         기본 정보 및 공시가격 연혁 조회
                     </button>
-
-                    <p class="text-xs text-slate-500 mt-3 bg-slate-50 p-2.5 rounded-lg border border-slate-100 leading-relaxed">
-                        💡 <b>4번 정비사업현황</b> 탭은 위 주소 검색을 하지 않아도 <b>'자치구'나 '사업명'으로 즉시 검색</b>이 가능합니다.
-                    </p>
                 </div>
             </div>
 
@@ -110,7 +117,6 @@
                 <div class="mb-4 bg-amber-50 border-l-4 border-amber-400 p-3 text-amber-800 text-xs rounded-r-lg leading-relaxed">
                     <p class="font-bold mb-1">📢 주소 입력 유의사항</p>
                     <ul class="list-disc ml-4 space-y-1">
-                        <li>엑셀 A열에 1행부터 주소만 쭉 넣으신 파일을 업로드 하시면 됩니다</li>
                         <li><b>공동주택:</b> 주소 뒤에 쉼표(,) 후 동-호수 입력 <br><span class="text-amber-600/80 font-medium">(예: 서울 강남구 압구정로 309, 11-102)</span></li>
                         <li><b>단독/토지:</b> 도로명 또는 지번주소 입력 (동호수 제외)</li>
                     </ul>
@@ -149,7 +155,7 @@
 
         <!-- 오른쪽: 결과 출력 영역 -->
         <div class="lg:col-span-2 space-y-6">
-            <div class="flex space-x-2 border-b border-slate-200 overflow-x-auto whitespace-nowrap hide-scrollbar pt-6 lg:pt-0">
+            <div class="flex space-x-2 border-b border-slate-200 overflow-x-auto whitespace-nowrap hide-scrollbar">
                 <button onclick="switchTab('gongsi')" id="tab-gongsi" class="px-5 py-3 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 focus:outline-none">
                     1. 공시가격 연혁 데이터
                 </button>
@@ -273,7 +279,7 @@
                 </div>
             </div>
 
-            <!-- 🌟 탭 3: 대장 및 규제 정보 영역 -->
+            <!-- 탭 3: 대장 및 규제 정보 영역 -->
             <div id="content-daejang" class="hidden space-y-6">
                 <!-- 건축물대장 -->
                 <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
@@ -327,25 +333,13 @@
                         <h2 class="text-lg font-extrabold text-slate-800 flex items-center">
                             <span class="w-2 h-2 bg-rose-600 rounded-full mr-2"></span> 서울시 관내 정비사업 진행현황 (조합인가 등)
                         </h2>
+                        <button onclick="fetchSeoulRenewal()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all text-sm">
+                            관할 자치구 사업 스캔
+                        </button>
                     </div>
-                    
-                    <!-- 🌟 4번 탭 독립 검색 UI -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-rose-50 p-4 rounded-xl border border-rose-100 mb-4">
-                        <div>
-                            <label class="block text-xs font-bold text-rose-800 mb-1">자치구 검색</label>
-                            <input type="text" id="renewalGu" placeholder="예: 강남구, 서초" class="w-full bg-white border border-rose-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-200">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-rose-800 mb-1">사업명(구역명) 검색</label>
-                            <div class="flex space-x-2">
-                                <input type="text" id="renewalName" placeholder="예: 은마, 신반포" class="flex-1 bg-white border border-rose-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-200" onkeypress="if(event.key==='Enter') fetchSeoulRenewal()">
-                                <button onclick="fetchSeoulRenewal()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all text-sm whitespace-nowrap">
-                                    스캔
-                                </button>
-                            </div>
-                        </div>
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4">
+                        <p class="text-xs text-slate-600 font-medium">※ 좌측에서 서울시 주소를 검색한 후 스캔 버튼을 누르면 해당 자치구(예: 강남구, 서초구 등)의 재개발/재건축 정비사업 내역을 불러옵니다.</p>
                     </div>
-
                     <div class="overflow-x-auto max-h-[600px] border border-slate-100 rounded-lg">
                         <table class="w-full text-left border-collapse relative">
                             <thead class="sticky top-0 bg-slate-50 shadow-sm z-10">
@@ -355,31 +349,16 @@
                                     <th class="py-3 px-4 min-w-[150px]">사업명(구역명)</th>
                                     <th class="py-3 px-4 whitespace-nowrap">진행단계(인가현황)</th>
                                     <th class="py-3 px-4 min-w-[120px]">대표지번</th>
-                                    <th class="py-3 px-4 text-center whitespace-nowrap">상세</th>
                                 </tr>
                             </thead>
                             <tbody id="renewal-table-body" class="text-xs divide-y divide-slate-100 text-slate-700">
-                                <tr><td colspan="6" class="py-12 text-center text-slate-400 font-medium">검색 조건을 입력하고 스캔 버튼을 눌러주세요.</td></tr>
+                                <tr><td colspan="5" class="py-12 text-center text-slate-400 font-medium">주소 검색 후 상단의 스캔 버튼을 눌러주세요.</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
-        </div>
-    </div>
-
-    <!-- 🌟 하단으로 이동된 면책 조항 및 주의 안내 -->
-    <div class="w-full bg-[#0f172a] border-t border-slate-800 mt-auto py-8 px-4">
-        <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center md:items-start gap-4 text-slate-400 text-xs leading-relaxed">
-            <div class="text-rose-400">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            </div>
-            <div>
-                <p class="font-bold text-slate-300 mb-1 text-sm">주의 안내</p>
-                <p>본 사이트에서 제공하는 실거래가, 공시가격, 대장 정보 및 정비사업현황 등은 국토교통부, 서울시 등 공공데이터 기반의 단순 참고용입니다. 실제 거래, 투자 등 주요 의사결정 시에는 반드시 관할 구청 및 국토교통부 등의 공식 원본 문서(대장, 등기부등본 등)를 직접 열람하여 교차 검증하시기 바라며, 본 사이트의 정보 오류로 인한 법적 책임은 지지 않습니다.</p>
-                <p class="mt-2">&copy; 2026 MICRO_TAX. All rights reserved.</p>
-            </div>
         </div>
     </div>
 
@@ -503,6 +482,8 @@
         const DATA_GO_KR_KEY = "83a79624397baf59da6f5daea52c9c0478aceccf3f20b707e26f9866c85f7b8f";
         const DOMAIN = window.location.origin; 
         const OFFICE_PHONE = "02-2679-0679"; 
+        
+        // 새로 추가된 서울시 정비사업 API 인증키
         const SEOUL_KEY = "456353517878676138305274595667";
 
         let priceChartInstance = null;
@@ -564,28 +545,7 @@
 
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-        // 🌟 VWORLD 연동용 원래 함수 (건드리지 않음)
-        function fetchJSONP(url) {
-            return new Promise((resolve, reject) => {
-                const callbackName = 'vworld_cb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
-                const script = document.createElement('script');
-                window[callbackName] = function(data) {
-                    delete window[callbackName];
-                    document.body.removeChild(script);
-                    resolve(data);
-                };
-                const char = url.indexOf('?') > -1 ? '&' : '?';
-                script.src = url + char + 'callback=' + callbackName;
-                script.onerror = () => {
-                    delete window[callbackName];
-                    document.body.removeChild(script);
-                    reject(new Error('서버 응답 지연'));
-                };
-                document.body.appendChild(script);
-            });
-        }
-
-        // 건축물대장 등 외부호출용 프록시
+        // 🌟 CORS 방지용 글로벌 프록시 함수 🌟
         async function fetchWithProxy(url) {
             try {
                 const res = await fetch(url);
@@ -593,6 +553,7 @@
                 return await res.json();
             } catch(e) {
                 try {
+                    // 1순위: allorigins의 /get 방식 (CORS 완벽 우회 및 JSON 래핑)
                     const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
                     const res2 = await fetch(proxyUrl);
                     if (!res2.ok) throw new Error();
@@ -600,11 +561,13 @@
                     return JSON.parse(data.contents);
                 } catch(e2) {
                     try {
+                        // 2순위: corsproxy.io
                         const proxyUrl2 = `https://corsproxy.io/?${encodeURIComponent(url)}`;
                         const res3 = await fetch(proxyUrl2);
                         return await res3.json();
                     } catch(e3) {
-                        return null; 
+                        console.error("API Proxy Error:", e3);
+                        return null; // 에러 방어
                     }
                 }
             }
@@ -623,26 +586,6 @@
             
             initSigaChart([]); 
         });
-
-        // 🌟 아코디언 메뉴(상세보기) 토글 함수 🌟
-        window.toggleRenewalDates = function(btn) {
-            const mainTr = btn.closest('tr');
-            const detailTr = mainTr.nextElementSibling;
-            
-            if (detailTr && detailTr.classList.contains('detail-row')) {
-                detailTr.classList.toggle('hidden');
-                
-                if (detailTr.classList.contains('hidden')) {
-                    btn.innerHTML = "상세보기 ▼";
-                    btn.classList.remove('bg-indigo-50', 'text-indigo-700', 'border-indigo-300');
-                    btn.classList.add('bg-white', 'text-slate-600', 'border-slate-300');
-                } else {
-                    btn.innerHTML = "닫기 ▲";
-                    btn.classList.remove('bg-white', 'text-slate-600', 'border-slate-300');
-                    btn.classList.add('bg-indigo-50', 'text-indigo-700', 'border-indigo-300');
-                }
-            }
-        };
 
         function switchTab(tab) {
             const tabs = ['gongsi', 'siga', 'daejang', 'renewal'];
@@ -668,11 +611,6 @@
                 oncomplete: function(data) {
                     document.getElementById('address').value = data.roadAddress || data.jibunAddress;
                     closeDaumPostcode();
-                    
-                    let match = (data.roadAddress || data.jibunAddress).match(/서울(?:특별시)?\s+([가-힣]+구)/);
-                    if (match && document.getElementById('renewalGu')) {
-                        document.getElementById('renewalGu').value = match[1];
-                    }
                 },
                 width: '100%',
                 height: '100%'
@@ -683,6 +621,7 @@
             const layer = document.getElementById('daum-postcode-layer');
             layer.classList.add('hidden');
             layer.classList.remove('flex');
+            document.getElementById('daum-postcode-container').innerHTML = ''; 
         }
 
         function extractNum(text) {
@@ -705,6 +644,26 @@
                 }
             }
             return rawDate;
+        }
+
+        function fetchJSONP(url) {
+            return new Promise((resolve, reject) => {
+                const callbackName = 'vworld_cb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+                const script = document.createElement('script');
+                window[callbackName] = function(data) {
+                    delete window[callbackName];
+                    document.body.removeChild(script);
+                    resolve(data);
+                };
+                const char = url.indexOf('?') > -1 ? '&' : '?';
+                script.src = url + char + 'callback=' + callbackName;
+                script.onerror = () => {
+                    delete window[callbackName];
+                    document.body.removeChild(script);
+                    reject(new Error('서버 응답 지연'));
+                };
+                document.body.appendChild(script);
+            });
         }
 
         async function getPnu(address) {
@@ -737,7 +696,6 @@
             }
         }
 
-        // 🌟 완벽하게 원복된 기존 공시가격 조회 함수 (절대 건드리지 않음) 🌟
         async function searchPriceHistory() {
             const address = document.getElementById('address').value;
             const propType = document.querySelector('input[name="propType"]:checked').value;
@@ -1137,7 +1095,293 @@
             } catch(e) { console.error("❌ 건축물대장 에러:", e); }
         }
 
-        // 🌟 실거래가 누락 함수 원복 부분 🌟
+        // 🌟 [4] 서울시 정비사업 현황 🌟
+        async function fetchSeoulRenewal() {
+            if (!globalCurrentPnu || !globalCurrentPnu.startsWith("11")) {
+                alert("서울시 주소를 먼저 검색한 후 기본 정보 조회를 완료해 주세요. (타 지역은 제공되지 않습니다)");
+                return;
+            }
+
+            const tbody = document.getElementById('renewal-table-body');
+            tbody.innerHTML = `<tr><td colspan="5" class="py-12 text-center text-rose-500 font-bold animate-pulse">정비사업 진행 현황 데이터를 분석 중입니다...</td></tr>`;
+
+            // url endpoint - upisRebuild
+            const url1 = `http://openapi.seoul.go.kr:8088/${SEOUL_KEY}/json/upisRebuild/1/500/`;
+            const url2 = `http://openapi.seoul.go.kr:8088/${SEOUL_KEY}/json/cityBuildInfo/1/500/`;
+
+            try {
+                let data = await fetchWithProxy(url1);
+                let rows = [];
+                
+                // Generic extraction to find 'row' array
+                for (let key in data) {
+                    if (data[key] && Array.isArray(data[key].row)) {
+                        rows = data[key].row;
+                        break;
+                    }
+                }
+
+                if (rows.length === 0) {
+                     let fallbackData = await fetchWithProxy(url2);
+                     for (let key in fallbackData) {
+                        if (fallbackData[key] && Array.isArray(fallbackData[key].row)) {
+                            rows = fallbackData[key].row;
+                            break;
+                        }
+                     }
+                }
+
+                if (rows.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="py-12 text-center text-slate-400">데이터가 없거나 현재 제공되지 않습니다.</td></tr>`;
+                    return;
+                }
+
+                const addrVal = document.getElementById('address').value || "";
+                let targetGu = "";
+                let match = addrVal.match(/서울(?:특별시)?\s+([가-힣]+구)/);
+                if (match) targetGu = match[1];
+
+                let filteredRows = targetGu ? rows.filter(r => {
+                    let jsonStr = JSON.stringify(r);
+                    return jsonStr.includes(targetGu);
+                }) : rows;
+
+                if (filteredRows.length === 0) filteredRows = rows; // if no match, show all
+
+                const getField = (row, possibleNames) => {
+                    for (let n of possibleNames) {
+                        if (row[n] !== undefined) return row[n];
+                    }
+                    return "-";
+                };
+
+                tbody.innerHTML = "";
+                filteredRows.forEach(row => {
+                    let gu = getField(row, ["CGG_NM", "GU_NM", "ATDRN_NM", "LOGVM"]);
+                    let type = getField(row, ["BIZ_TY_NM", "BIZ_TYPE_NM", "BSNS_KND_NM", "SE_NM", "RPT_TYPE"]);
+                    let name = getField(row, ["BIZ_NM", "BIZ_NAME", "ZONE_NM", "BSNS_NM"]);
+                    let step = getField(row, ["PROCS_STEP_NM", "PRGS_STEP_NM", "PRT_STEP_NM", "OPERTN_PROGRS_STTUS_NM"]);
+                    let addr = getField(row, ["RPY_JIBUN", "ADDR", "LNM_ADRES", "LNM_ADDR", "LOC"]);
+
+                    let tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0";
+                    
+                    tr.innerHTML = `
+                        <td class="py-3 px-4 font-bold text-slate-600">${gu}</td>
+                        <td class="py-3 px-4"><span class="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-2 py-0.5 rounded">${type}</span></td>
+                        <td class="py-3 px-4 text-slate-800 font-extrabold max-w-[200px] truncate" title="${name}">${name}</td>
+                        <td class="py-3 px-4 font-bold text-rose-600">${step}</td>
+                        <td class="py-3 px-4 text-slate-500 text-[11px] max-w-[150px] truncate" title="${addr}">${addr}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+            } catch (e) {
+                console.error(e);
+                tbody.innerHTML = `<tr><td colspan="5" class="py-12 text-center text-rose-500 font-bold">통신 오류가 발생했습니다. (서울시 열린데이터광장 API 점검 중일 수 있습니다.)</td></tr>`;
+            }
+        }
+
+        // =========================================================================
+        // 모달 및 PDF / 엑셀 다운로드 컨트롤
+        // =========================================================================
+        function openDaejangModal() {
+            const modal = document.getElementById('daejangModal');
+            const addr = document.getElementById('address').value;
+            const dong = document.getElementById('dong').value;
+            const ho = document.getElementById('ho').value;
+            
+            const fullTitle = `${addr} ${dong ? dong+'동' : ''} ${ho ? ho+'호' : ''}`.trim();
+            document.getElementById('modal-address-title').innerText = fullTitle;
+            document.getElementById('pdf-header-address').innerText = fullTitle;
+
+            const titleBody = document.getElementById('modal-title-body');
+            titleBody.innerHTML = '';
+            if (globalTitleItem) {
+                const keys = ["platPlc", "bldNm", "dongNm", "mainPurpsCdNm", "strctCdNm", "platArea", "archArea", "bcRat", "totArea", "vlRatYyArea", "vlRat", "mainBldCnt", "hoCnt", "stndrYear", "useAprDay", "crtnDay"];
+                keys.forEach(k => {
+                    let val = globalTitleItem[k] || '-';
+                    if (k === 'useAprDay' || k === 'crtnDay') { if(val !== '-') val = formatPubDate(val); }
+                    titleBody.innerHTML += `<tr class="hover:bg-slate-50"><td class="py-2 px-4 font-bold text-slate-600 bg-slate-50/50 w-1/3 border-r border-slate-100">${DAEJANG_DICT[k] || k}</td><td class="py-2 px-4 text-slate-800 font-medium">${val}</td></tr>`;
+                });
+            } else {
+                titleBody.innerHTML = `<tr><td class="py-4 text-center text-slate-400">데이터가 없습니다.</td></tr>`;
+            }
+
+            const exposSection = document.getElementById('modal-expos-section');
+            const exposBody = document.getElementById('modal-expos-body');
+            exposBody.innerHTML = '';
+            
+            const propType = document.querySelector('input[name="propType"]:checked').value;
+            if (propType === "공동주택" || propType === "상가/건물") {
+                if (globalExposItem) {
+                    exposSection.classList.remove('hidden');
+                    const keys = ["dongNm", "flrNoNm", "hoNm", "exposPubuseGbCdNm", "area"];
+                    keys.forEach(k => {
+                        let val = globalExposItem[k] || '-';
+                        exposBody.innerHTML += `<tr class="hover:bg-slate-50"><td class="py-2 px-4 font-bold text-slate-600 bg-slate-50/50 w-1/3 border-r border-slate-100">${DAEJANG_DICT[k] || k}</td><td class="py-2 px-4 text-slate-800 font-medium">${val}</td></tr>`;
+                    });
+                } else {
+                    exposSection.classList.add('hidden');
+                }
+            } else {
+                exposSection.classList.add('hidden');
+            }
+
+            const landBody = document.getElementById('modal-land-body');
+            landBody.innerHTML = '';
+            if (globalLandItem) {
+                const keys = ["pnu", "lndcgrCodeNm", "lndpclAr", "prposArea1Nm", "prposArea2Nm", "landUseSittnNm", "tpgrphPitcNm", "tpgrphFrmNm", "roadSideCodeNm"];
+                keys.forEach(k => {
+                    let val = globalLandItem[k] || '-';
+                    if (k === 'lndpclAr' && val !== '-') val = Number(val).toLocaleString();
+                    landBody.innerHTML += `<tr class="hover:bg-slate-50"><td class="py-2 px-4 font-bold text-slate-600 bg-slate-50/50 w-1/3 border-r border-slate-100">${DAEJANG_DICT[k] || k}</td><td class="py-2 px-4 text-slate-800 font-medium">${val}</td></tr>`;
+                });
+            } else {
+                landBody.innerHTML = `<tr><td class="py-4 text-center text-slate-400">데이터가 없습니다.</td></tr>`;
+            }
+
+            const landUseBody = document.getElementById('modal-landuse-body');
+            if (globalLandUseTags && globalLandUseTags.length > 0) {
+                landUseBody.innerHTML = globalLandUseTags.map(t => {
+                    let color = "bg-slate-100 text-slate-700 border border-slate-200"; 
+                    if (t.includes('재개발') || t.includes('재건축') || t.includes('정비구역') || t.includes('촉진지구')) {
+                        color = "bg-rose-100 text-rose-800 font-black border-2 border-rose-400";
+                    } else if (t.includes('상업')) {
+                        color = "bg-purple-100 text-purple-800 font-bold border border-purple-300";
+                    } else if (t.includes('주거')) {
+                        color = "bg-blue-100 text-blue-800 font-bold border border-blue-300";
+                    } else if (t.includes('토지거래계약에관한허가구역')) {
+                        color = "bg-amber-100 text-amber-800 font-black border-2 border-amber-400";
+                    }
+                    return `<span class="inline-block px-3 py-1.5 rounded-lg text-sm mr-2 mb-2 ${color}">${t}</span>`;
+                }).join('');
+            } else {
+                landUseBody.innerHTML = `<span class="text-sm text-slate-400">해당 없음 또는 정보 없음</span>`;
+            }
+
+            const violationSection = document.getElementById('modal-violation-section');
+            const violationBody = document.getElementById('modal-violation-body');
+            violationBody.innerHTML = '';
+            
+            if (globalViolationItems && globalViolationItems.length > 0) {
+                violationSection.classList.remove('hidden');
+                globalViolationItems.forEach(v => {
+                    let vDate = formatPubDate(v.violtBldRegsDay);
+                    let vDetail = v.violtCn;
+                    vDate = vDate ? vDate : '일자 미기재';
+                    vDetail = vDetail ? vDetail : '상세 사유 지자체 전산 미등록 (대장 원본 표제부 확인 요망)';
+                    violationBody.innerHTML += `
+                        <tr class="hover:bg-red-50/50">
+                            <td class="py-3 px-4 font-bold text-red-700 border-b border-red-50 whitespace-nowrap">${vDate}</td>
+                            <td class="py-3 px-4 text-slate-700 font-medium border-b border-red-50 leading-relaxed">${vDetail}</td>
+                        </tr>
+                    `;
+                });
+            } else if (globalIsVioltBld) {
+                violationSection.classList.remove('hidden');
+                violationBody.innerHTML = `<tr><td colspan="2" class="py-4 px-4 text-center text-red-500 font-bold">위반건축물 표시가 있으나, 상세 내역이 전산에 등록되지 않았습니다.</td></tr>`;
+            } else {
+                violationSection.classList.add('hidden');
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => { modal.classList.remove('opacity-0'); }, 10);
+        }
+
+        function closeDaejangModal() {
+            const modal = document.getElementById('daejangModal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+        }
+
+        function downloadDaejangExcel() {
+            if (!globalTitleItem && !globalLandItem && !globalExposItem) {
+                alert("다운로드할 원본 데이터가 없습니다.");
+                return;
+            }
+
+            const workbook = XLSX.utils.book_new();
+
+            function createVerticalSheet(dataItem) {
+                const rows = [];
+                for (let k in dataItem) {
+                    if (typeof dataItem[k] !== 'object') {
+                        let keyName = DAEJANG_DICT[k] || k;
+                        let val = dataItem[k];
+                        if (k === 'useAprDay' || k === 'crtnDay') { if(val && val !== '-') val = formatPubDate(val); }
+                        rows.push({ "항목": keyName, "내용": val });
+                    }
+                }
+                const ws = XLSX.utils.json_to_sheet(rows);
+                ws['!cols'] = [{ wpx: 180 }, { wpx: 350 }]; 
+                return ws;
+            }
+
+            if (globalTitleItem) XLSX.utils.book_append_sheet(workbook, createVerticalSheet(globalTitleItem), "건축물대장_표제부");
+            if (globalExposItem) XLSX.utils.book_append_sheet(workbook, createVerticalSheet(globalExposItem), "건축물대장_전유부");
+            if (globalLandItem) XLSX.utils.book_append_sheet(workbook, createVerticalSheet(globalLandItem), "토지대장_특성");
+            
+            if (globalLandUseTags && globalLandUseTags.length > 0) {
+                const luRows = globalLandUseTags.map((tag, idx) => ({ "연번": idx + 1, "지정_규제_내역": tag }));
+                const ws = XLSX.utils.json_to_sheet(luRows);
+                ws['!cols'] = [{ wpx: 50 }, { wpx: 400 }];
+                XLSX.utils.book_append_sheet(workbook, ws, "토지이용계획_규제");
+            }
+
+            if (globalViolationItems && globalViolationItems.length > 0) {
+                const viRows = globalViolationItems.map(item => {
+                    return {
+                        "동명칭": item.dongNm || '-',
+                        "호명칭": item.hoNm || '-',
+                        "위반건축물등록일자": formatPubDate(item.violtBldRegsDay) || '-',
+                        "위반내용_상세": item.violtCn || '-'
+                    };
+                });
+                const ws = XLSX.utils.json_to_sheet(viRows);
+                ws['!cols'] = [{ wpx: 80 }, { wpx: 80 }, { wpx: 120 }, { wpx: 500 }];
+                XLSX.utils.book_append_sheet(workbook, ws, "위반건축물_적발내역");
+            }
+
+            XLSX.writeFile(workbook, "강승완세무사_대장및규제_추출.xlsx");
+        }
+
+        async function downloadDaejangPDF() {
+            const btn = document.getElementById('pdfBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "PDF 변환 중... (잠시만 기다려주세요)";
+            
+            const { jsPDF } = window.jspdf;
+            const printArea = document.getElementById('daejang-print-area');
+            const pdfHeader = document.getElementById('pdf-header');
+            
+            const originalOverflow = printArea.style.overflow;
+            printArea.style.overflow = 'visible';
+            pdfHeader.classList.remove('hidden');
+            
+            try {
+                const canvas = await html2canvas(printArea, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+                const imgData = canvas.toDataURL('image/png');
+                
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save("강승완세무사_대장및규제_추출.pdf");
+            } catch(e) {
+                console.error(e);
+                alert("PDF 생성 중 오류가 발생했습니다.");
+            } finally {
+                printArea.style.overflow = originalOverflow;
+                pdfHeader.classList.add('hidden');
+                btn.innerHTML = originalText;
+            }
+        }
+
+        // =========================================================================
+        // 단지 실거래 조회 및 필터링 기능
+        // =========================================================================
         function matchJibun(apiJibunStr, isSan, targetBon, targetBu) {
             if (!apiJibunStr) return false;
             const apiJibuns = String(apiJibunStr).replace(/\s/g, '').split(',');
@@ -1276,32 +1520,19 @@
                     
                     try {
                         const fetchPromises = [
-    fetch(tradeUrl).then(res => ({res, dataType: 'trade'})).catch(e => { alert("매매 통신 에러: " + e.message); return {res: null, dataType: 'trade'}; }),
-    fetch(rentUrl).then(res => ({res, dataType: 'rent'})).catch(e => { alert("전월세 통신 에러: " + e.message); return {res: null, dataType: 'rent'}; })
-];
-if (includeSilv) fetchPromises.push(fetch(silvUrl).then(res => ({res, dataType: 'silv'})).catch(e => { alert("분양권 통신 에러: " + e.message); return {res: null, dataType: 'silv'}; }));
+                            fetch(tradeUrl).then(res => ({res, dataType: 'trade'})).catch(e => ({res: null, dataType: 'trade'})),
+                            fetch(rentUrl).then(res => ({res, dataType: 'rent'})).catch(e => ({res: null, dataType: 'rent'}))
+                        ];
+                        if (includeSilv) fetchPromises.push(fetch(silvUrl).then(res => ({res, dataType: 'silv'})).catch(e => ({res: null, dataType: 'silv'})));
                         
                         const responses = await Promise.all(fetchPromises);
 
                         const processResponse = async (resultObj) => {
-    if (!resultObj.res || !resultObj.res.ok) return;
-    const text = await resultObj.res.text();
-    
-    // 👇 이 부분만 추가해 두시면 원인을 바로 알 수 있어 속이 뻥 뚫립니다! 👇
-    if (text.includes("HTTP_ERROR") || text.includes("<errMsg>") || text.includes("DEADLINE_EXCEEDED")) {
-        alert("🚨 국토부 서버 응답 오류입니다. (일시적인 장애 또는 정기점검)"); 
-        return;
-    }
-    if (text.includes("LIMITED") || text.includes("EXCEEDS")) {
-        alert("🚨 국토부 실거래가 API 일일 트래픽(조회 한도)이 초과되었습니다!");
-        return;
-    }
-    // 👆 ------------------------------------------------------------- 👆
+                            if (!resultObj.res || !resultObj.res.ok) return;
+                            const text = await resultObj.res.text();
+                            if (text.includes("SERVICE KEY IS NOT REGISTERED ERROR")) return;
 
-    if (text.includes("SERVICE KEY IS NOT REGISTERED ERROR")) return;
-
-    const parsedItems = parseHybridData(text);
-    // ... 기존 로직 계속 ...
+                            const parsedItems = parseHybridData(text);
 
                             parsedItems.forEach(item => {
                                 let isKeywordMatch = false;
@@ -1346,7 +1577,7 @@ if (includeSilv) fetchPromises.push(fetch(silvUrl).then(res => ({res, dataType: 
                                     name: item.complexName.trim() || "-",
                                     date: `${item.year}-${String(item.month).padStart(2, '0')}-${String(item.day).padStart(2, '0')}`,
                                     floor: item.floor,
-                                    area: parseFloat(item.area) || 0,
+                                    area: item.area || 0,
                                     amount: parsedAmount * 10000,
                                     monthlyRent: parsedMonthly * 10000
                                 });
@@ -1736,230 +1967,6 @@ if (includeSilv) fetchPromises.push(fetch(silvUrl).then(res => ({res, dataType: 
                 } catch (err) { alert("엑셀 빌드 실패"); progressContainer.classList.add('hidden'); }
             };
             reader.readAsArrayBuffer(file);
-        }
-
-        // 🌟 [4] 서울시 정비사업 현황 🌟
-        async function fetchSeoulRenewal() {
-            const thead = document.getElementById('renewal-table-head');
-            thead.innerHTML = `
-                <th class="py-3 px-4 whitespace-nowrap">자치구</th>
-                <th class="py-3 px-4 whitespace-nowrap">사업구분</th>
-                <th class="py-3 px-4 min-w-[150px]">사업명(구역명)</th>
-                <th class="py-3 px-4 whitespace-nowrap">진행단계(인가현황)</th>
-                <th class="py-3 px-4 min-w-[120px]">대표지번</th>
-                <th class="py-3 px-4 text-center whitespace-nowrap">상세</th>
-            `;
-
-            const tbody = document.getElementById('renewal-table-body');
-            tbody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-rose-500 font-bold animate-pulse">정비사업 진행 현황 데이터를 실시간 스캔 중입니다...</td></tr>`;
-
-            const url = `/api/seoul/${SEOUL_KEY}/json/TbSeoulRedevStatus/1/1000/`;
-
-            try {
-                let res = await fetch(url);
-                if (!res.ok) {
-                    throw new Error("API 통신 오류");
-                }
-                
-                let data = await res.json();
-                let rows = [];
-                
-                if (data.TbSeoulRedevStatus && Array.isArray(data.TbSeoulRedevStatus.row)) {
-                    rows = data.TbSeoulRedevStatus.row;
-                }
-
-                if (rows.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-slate-400">데이터가 없거나 현재 제공되지 않습니다.</td></tr>`;
-                    return;
-                }
-
-                let targetGu = document.getElementById('renewalGu') ? document.getElementById('renewalGu').value.trim().replace(/구$/, '') : "";
-                let targetName = document.getElementById('renewalName') ? document.getElementById('renewalName').value.trim().toLowerCase() : "";
-
-                let filteredRows = rows;
-                
-                if (targetGu || targetName) {
-                    filteredRows = rows.filter(r => {
-                        let guMatch = true;
-                        let nameMatch = true;
-
-                        if (targetGu) {
-                            let district = r.DISTRICT || r.CGG_NM || r.GU_NM || "";
-                            guMatch = district.includes(targetGu);
-                        }
-                        if (targetName) {
-                            let name = String(r.ZONE_NM || r.BIZ_NM || r.BIZ_NAME || "").toLowerCase();
-                            nameMatch = name.includes(targetName);
-                        }
-                        
-                        return guMatch && nameMatch;
-                    });
-                }
-
-                if (filteredRows.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-slate-500 font-medium">검색 조건에 맞는 정비사업 내역이 없습니다.</td></tr>`;
-                    return;
-                }
-
-                tbody.innerHTML = "";
-                
-                filteredRows.forEach(row => {
-                    let gu = row.DISTRICT || "-";
-                    let type = row.BIZ_TYPE || "-";
-                    let name = row.ZONE_NM || "-";
-                    let step = row.BIZ_STAGE || "-";
-                    let addr = (row.JIBUN_ADDR && row.JIBUN_ADDR !== "-") ? row.JIBUN_ADDR : (row.ROAD_ADDR || "-");
-                    
-                    const d_zone_init = row.ZONE_DESIGNATION_INIT_YMD || "-";
-                    const d_zone_last = row.ZONE_DESIGNATION_LAST_YMD || "-";
-                    const d_prom = row.PROMOTION_COMMITTEE_YMD || "-";
-                    const d_assoc = row.ASSOCIATION_ESTABLISHMENT_YMD || "-";
-                    const d_arch = row.ARCHITECTURAL_REVIEW_YMD || "-";
-                    const d_biz_init = row.BIZ_IMPLEMENTATION_INIT_YMD || "-";
-                    const d_biz_last = row.BIZ_IMPLEMENTATION_LAST_YMD || "-";
-                    const d_mng_init = row.MGMT_DISPOSITION_INIT_YMD || "-";
-                    const d_mng_last = row.MGMT_DISPOSITION_LAST_YMD || "-";
-                    const d_mig_start = row.MIGRATION_START_YMD || "-";
-                    const d_mig_end = row.MIGRATION_END_YMD || "-";
-                    const d_const = row.CONSTRUCTION_START_YMD || "-";
-
-                    let mainTr = document.createElement('tr');
-                    mainTr.className = "hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0";
-                    mainTr.innerHTML = `
-                        <td class="py-3 px-4 font-bold text-slate-600">${gu}</td>
-                        <td class="py-3 px-4"><span class="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-2 py-0.5 rounded">${type}</span></td>
-                        <td class="py-3 px-4 text-slate-800 font-extrabold max-w-[200px] truncate" title="${name}">${name}</td>
-                        <td class="py-3 px-4 font-bold text-rose-600">${step}</td>
-                        <td class="py-3 px-4 text-slate-500 text-[11px] max-w-[150px] truncate" title="${addr}">${addr}</td>
-                        <td class="py-3 px-4 text-center">
-                            <button onclick="toggleRenewalDates(this)" class="text-[10px] bg-white hover:bg-slate-100 text-slate-600 font-bold py-1 px-2.5 rounded border border-slate-300 transition-colors whitespace-nowrap shadow-sm">상세보기 ▼</button>
-                        </td>
-                    `;
-                    
-                    let detailTr = document.createElement('tr');
-                    detailTr.className = "hidden bg-slate-50 border-b border-slate-200 detail-row";
-                    detailTr.innerHTML = `
-                        <td colspan="6" class="p-4 md:px-8">
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 p-5 bg-white rounded-xl border border-slate-200 shadow-sm text-[11px] text-slate-700">
-                                <div><span class="font-bold text-indigo-800 block mb-1.5 flex items-center"><span class="w-1.5 h-1.5 bg-indigo-500 rounded-full mr-1.5"></span>구역지정</span><span class="text-slate-400">최초:</span> <span class="font-medium">${d_zone_init}</span><br><span class="text-slate-400">변경:</span> <span class="font-medium">${d_zone_last}</span></div>
-                                <div><span class="font-bold text-indigo-800 block mb-1.5 flex items-center"><span class="w-1.5 h-1.5 bg-indigo-500 rounded-full mr-1.5"></span>추진위원회</span><span class="font-medium">${d_prom}</span></div>
-                                <div><span class="font-bold text-indigo-800 block mb-1.5 flex items-center"><span class="w-1.5 h-1.5 bg-indigo-500 rounded-full mr-1.5"></span>조합설립인가</span><span class="font-medium">${d_assoc}</span></div>
-                                <div><span class="font-bold text-indigo-800 block mb-1.5 flex items-center"><span class="w-1.5 h-1.5 bg-indigo-500 rounded-full mr-1.5"></span>건축심의</span><span class="font-medium">${d_arch}</span></div>
-                                
-                                <div><span class="font-bold text-emerald-700 block mb-1.5 mt-2 md:mt-0 flex items-center"><span class="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1.5"></span>사업시행인가</span><span class="text-slate-400">최초:</span> <span class="font-medium">${d_biz_init}</span><br><span class="text-slate-400">변경:</span> <span class="font-medium">${d_biz_last}</span></div>
-                                <div><span class="font-bold text-emerald-700 block mb-1.5 mt-2 md:mt-0 flex items-center"><span class="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1.5"></span>관리처분인가</span><span class="text-slate-400">최초:</span> <span class="font-medium">${d_mng_init}</span><br><span class="text-slate-400">변경:</span> <span class="font-medium">${d_mng_last}</span></div>
-                                
-                                <div><span class="font-bold text-rose-700 block mb-1.5 mt-2 md:mt-0 flex items-center"><span class="w-1.5 h-1.5 bg-rose-500 rounded-full mr-1.5"></span>이주기간</span><span class="text-slate-400">시작:</span> <span class="font-medium">${d_mig_start}</span><br><span class="text-slate-400">종료:</span> <span class="font-medium">${d_mig_end}</span></div>
-                                <div><span class="font-bold text-rose-700 block mb-1.5 mt-2 md:mt-0 flex items-center"><span class="w-1.5 h-1.5 bg-rose-500 rounded-full mr-1.5"></span>착공일</span><span class="font-medium">${d_const}</span></div>
-                            </div>
-                        </td>
-                    `;
-
-                    tbody.appendChild(mainTr);
-                    tbody.appendChild(detailTr);
-                });
-
-            } catch (e) {
-                console.error(e);
-                tbody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-rose-500 font-bold">통신 오류가 발생했습니다. (서울시 열린데이터광장 API 점검 중일 수 있습니다.)</td></tr>`;
-            }
-        }
-        // 🌟 [누락된 코드] 대장 모달 제어 및 PDF/엑셀 출력 🌟
-        function openDaejangModal() {
-            const modal = document.getElementById('daejangModal');
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                modal.classList.remove('opacity-0');
-                modal.querySelector('div').classList.remove('scale-95');
-            }, 10);
-            
-            const addr = document.getElementById('address').value;
-            document.getElementById('modal-address-title').innerText = addr;
-            document.getElementById('pdf-header-address').innerText = addr;
-            
-            renderModalData();
-        }
-
-        function closeDaejangModal() {
-            const modal = document.getElementById('daejangModal');
-            modal.classList.add('opacity-0');
-            modal.querySelector('div').classList.add('scale-95');
-            setTimeout(() => modal.classList.add('hidden'), 300);
-        }
-
-        function renderModalData() {
-            // 1. 표제부
-            const titleBody = document.getElementById('modal-title-body');
-            titleBody.innerHTML = '';
-            if(globalTitleItem) {
-                const keys = ['bldNm', 'mainPurpsCdNm', 'strctCdNm', 'platArea', 'totArea', 'bcRat', 'vlRat', 'grndFlrCnt', 'useAprDay'];
-                keys.forEach(k => {
-                    if(globalTitleItem[k]) titleBody.innerHTML += `<tr><th class="p-2 bg-slate-50 border-b w-1/3 text-slate-600">${DAEJANG_DICT[k]||k}</th><td class="p-2 border-b text-slate-800 font-bold">${globalTitleItem[k]}</td></tr>`;
-                });
-            } else { titleBody.innerHTML = '<tr><td class="p-4 text-center text-slate-500">데이터 없음</td></tr>'; }
-
-            // 2. 전유부
-            const exposSection = document.getElementById('modal-expos-section');
-            const exposBody = document.getElementById('modal-expos-body');
-            if(globalExposItem) {
-                exposSection.classList.remove('hidden');
-                exposBody.innerHTML = '';
-                const keys = ['dongNm', 'hoNm', 'mainPurpsCdNm', 'area'];
-                keys.forEach(k => {
-                    if(globalExposItem[k]) exposBody.innerHTML += `<tr><th class="p-2 bg-slate-50 border-b w-1/3 text-slate-600">${DAEJANG_DICT[k]||k}</th><td class="p-2 border-b text-slate-800 font-bold">${globalExposItem[k]}</td></tr>`;
-                });
-            } else { exposSection.classList.add('hidden'); }
-
-            // 3. 토지대장
-            const landBody = document.getElementById('modal-land-body');
-            landBody.innerHTML = '';
-            if(globalLandItem) {
-                const keys = ['lndcgrCodeNm', 'lndpclAr', 'prposArea1Nm', 'landUseSittnNm'];
-                keys.forEach(k => {
-                    if(globalLandItem[k]) landBody.innerHTML += `<tr><th class="p-2 bg-slate-50 border-b w-1/3 text-slate-600">${DAEJANG_DICT[k]||k}</th><td class="p-2 border-b text-slate-800 font-bold">${globalLandItem[k]}</td></tr>`;
-                });
-            } else { landBody.innerHTML = '<tr><td class="p-4 text-center text-slate-500">데이터 없음</td></tr>'; }
-
-            // 4. 규제(토지이용계획)
-            const useBody = document.getElementById('modal-landuse-body');
-            if(globalLandUseTags && globalLandUseTags.length > 0) {
-                useBody.innerHTML = globalLandUseTags.map(t => `<span class="inline-block bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs mr-1 mb-1 font-bold border border-purple-200">${t}</span>`).join('');
-            } else { useBody.innerHTML = '<span class="text-slate-500 text-xs">데이터 없음</span>'; }
-
-            // 5. 위반건축물
-            const violSection = document.getElementById('modal-violation-section');
-            const violBody = document.getElementById('modal-violation-body');
-            if(globalViolationItems && globalViolationItems.length > 0) {
-                violSection.classList.remove('hidden');
-                violBody.innerHTML = globalViolationItems.map(v => `<tr><td class="p-2 border-b whitespace-nowrap text-red-600 font-bold">${v.crtnDay||'-'}</td><td class="p-2 border-b text-slate-700">${v.violtCn||'위반내용 없음'}</td></tr>`).join('');
-            } else { violSection.classList.add('hidden'); }
-        }
-
-        async function downloadDaejangPDF() {
-            const btn = document.getElementById('pdfBtn');
-            btn.innerText = "PDF 생성 중... 잠시만 기다려주세요";
-            document.getElementById('pdf-header').classList.remove('hidden');
-            const printArea = document.getElementById('daejang-print-area');
-            
-            try {
-                const canvas = await html2canvas(printArea, { scale: 2, useCORS: true });
-                const imgData = canvas.toDataURL('image/png');
-                const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-                
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                pdf.save(`건축물_토지대장_${document.getElementById('address').value}.pdf`);
-            } catch(e) {
-                alert("PDF 생성 중 오류가 발생했습니다.");
-            } finally {
-                document.getElementById('pdf-header').classList.add('hidden');
-                btn.innerHTML = `<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg> 현재 화면 PDF 저장`;
-            }
-        }
-
-        function downloadDaejangExcel() {
-            alert("엑셀 다운로드 기능은 추가 구성이 필요합니다. 현재는 PDF 저장을 이용해 주세요.");
         }
     </script>
 </body>
