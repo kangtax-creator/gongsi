@@ -1240,7 +1240,7 @@
                 return;
             }
 
-            btn.innerText = "데이터 안전 스캔 중 (3중 우회망 가동)...";
+            btn.innerText = "실거래가 데이터 스캔 중... (잠시만 기다려주세요)";
             btn.disabled = true;
             globalTransactions = [];
             let hasApiServerIssue = false; 
@@ -1323,7 +1323,6 @@
                 }
 
                 for (const ym of targetMonths) {
-                    btn.innerText = `${ym.substring(0,4)}년 ${ym.substring(4,6)}월 실거래가 스캔 중...`;
                     
                     const urlsToFetch = [
                         { 
