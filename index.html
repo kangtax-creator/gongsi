@@ -1243,9 +1243,8 @@
             btn.innerText = "데이터 안전 스캔 중 (과부하 방지 순차 추출)...";
             btn.disabled = true;
             globalTransactions = [];
-            let hasApiServerIssue = false; 
+            let lastResponseText = ""; // 🌟 디버깅: 서버 응답 원본을 캡처할 변수
 
-            // 🌟 1. 무한 대기(프리징) 방지용 타임아웃 함수 도입 (8초 넘으면 자동 패스)
             async function fetchWithTimeout(url, timeout = 8000) {
                 const controller = new AbortController();
                 const id = setTimeout(() => controller.abort(), timeout);
@@ -1289,7 +1288,6 @@
                     rentApiPath = "RTMSDataSvcOffiRent/getRTMSDataSvcOffiRent";
                 }
 
-                // 🌟 2. 병렬 폭격을 막고 한 달 단위로 하나씩 Vercel로 순차 요청
                 for (const ym of targetMonths) {
                     btn.innerText = `${ym.substring(0,4)}년 ${ym.substring(4,6)}월 실거래가 스캔 중...`;
                     
@@ -1303,19 +1301,13 @@
 
                     for (const req of urlsToFetch) {
                         try {
-                            const res = await fetchWithTimeout(req.url, 8000); // 8초 안에 응답 안 오면 강제 컷
-                            if (!res.ok) {
-                                hasApiServerIssue = true;
-                                continue;
-                            }
-                            const text = await res.text();
+                            const res = await fetchWithTimeout(req.url, 8000); 
+                            if (!res.ok) continue;
                             
-                            // 에러가 감지되면 조용히 건너뜀 (팝업 무한 반복 방지)
-                            if (text.includes("SERVICE KEY IS NOT REGISTERED ERROR") || text.includes("LIMITED")) {
-                                hasApiServerIssue = true;
-                                break; 
-                            }
-                            if (text.includes("HTTP_ERROR") || text.includes("<errMsg>")) {
+                            const text = await res.text();
+                            lastResponseText = text; // 🌟 성공한 텍스트 응답을 모조리 저장해 둠
+                            
+                            if (text.includes("SERVICE KEY IS NOT REGISTERED ERROR") || text.includes("LIMITED") || text.includes("HTTP_ERROR") || text.includes("<errMsg>")) {
                                 continue; 
                             }
 
@@ -1370,23 +1362,26 @@
                                 });
                             });
                         } catch (e) {
-                            console.error(`${ym}월 ${req.type} 통신 에러/타임아웃:`, e);
+                            console.error(e);
                         }
-                        // 🌟 3. 한 개 요청할 때마다 0.05초 대기 (국토부 방화벽 차단 회피)
                         await sleep(50);
                     }
-                    // 한 달치 다하면 0.1초 대기 후 다음 달로
                     await sleep(100); 
                 } // end for loop
 
                 globalTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
                 
-                if (hasApiServerIssue && globalTransactions.length === 0) {
+                if (globalTransactions.length === 0) {
+                    // 🌟 데이터가 0건일 때, 표 안쪽에 서버 원본 데이터를 통째로 띄웁니다!
+                    let safeText = lastResponseText.replace(/</g, "&lt;").replace(/>/g, "&gt;");
                     document.getElementById('siga-table-body').innerHTML = `
                         <tr>
-                            <td colspan="7" class="py-12 text-center text-rose-500 font-bold">
-                                🚨 공공데이터포털 서버 장애 또는 일일 데이터 한도를 초과했습니다.<br>
-                                <span class="text-sm text-slate-500 font-medium mt-2 inline-block">내일 다시 이용해 주세요.</span>
+                            <td colspan="7" class="py-8 px-4 text-center text-slate-700">
+                                🚨 조건에 맞는 실거래가가 없습니다.<br><br>
+                                <div class="text-left bg-slate-100 p-4 rounded-lg mt-4 max-w-4xl mx-auto overflow-x-auto border border-slate-300">
+                                    <p class="text-xs font-bold text-rose-500 mb-2">🔍 [진단용 X-RAY] 국토부 서버의 실제 응답 데이터:</p>
+                                    <pre class="text-[11px] text-slate-600 whitespace-pre-wrap">${safeText.substring(0, 1500)}</pre>
+                                </div>
                             </td>
                         </tr>
                     `;
@@ -1409,7 +1404,6 @@
                 btn.disabled = false;
             }
         }
-
         function populateAreaFilter() {
             const areaSelect = document.getElementById('areaFilter');
             const uniqueAreas = [...new Set(globalTransactions.map(t => Number(t.area.toFixed(2))))].sort((a, b) => a - b);
