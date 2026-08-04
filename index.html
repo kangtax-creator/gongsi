@@ -1239,6 +1239,8 @@
             btn.disabled = true;
             globalTransactions = [];
 
+            let hasApiServerIssue = false;
+
             try {
                 const lawdCd = globalCurrentPnu.substring(0, 5);
                 const isSan = globalCurrentPnu.substring(10, 11) === '2';
@@ -1284,24 +1286,23 @@ if (includeSilv) fetchPromises.push(fetch(silvUrl).then(res => ({res, dataType: 
                         const responses = await Promise.all(fetchPromises);
 
                         const processResponse = async (resultObj) => {
-    if (!resultObj.res || !resultObj.res.ok) return;
+    if (!resultObj.res || !resultObj.res.ok) {
+        hasApiServerIssue = true; // 에러 감지 시 변수만 true로 변경
+        return;
+    }
     const text = await resultObj.res.text();
     
-    // 👇 이 부분만 추가해 두시면 원인을 바로 알 수 있어 속이 뻥 뚫립니다! 👇
-    if (text.includes("HTTP_ERROR") || text.includes("<errMsg>") || text.includes("DEADLINE_EXCEEDED")) {
-        alert("🚨 국토부 서버 응답 오류입니다. (일시적인 장애 또는 정기점검)"); 
+    // 👇 에러 메시지가 감지되어도 알림창을 띄우지 않고 변수만 변경 후 조용히 종료합니다.
+    if (text.includes("HTTP_ERROR") || text.includes("<errMsg>") || text.includes("DEADLINE_EXCEEDED") || text.includes("LIMITED") || text.includes("EXCEEDS")) {
+        hasApiServerIssue = true;
         return;
     }
-    if (text.includes("LIMITED") || text.includes("EXCEEDS")) {
-        alert("🚨 국토부 실거래가 API 일일 트래픽(조회 한도)이 초과되었습니다!");
+    if (text.includes("SERVICE KEY IS NOT REGISTERED ERROR")) {
+        hasApiServerIssue = true;
         return;
     }
-    // 👆 ------------------------------------------------------------- 👆
-
-    if (text.includes("SERVICE KEY IS NOT REGISTERED ERROR")) return;
 
     const parsedItems = parseHybridData(text);
-    // ... 기존 로직 계속 ...
 
                             parsedItems.forEach(item => {
                                 let isKeywordMatch = false;
@@ -1358,15 +1359,27 @@ if (includeSilv) fetchPromises.push(fetch(silvUrl).then(res => ({res, dataType: 
 
                 await Promise.all(fetchTasks);
 
-                globalTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
-                
-                populateAreaFilter();
-                
-                currentTransactionFilter = 'all';
-                document.getElementById('areaFilter').value = 'all';
-                applyFilters();
+    globalTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    // 👇 모든 스캔이 끝난 후, 에러가 있었고 데이터가 0건이라면 표 안에 안내를 띄웁니다.
+    if (hasApiServerIssue && globalTransactions.length === 0) {
+        document.getElementById('siga-table-body').innerHTML = `
+            <tr>
+                <td colspan="7" class="py-12 text-center text-rose-500 font-bold">
+                    🚨 국토부 서버 장애 또는 일일 트래픽 초과로 데이터를 불러오지 못했습니다.<br>
+                    <span class="text-sm text-slate-500 font-medium mt-2 inline-block">잠시 후 다시 시도하시거나, 내일 이용해 주세요.</span>
+                </td>
+            </tr>
+        `;
+        document.getElementById('sigaChart').getContext('2d').clearRect(0, 0, 400, 400); // 차트 초기화
+    } else {
+        populateAreaFilter();
+        currentTransactionFilter = 'all';
+        document.getElementById('areaFilter').value = 'all';
+        applyFilters();
+    }
 
-            } catch (err) {
+} catch (err) {
                 alert("조회 중 오류가 발생했습니다.");
                 console.error(err);
             } finally {
