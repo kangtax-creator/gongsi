@@ -2132,6 +2132,54 @@
 
     XLSX.writeFile(workbook, `강승완세무사_대장및규제_${document.getElementById('address').value}.xlsx`);
 }
+
+        function downloadSigaExcel() {
+    // 1. 데이터가 있는지 확인
+    if (!globalTransactions || globalTransactions.length === 0) {
+        alert("다운로드할 실거래가 데이터가 없습니다.");
+        return;
+    }
+
+    // 2. 데이터를 엑셀 표(행/열) 형식으로 깔끔하게 변환
+    const excelData = globalTransactions.map((item, index) => {
+        // 금액 단위(원) 및 월세 표현 포맷팅
+        let priceStr = item.amount.toLocaleString() + "원";
+        if (item.type === '월세' || item.monthlyRent > 0) {
+            priceStr = `${item.amount.toLocaleString()} / ${item.monthlyRent.toLocaleString()}원`;
+        }
+
+        return {
+            "연번": index + 1,
+            "거래유형": item.type,
+            "단지명": item.name,
+            "계약일자": item.date,
+            "층": item.floor + "층",
+            "전용면적(㎡)": item.area,
+            "거래금액(보증금/월세)": priceStr
+        };
+    });
+
+    // 3. 엑셀 워크시트 생성
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    
+    // 4. 열(Column) 너비 예쁘게 맞춤 설정
+    worksheet['!cols'] = [
+        { wpx: 40 },  // 연번
+        { wpx: 80 },  // 거래유형
+        { wpx: 180 }, // 단지명
+        { wpx: 100 }, // 계약일자
+        { wpx: 60 },  // 층
+        { wpx: 80 },  // 전용면적
+        { wpx: 150 }  // 거래금액
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "실거래가_내역");
+
+    // 5. 파일명에 주소를 넣어서 다운로드 실행
+    const addressValue = document.getElementById('address') ? document.getElementById('address').value : '상세내역';
+    XLSX.writeFile(workbook, `강승완세무사_실거래가_${addressValue}.xlsx`);
+}
     </script>
 </body>
 </html>
