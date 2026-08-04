@@ -1,4 +1,403 @@
-<script>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>부동산 공시가격 & 단지 내 실거래(매매/임대/분양권) 통합 조회 | 강승완 세무사</title>
+    
+    <meta name="keywords" content="부동산 공시가격, 연도별 기준시가, 실거래가, 매매가, 전세가, 월세, 분양권, 상속세, 증여세, 양도소득세, 강승완 세무사, micro-tax">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="부동산 원클릭 스캐너">
+    <meta property="og:description" content="여러 물건지도 한번에! - 부동산(가격/정보) 원클릭 스캐너">
+    <meta property="og:url" content="https://gongsi-ten.vercel.app">
+    <meta property="og:image" content="https://gongsi-ten.vercel.app/thumbnail.jpg">
+    
+    <!-- 필수 라이브러리 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <!-- 구글 애널리틱스 (GA4) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-97YGLD3SJ9"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-97YGLD3SJ9');
+    </script>
+</head>
+<body class="bg-[#f3f4f6] font-sans min-h-screen">
+
+    <!-- 헤더 -->
+    <div class="bg-[#0f172a] text-white pt-12 pb-24 px-4">
+        <div class="max-w-6xl mx-auto">
+            <p class="text-indigo-400 font-bold text-sm mb-2 tracking-wider">세무/부동산 데이터 리서치 시스템</p>
+            <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight mb-4">부동산 원클릭 스캐너</h1>
+            <p class="text-slate-400 text-sm md:text-base">출처: 국토교통부 실거래가 시스템 및 공동주택가격 공시시스템 (VWORLD) · 자동 동기화</p>
+            
+            <a href="https://www.micro-tax.com" target="_blank" class="mt-8 border border-slate-700 bg-slate-800/50 hover:bg-slate-700 rounded-xl p-4 flex justify-between items-center max-w-md transition-all cursor-pointer group no-underline">
+                <div>
+                    <p class="text-xs text-slate-400 mb-1 group-hover:text-slate-300">양도·상속·증여 및 부동산 절세 전문</p>
+                    <p class="text-emerald-400 font-bold text-lg group-hover:text-emerald-300">강승완 세무사 상담 홈페이지 &rarr;</p>
+                </div>
+                <div class="text-slate-600 group-hover:text-slate-400 text-2xl font-bold transition-colors">🏢</div>
+            </a>
+        </div>
+    </div>
+
+    <!-- 메인 컨텐츠 영역 -->
+    <div class="max-w-6xl mx-auto px-4 -mt-12 pb-12 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        
+        <!-- 왼쪽: 주소 입력 영역 -->
+        <div class="space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
+                <h2 class="text-lg font-extrabold text-slate-800 mb-4 flex items-center">
+                    <span class="w-2 h-2 bg-indigo-600 rounded-full mr-2"></span> 대상 부동산 주소 설정
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex flex-wrap gap-2">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="propType" value="공동주택" checked class="peer sr-only">
+                                <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">공동주택</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="propType" value="단독주택" class="peer sr-only">
+                                <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">단독주택</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="propType" value="상가/건물" class="peer sr-only">
+                                <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">상가/일반건물</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="propType" value="토지" class="peer sr-only">
+                                <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">토지(지가)</div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="flex space-x-2">
+                        <input type="text" id="address" readonly placeholder="주소 검색 버튼을 클릭하세요" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none">
+                        <button onclick="execDaumPostcode()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap">주소 검색</button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <input type="text" id="dong" placeholder="동 (선택) ex: 101" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none">
+                        <input type="text" id="ho" placeholder="호 (선택) ex: 502" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none">
+                    </div>
+
+                    <button onclick="searchPriceHistory()" id="searchBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition-all">
+                        기본 정보 및 공시가격 연혁 조회
+                    </button>
+                </div>
+            </div>
+
+            <!-- 대량 조회 섹션 -->
+            <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
+                <h2 class="text-lg font-extrabold text-slate-800 mb-2 flex items-center">
+                    <span class="w-2 h-2 bg-emerald-600 rounded-full mr-2"></span> 엑셀 대량 조회 (Batch)
+                </h2>
+                
+                <div class="mb-4 bg-amber-50 border-l-4 border-amber-400 p-3 text-amber-800 text-xs rounded-r-lg leading-relaxed">
+                    <p class="font-bold mb-1">📢 주소 입력 유의사항</p>
+                    <ul class="list-disc ml-4 space-y-1">
+                        <li><b>공동주택:</b> 주소 뒤에 쉼표(,) 후 동-호수 입력 <br><span class="text-amber-600/80 font-medium">(예: 서울 강남구 압구정로 309, 11-102)</span></li>
+                        <li><b>단독/토지:</b> 도로명 또는 지번주소 입력 (동호수 제외)</li>
+                    </ul>
+                </div>
+
+                <div class="space-y-4">
+                    <select id="bulkPropType" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none font-bold text-indigo-700">
+                        <option value="auto">🌟 자동 분류 (아파트·주택·토지 통합검색)</option>
+                        <option value="공동주택">공동주택 전용</option>
+                        <option value="단독주택">단독/개별주택 전용</option>
+                        <option value="토지">개별공시지가 전용</option>
+                    </select>
+
+                    <div class="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-8 text-center bg-slate-50/50 cursor-pointer relative group transition-colors">
+                        <input type="file" id="excelFileInput" accept=".xlsx, .xls" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="handleBulkExcel(event)">
+                        <div class="flex flex-col items-center justify-center space-y-3">
+                            <div class="bg-emerald-100 text-emerald-600 p-4 rounded-full group-hover:scale-110 transition-transform">
+                                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-slate-700 group-hover:text-emerald-600">클릭하거나 엑셀 파일을 여기에 드롭하세요</p>
+                                <p class="text-xs text-slate-400 mt-1">.xls, .xlsx 파일만 업로드 가능</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="bulk-progress-container" class="hidden space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <div class="flex justify-between text-xs font-bold">
+                            <span id="bulk-status-text" class="text-indigo-600">준비 중...</span>
+                            <span id="bulk-percentage">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-200 rounded-full h-1.5">
+                            <div id="bulk-progress-bar" class="bg-indigo-600 h-1.5 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 오른쪽: 결과 출력 영역 -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <div class="flex space-x-2 border-b border-slate-200 overflow-x-auto whitespace-nowrap hide-scrollbar">
+                <button onclick="switchTab('gongsi')" id="tab-gongsi" class="px-5 py-3 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 focus:outline-none">
+                    1. 공시가격 연혁 데이터
+                </button>
+                <button onclick="switchTab('siga')" id="tab-siga" class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none">
+                    2. 단지 내 매매/전월세 조회
+                </button>
+                <button onclick="switchTab('daejang')" id="tab-daejang" class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none">
+                    3. 건축물 / 토지 대장
+                </button>
+            </div>
+
+            <!-- 탭 1: 공시가격 컨텐츠 -->
+            <div id="content-gongsi" class="space-y-6">
+                <div id="result-container" class="hidden space-y-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
+                        <h2 class="text-lg font-extrabold text-slate-800 mb-4">기준시가 변동 추이</h2>
+                        <div class="relative h-64 w-full">
+                            <canvas id="priceChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-lg font-extrabold text-slate-800">연도별 상세 고시 데이터</h2>
+                            <button onclick="downloadExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors">
+                                공시연혁 엑셀 다운로드
+                            </button>
+                        </div>
+                        <div id="tag-container" class="flex flex-col gap-3"></div>
+                    </div>
+                </div>
+                <div id="gongsi-placeholder" class="bg-white p-12 rounded-2xl text-center text-slate-400 border border-slate-200">
+                    좌측 주소를 검색한 후 [기본 정보 및 공시가격 연혁 조회] 버튼을 눌러주세요.
+                </div>
+            </div>
+
+            <!-- 탭 2: 단지 내 실거래 종합 조회 -->
+            <div id="content-siga" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200 space-y-4">
+                    <h2 class="text-lg font-extrabold text-slate-800 flex items-center">
+                        <span class="w-2 h-2 bg-indigo-600 rounded-full mr-2"></span> 선택 단지 실거래 종합 분석
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">조회 시작 월</label>
+                            <input type="month" id="searchStartMonth" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">조회 종료 월</label>
+                            <input type="month" id="searchEndMonth" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">기본 물건 유형</label>
+                            <select id="sigaTargetType" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none font-bold text-slate-700">
+                                <option value="APT">아파트 (분양권 포함)</option>
+                                <option value="RH">연립다세대</option>
+                                <option value="OFFI">오피스텔</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                        <label class="block text-xs font-bold text-indigo-800 mb-1">💡 단지명 직접 검색 (선택사항 / 분양·입주권은 필수!)</label>
+                        <p class="text-[11px] text-indigo-600 mb-2">지번 불일치로 거래가 안 나오거나, 지번이 아직 없는 <b class="text-indigo-800">분양권/입주권</b>을 조회하시려면 여기에 단지명(예: 올림픽파크포레온)을 입력하세요.</p>
+                        <input type="text" id="searchKeyword" placeholder="단지명 키워드 입력..." class="w-full bg-white border border-indigo-200 rounded-lg px-4 py-2 text-sm font-bold focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all">
+                    </div>
+
+                    <div class="pt-2">
+                        <button onclick="fetchComplexTransactions()" id="sigaBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition-all">
+                            선택 기간 내 매매 / 전월세 / 분양·입주권 데이터 동시 스캔
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
+                    <h2 class="text-base font-extrabold text-slate-800 mb-4">거래 금액(추이) 시각화 분석</h2>
+                    <div class="relative h-64 w-full">
+                        <canvas id="sigaChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200 space-y-4">
+                    <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
+                        <div class="flex items-center gap-3">
+                            <h3 class="text-base font-extrabold text-slate-800">상세 거래 내역</h3>
+                            <!-- 🌟 신규 추가: 면적 필터 드롭다운 -->
+                            <select id="areaFilter" onchange="applyFilters()" class="bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-lg px-3 py-1.5 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-300">
+                                <option value="all">전체 면적</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-wrap gap-2 items-center">
+                            <button onclick="filterTransactions('all')" id="btn-filter-all" class="bg-indigo-600 text-white text-xs px-3 py-1.5 rounded-full font-bold border border-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm">총 0건</button>
+                            <button onclick="filterTransactions('trade')" id="btn-filter-trade" class="bg-white text-emerald-700 text-xs px-3 py-1.5 rounded-full font-bold border border-emerald-200 hover:bg-emerald-50 transition-colors shadow-sm">매매 0건</button>
+                            <button onclick="filterTransactions('rent')" id="btn-filter-rent" class="bg-white text-amber-700 text-xs px-3 py-1.5 rounded-full font-bold border border-amber-200 hover:bg-amber-50 transition-colors shadow-sm">전월세 0건</button>
+                            <button onclick="filterTransactions('silv')" id="btn-filter-silv" class="bg-white text-purple-700 text-xs px-3 py-1.5 rounded-full font-bold border border-purple-200 hover:bg-purple-50 transition-colors shadow-sm">분양·입주권 0건</button>
+                            
+                            <button onclick="downloadSigaExcel()" class="ml-auto xl:ml-2 bg-slate-800 hover:bg-slate-700 text-white text-xs px-3 py-1.5 rounded-md font-bold shadow-sm transition-colors flex items-center">
+                                <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                엑셀 다운로드
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto max-h-[600px] border border-slate-100 rounded-lg">
+                        <table class="w-full text-left border-collapse relative">
+                            <thead class="sticky top-0 bg-slate-50 shadow-sm z-10">
+                                <tr class="border-b border-slate-200 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
+                                    <th class="py-3 px-4 min-w-[90px]">계약일자</th>
+                                    <th class="py-3 px-4">유형</th>
+                                    <th class="py-3 px-4 min-w-[120px]">단지명</th>
+                                    <th class="py-3 px-4">전용면적(㎡)</th>
+                                    <th class="py-3 px-4">층수</th>
+                                    <th class="py-3 px-4 text-right">거래금액(매매/보증금)</th>
+                                    <th class="py-3 px-4 text-right">월세</th>
+                                </tr>
+                            </thead>
+                            <tbody id="siga-table-body" class="text-xs divide-y divide-slate-100 text-slate-700">
+                                <tr>
+                                    <td colspan="7" class="py-12 text-center text-slate-400 font-medium">조회 기간을 설정하고 스캔 버튼을 눌러주세요.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 🌟 탭 3: 대장 정보 추가 영역 -->
+            <div id="content-daejang" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
+                    <h2 class="text-lg font-extrabold text-slate-800 mb-4 flex items-center">
+                        <span class="w-2 h-2 bg-emerald-600 rounded-full mr-2"></span> 건축물대장 (표제부/전유부 요약)
+                    </h2>
+                    <div id="bldg-info" class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div class="p-4 bg-slate-50 rounded-xl text-center col-span-full text-slate-500">
+                            좌측에서 주소를 검색하시면 데이터가 자동으로 불러와집니다.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
+                    <h2 class="text-lg font-extrabold text-slate-800 mb-4 flex items-center">
+                        <span class="w-2 h-2 bg-blue-600 rounded-full mr-2"></span> 토지대장 (특성 요약)
+                    </h2>
+                    <div id="land-info" class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div class="p-4 bg-slate-50 rounded-xl text-center col-span-full text-slate-500">
+                            좌측에서 주소를 검색하시면 데이터가 자동으로 불러와집니다.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 🌟 상세 열람 버튼 컨테이너 -->
+                <div id="daejang-action-buttons" class="hidden mt-6">
+                    <button onclick="openDaejangModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 rounded-xl shadow-md transition-all flex justify-center items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        대장 원본 상세 내역 열람 및 다운로드
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 🌟 대장 상세 열람 모달 (엑셀/PDF 버튼 포함) -->
+    <div id="daejangModal" class="fixed inset-0 bg-slate-900/60 z-50 hidden flex flex-col items-center justify-center p-4 sm:p-6 opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl transform scale-95 transition-transform duration-300">
+            
+            <!-- 모달 헤더 -->
+            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 rounded-t-2xl">
+                <div>
+                    <h3 class="text-lg font-extrabold text-slate-800">건축물대장 / 토지대장 상세 원본</h3>
+                    <p class="text-xs text-slate-500 mt-1" id="modal-address-title">주소 데이터 불러오는 중...</p>
+                </div>
+                <button onclick="closeDaejangModal()" class="text-slate-400 hover:text-slate-700 bg-white hover:bg-slate-100 rounded-full p-2 transition-colors border border-slate-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <!-- 모달 바디 (출력 캡처 및 스크롤 영역) -->
+            <div id="daejang-print-area" class="p-6 overflow-y-auto flex-1 bg-white space-y-8 relative">
+                <!-- PDF 출력용 숨김 헤더 (평소엔 안보임) -->
+                <div id="pdf-header" class="hidden mb-6 pb-4 border-b-2 border-slate-800 text-center">
+                    <h2 class="text-2xl font-black text-slate-800 mb-2">대장 원본 상세 내역</h2>
+                    <p class="text-sm font-bold text-slate-600" id="pdf-header-address"></p>
+                </div>
+
+                <!-- 표제부 영역 -->
+                <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                    <div class="bg-emerald-50 px-4 py-3 border-b border-slate-200 flex items-center">
+                        <span class="w-2 h-2 bg-emerald-500 rounded-full mr-2"></span>
+                        <h4 class="font-bold text-emerald-800 text-sm">건축물대장 (표제부 / 단지 및 건물 전체)</h4>
+                    </div>
+                    <div class="p-0">
+                        <table class="w-full text-left border-collapse text-xs md:text-sm">
+                            <tbody id="modal-title-body" class="divide-y divide-slate-100">
+                                <!-- JS에서 주입 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 전유부 영역 (아파트만) -->
+                <div id="modal-expos-section" class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hidden">
+                    <div class="bg-indigo-50 px-4 py-3 border-b border-slate-200 flex items-center">
+                        <span class="w-2 h-2 bg-indigo-500 rounded-full mr-2"></span>
+                        <h4 class="font-bold text-indigo-800 text-sm">건축물대장 (전유부 / 세대 전용면적)</h4>
+                    </div>
+                    <div class="p-0">
+                        <table class="w-full text-left border-collapse text-xs md:text-sm">
+                            <tbody id="modal-expos-body" class="divide-y divide-slate-100">
+                                <!-- JS에서 주입 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 토지 영역 -->
+                <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                    <div class="bg-blue-50 px-4 py-3 border-b border-slate-200 flex items-center">
+                        <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                        <h4 class="font-bold text-blue-800 text-sm">토지대장 (지목 및 토지특성)</h4>
+                    </div>
+                    <div class="p-0">
+                        <table class="w-full text-left border-collapse text-xs md:text-sm">
+                            <tbody id="modal-land-body" class="divide-y divide-slate-100">
+                                <!-- JS에서 주입 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 모달 푸터 (엑셀 및 PDF 다운로드 버튼) -->
+            <div class="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-end rounded-b-2xl gap-2">
+                <button onclick="downloadDaejangExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-sm transition-all text-sm flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    엑셀 세로형 다운로드
+                </button>
+                <button onclick="downloadDaejangPDF()" id="pdfBtn" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-sm transition-all text-sm flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    현재 화면 PDF 저장
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 자바스크립트 영역 -->
+    <script>
         const VWORLD_KEY = "75321A8E-275D-32A6-82AC-B9D0D8E551FE";
         const DATA_GO_KR_KEY = "83a79624397baf59da6f5daea52c9c0478aceccf3f20b707e26f9866c85f7b8f";
         const DOMAIN = window.location.origin; 
@@ -52,7 +451,9 @@
             "itgBldCert": "지능형건축물인증점수", "crtnDay": "생성일자", "rserthqkDsgnApplyYn": "내진설계적용여부",
             "rserthqkAblty": "내진능력",
             "hoNm": "호명칭", "flrNoNm": "층명칭", "exposPubuseGbCdNm": "전유/공용구분",
-            "exposPubuseGbCd": "전유/공용구분코드", "area": "전용면적(㎡)"
+            "exposPubuseGbCd": "전유/공용구분코드", "area": "전용면적(㎡)",
+            "mainBldCnt": "주건축물수(개동)", 
+            "stndrYear": "기준연도"
         };
 
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -150,7 +551,6 @@
             return null;
         }
 
-        // 🌟 단일 조회용 초정밀 족집게 함수
         function isMatch(apiStr, targetStr) {
             if (!targetStr) return true; 
             if (apiStr === null || apiStr === undefined) return false;
@@ -167,7 +567,6 @@
             }
         }
 
-        // 🌟 1. 상가/건물 안내 배너 및 개별공시지가 연동 로직
         async function searchPriceHistory() {
             const address = document.getElementById('address').value;
             const propType = document.querySelector('input[name="propType"]:checked').value;
@@ -190,9 +589,8 @@
                 globalCurrentPnu = pnu || "1168010100100010000"; 
                 globalComplexName = ""; 
 
-                setTimeout(() => fetchDaejangInfo(globalCurrentPnu), 500);
+                fetchDaejangInfo(globalCurrentPnu);
 
-                // 상가/건물 전용 안내 배너 처리
                 let noticeBanner = document.getElementById('commercial-notice');
                 if (!noticeBanner) {
                     noticeBanner = document.createElement('div');
@@ -218,7 +616,7 @@
                 let apiUrl = ""; let priceField = "";
                 if (propType === "공동주택") { apiUrl = "https://api.vworld.kr/ned/data/getApartHousingPriceAttr"; priceField = "pblntfPc"; }
                 else if (propType === "단독주택") { apiUrl = "https://api.vworld.kr/ned/data/getIndvdHousingPriceAttr"; priceField = "pblntfPc"; }
-                else { apiUrl = "https://api.vworld.kr/ned/data/getIndvdLandPriceAttr"; priceField = "pblntfPclnd"; } // 상가/건물 및 토지는 개별공시지가
+                else { apiUrl = "https://api.vworld.kr/ned/data/getIndvdLandPriceAttr"; priceField = "pblntfPclnd"; }
 
                 const rawHistoryData = []; 
                 const filteredHistoryData = [];
@@ -300,7 +698,6 @@
             }
         }
 
-        // 🌟 상가 및 집합건물/일반건물 모두 원활하게 대응하는 대장 조회 함수
         async function fetchDaejangInfo(pnu) {
             if (!pnu || pnu.length !== 19) return;
             
@@ -370,7 +767,7 @@
             }
 
             try {
-                document.getElementById('bldg-info').innerHTML = `<div class="p-4 bg-indigo-50 text-indigo-600 rounded-xl text-center col-span-full font-bold animate-pulse">건축물대장 정보 정밀 매칭 중...</div>`;
+                document.getElementById('bldg-info').innerHTML = `<div class="p-4 bg-indigo-50 text-indigo-600 rounded-xl text-center col-span-full font-bold animate-pulse">건축물대장 정보를 불러오는 중입니다...</div>`;
                 let isApiError = false;
                 
                 let titleItem = null;
@@ -399,7 +796,6 @@
                     let fallbackItem = null;
                     let isFallbackUsed = false;
 
-                    // 상가 호수 또는 아파트 호수 조회용
                     if (rawHoVal) {
                         const hoQueries = [
                             `&hoNm=${encodeURIComponent(rawHoVal + "호")}`,
@@ -438,7 +834,6 @@
                         } catch(e) {}
                     }
 
-                    // 전유부 조회 실패 시 (일반 상가건물이거나 정보 없음)
                     if (!exposItem && (propType === "공동주택" || propType === "상가/건물")) {
                         exposItem = fallbackItem;
                         isFallbackUsed = true;
@@ -447,7 +842,6 @@
                     if (exposItem) globalExposItem = exposItem;
 
                     if (exposItem) {
-                        // 구분건물 (상가 101호, 아파트 등)
                         const useAprDay = titleItem ? formatPubDate(titleItem.useAprDay) : '-';
                         const bldNm = titleItem ? (titleItem.bldNm || '-') : '-';
                         let dongHoStr = (exposItem.dongNm ? exposItem.dongNm + " " : "") + (exposItem.hoNm || "");
@@ -470,7 +864,6 @@
                             <div class="bg-emerald-50 p-3 rounded-lg flex flex-col justify-center"><p class="text-xs text-emerald-800 font-bold mb-1">사용승인일(준공)</p><p class="text-sm font-extrabold text-slate-800">${useAprDay || '-'}</p></div>
                         `;
                     } else if (titleItem) {
-                        // 통건물 상가/일반건물
                         bldgHtml = `
                             <div class="bg-emerald-50 p-3 rounded-lg flex flex-col justify-center"><p class="text-xs text-emerald-800 font-bold mb-1">건물명 / 동명</p><p class="text-sm font-extrabold text-slate-800">${titleItem.bldNm || titleItem.dongNm || '일반건축물'}</p></div>
                             <div class="bg-emerald-50 p-3 rounded-lg flex flex-col justify-center"><p class="text-xs text-emerald-800 font-bold mb-1">주용도 / 주구조</p><p class="text-sm font-extrabold text-slate-800">${titleItem.mainPurpsCdNm || '-'} / ${titleItem.strctCdNm || '-'}</p></div>
@@ -622,7 +1015,7 @@
         }
 
         // =========================================================================
-        // 단지 실거래 조회
+        // 단지 실거래 조회 및 필터링 기능
         // =========================================================================
         function matchJibun(apiJibunStr, isSan, targetBon, targetBu) {
             if (!apiJibunStr) return false;
@@ -832,8 +1225,14 @@
                 await Promise.all(fetchTasks);
 
                 globalTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
-                updateFilterCounts();
-                filterTransactions('all');
+                
+                // 🌟 신규 추가: 면적 필터 목록 자동 생성 (소수점 유지)
+                populateAreaFilter();
+                
+                // 초기화: 전체면적, 전체유형 세팅 후 필터 적용
+                currentTransactionFilter = 'all';
+                document.getElementById('areaFilter').value = 'all';
+                applyFilters();
 
             } catch (err) {
                 alert("조회 중 오류가 발생했습니다.");
@@ -844,17 +1243,55 @@
             }
         }
 
-        function updateFilterCounts() {
-            let tradeCount = globalTransactions.filter(r => r.type === '매매').length;
-            let rentCount = globalTransactions.filter(r => r.type === '전세' || r.type === '월세').length;
-            let silvCount = globalTransactions.filter(r => r.type === '분양권' || r.type === '입주권').length;
+        // 🌟 1. 면적 드롭다운 세팅 함수 (소수점 그대로 유지, 평 환산 제거)
+        function populateAreaFilter() {
+            const areaSelect = document.getElementById('areaFilter');
             
-            document.getElementById('btn-filter-all').innerText = `총 ${globalTransactions.length}건`;
+            // 소수점 2자리까지만 기준으로 하여 부동소수점 오류 방지 및 중복 제거
+            const uniqueAreas = [...new Set(globalTransactions.map(t => Number(t.area.toFixed(2))))].sort((a, b) => a - b);
+            
+            let html = '<option value="all">전체 면적</option>';
+            uniqueAreas.forEach(area => {
+                if (area > 0) {
+                    html += `<option value="${area}">전용 ${area}㎡</option>`;
+                }
+            });
+            areaSelect.innerHTML = html;
+        }
+
+        // 🌟 2. 필터링 통합 함수
+        function applyFilters() {
+            const selectedArea = document.getElementById('areaFilter').value;
+            
+            // A. 면적 필터 적용 (부동소수점 오류 방지를 위해 toFixed(2) 값으로 비교)
+            let areaFiltered = globalTransactions;
+            if (selectedArea !== 'all') {
+                const targetArea = parseFloat(selectedArea);
+                areaFiltered = areaFiltered.filter(r => Number(r.area.toFixed(2)) === targetArea);
+            }
+
+            // B. 건수 업데이트
+            let tradeCount = areaFiltered.filter(r => r.type === '매매').length;
+            let rentCount = areaFiltered.filter(r => r.type === '전세' || r.type === '월세').length;
+            let silvCount = areaFiltered.filter(r => r.type === '분양권' || r.type === '입주권').length;
+            
+            document.getElementById('btn-filter-all').innerText = `총 ${areaFiltered.length}건`;
             document.getElementById('btn-filter-trade').innerText = `매매 ${tradeCount}건`;
             document.getElementById('btn-filter-rent').innerText = `전월세 ${rentCount}건`;
             document.getElementById('btn-filter-silv').innerText = `분양·입주권 ${silvCount}건`;
+
+            // C. 버튼(거래 유형) 필터 적용
+            let finalFiltered = areaFiltered;
+            if (currentTransactionFilter === 'trade') finalFiltered = finalFiltered.filter(r => r.type === '매매');
+            else if (currentTransactionFilter === 'rent') finalFiltered = finalFiltered.filter(r => r.type === '전세' || r.type === '월세');
+            else if (currentTransactionFilter === 'silv') finalFiltered = finalFiltered.filter(r => r.type === '분양권' || r.type === '입주권');
+
+            // D. UI 렌더링
+            renderSigaTable(finalFiltered);
+            updateSigaChart(finalFiltered, currentTransactionFilter);
         }
 
+        // 🌟 3. 버튼 클릭 시 호출
         function filterTransactions(type) {
             currentTransactionFilter = type;
             
@@ -873,16 +1310,16 @@
             else if (type === 'rent') btnRent.className = "bg-amber-500 text-white text-xs px-3 py-1.5 rounded-full font-bold border border-amber-500 hover:bg-amber-600 transition-colors shadow-sm focus:outline-none";
             else if (type === 'silv') btnSilv.className = "bg-purple-600 text-white text-xs px-3 py-1.5 rounded-full font-bold border border-purple-600 hover:bg-purple-700 transition-colors shadow-sm focus:outline-none";
 
-            let filtered = globalTransactions;
-            if (type === 'trade') filtered = globalTransactions.filter(r => r.type === '매매');
-            else if (type === 'rent') filtered = globalTransactions.filter(r => r.type === '전세' || r.type === '월세');
-            else if (type === 'silv') filtered = globalTransactions.filter(r => r.type === '분양권' || r.type === '입주권');
+            applyFilters();
+        }
 
+        // 🌟 4. 테이블 렌더링
+        function renderSigaTable(filtered) {
             const tbody = document.getElementById('siga-table-body');
             tbody.innerHTML = "";
 
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="py-12 text-center text-slate-500 font-medium">검색된 실거래가 내역이 없습니다.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="py-12 text-center text-slate-500 font-medium">선택한 조건에 맞는 실거래가 내역이 없습니다.</td></tr>`;
             } else {
                 filtered.forEach((row) => {
                     let typeBadge = '';
@@ -907,9 +1344,9 @@
                         </tr>`;
                 });
             }
-            updateSigaChart(filtered, type);
         }
 
+        // 🌟 차트 관련
         function initSigaChart(data) {
             const ctx = document.getElementById('sigaChart').getContext('2d');
             if (sigaChartInstance) { sigaChartInstance.destroy(); }
@@ -1016,7 +1453,6 @@
             XLSX.writeFile(workbook, "강승완세무사_기준시가_연혁.xlsx");
         }
 
-        // 🌟 복원된 과거의 완벽하게 동작하던 대량조회 로직 (extractNum 방식 유지)
         async function handleBulkExcel(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -1117,7 +1553,6 @@
                                     }
                                     if (items.length === 0) break;
 
-                                    // 🌟 과거에 완벽하게 작동하던 단순 extractNum 필터 로직
                                     for (const item of items) {
                                         if (probeType === "공동주택") {
                                             const itemDong = extractNum(item.dongNm);
@@ -1182,3 +1617,5 @@
             reader.readAsArrayBuffer(file);
         }
     </script>
+</body>
+</html>
