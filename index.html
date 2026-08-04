@@ -1270,27 +1270,22 @@
                 }
 
                 const fetchTasks = targetMonths.map(async (ym) => {
-    // 백엔드 경로(/api/...) 대신 공공데이터포털 원본 URL로 변경
-    const baseUrl = "https://apis.data.go.kr/1613000";
-    const tradeUrl = `${baseUrl}/${tradeApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`;
-    const rentUrl = `${baseUrl}/${rentApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`;
-    const silvUrl = `${baseUrl}/${silvApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`;
+    const tradeUrl = `/api/rtms/${tradeApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`;
+    const rentUrl = `/api/rent/${rentApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`;
+    const silvUrl = `/api/rtms/${silvApiPath}?serviceKey=${encodeURIComponent(DATA_GO_KR_KEY)}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`;
     
     try {
-        // 브라우저 차단을 막기 위해 CORS 프록시 경유
-        const getProxyUrl = (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-        
         const fetchPromises = [
-            fetch(getProxyUrl(tradeUrl)).then(res => res.json()).then(data => ({text: data.contents, dataType: 'trade'})).catch(e => ({text: null, dataType: 'trade'})),
-            fetch(getProxyUrl(rentUrl)).then(res => res.json()).then(data => ({text: data.contents, dataType: 'rent'})).catch(e => ({text: null, dataType: 'rent'}))
+            fetch(tradeUrl).then(res => ({res, dataType: 'trade'})).catch(e => ({res: null, dataType: 'trade'})),
+            fetch(rentUrl).then(res => ({res, dataType: 'rent'})).catch(e => ({res: null, dataType: 'rent'}))
         ];
-        if (includeSilv) fetchPromises.push(fetch(getProxyUrl(silvUrl)).then(res => res.json()).then(data => ({text: data.contents, dataType: 'silv'})).catch(e => ({text: null, dataType: 'silv'})));
+        if (includeSilv) fetchPromises.push(fetch(silvUrl).then(res => ({res, dataType: 'silv'})).catch(e => ({res: null, dataType: 'silv'})));
         
         const responses = await Promise.all(fetchPromises);
 
         const processResponse = async (resultObj) => {
-            if (!resultObj.text) return;
-            const text = resultObj.text;
+            if (!resultObj.res || !resultObj.res.ok) return;
+            const text = await resultObj.res.text();
                             if (text.includes("SERVICE KEY IS NOT REGISTERED ERROR")) return;
 
                             const parsedItems = parseHybridData(text);
