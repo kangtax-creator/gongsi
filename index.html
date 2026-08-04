@@ -1240,11 +1240,12 @@
                 return;
             }
 
-            btn.innerText = "데이터 안전 스캔 중 (과부하 방지 순차 추출)...";
+            btn.innerText = "데이터 안전 스캔 중 (3중 우회망 가동)...";
             btn.disabled = true;
             globalTransactions = [];
-            let lastResponseText = ""; // 🌟 디버깅: 서버 응답 원본을 캡처할 변수
+            let hasApiServerIssue = false; 
 
+            // 🌟 1. 무한 대기 원천 차단용 타임아웃 함수
             async function fetchWithTimeout(url, timeout = 8000) {
                 const controller = new AbortController();
                 const id = setTimeout(() => controller.abort(), timeout);
@@ -1256,6 +1257,39 @@
                     clearTimeout(id);
                     throw error;
                 }
+            }
+
+            // 🌟 2. 3중 방탄 통신 함수
+            async function safeFetchText(fullUrl, vercelUrl) {
+                // 1순위: 유저 개인 IP로 직접 통신 (CORS 허용 시 가장 빠름)
+                try {
+                    const res = await fetchWithTimeout(fullUrl, 4000);
+                    if (res.ok) {
+                        const text = await res.text();
+                        if (text && !text.includes("HTTP_ERROR") && !text.includes("<errMsg>")) return text;
+                    }
+                } catch (e) { /* CORS 에러 시 조용히 다음으로 패스 */ }
+
+                // 2순위: 초고속/안정형 프록시 (corsproxy.io - 무한 대기 없음)
+                try {
+                    const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(fullUrl)}`;
+                    const res = await fetchWithTimeout(proxyUrl, 6000);
+                    if (res.ok) {
+                        const text = await res.text();
+                        if (text && !text.includes("HTTP_ERROR") && !text.includes("<errMsg>")) return text;
+                    }
+                } catch (e) {}
+
+                // 3순위: 기존 Vercel 서버 (IP 차단이 풀렸을 때 작동)
+                try {
+                    const res = await fetchWithTimeout(vercelUrl, 6000);
+                    if (res.ok) {
+                        const text = await res.text();
+                        if (text && !text.includes("HTTP_ERROR") && !text.includes("<errMsg>")) return text;
+                    }
+                } catch (e) {}
+
+                return null; // 3개 다 실패하면 null
             }
 
             try {
@@ -1292,23 +1326,38 @@
                     btn.innerText = `${ym.substring(0,4)}년 ${ym.substring(4,6)}월 실거래가 스캔 중...`;
                     
                     const urlsToFetch = [
-                        { url: `/api/rtms/${tradeApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`, type: 'trade' },
-                        { url: `/api/rent/${rentApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`, type: 'rent' }
+                        { 
+                            fullUrl: `https://apis.data.go.kr/1613000/${tradeApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
+                            vercelUrl: `/api/rtms/${tradeApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
+                            type: 'trade' 
+                        },
+                        { 
+                            fullUrl: `https://apis.data.go.kr/1613000/${rentApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
+                            vercelUrl: `/api/rent/${rentApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
+                            type: 'rent' 
+                        }
                     ];
                     if (includeSilv) {
-                        urlsToFetch.push({ url: `/api/rtms/${silvApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`, type: 'silv' });
+                        urlsToFetch.push({ 
+                            fullUrl: `https://apis.data.go.kr/1613000/${silvApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
+                            vercelUrl: `/api/rtms/${silvApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
+                            type: 'silv' 
+                        });
                     }
 
                     for (const req of urlsToFetch) {
                         try {
-                            const res = await fetchWithTimeout(req.url, 8000); 
-                            if (!res.ok) continue;
+                            const text = await safeFetchText(req.fullUrl, req.vercelUrl);
                             
-                            const text = await res.text();
-                            lastResponseText = text; // 🌟 성공한 텍스트 응답을 모조리 저장해 둠
+                            // 3중 우회망이 모두 실패했다면 에러 기록
+                            if (!text) {
+                                hasApiServerIssue = true;
+                                continue;
+                            }
                             
-                            if (text.includes("SERVICE KEY IS NOT REGISTERED ERROR") || text.includes("LIMITED") || text.includes("HTTP_ERROR") || text.includes("<errMsg>")) {
-                                continue; 
+                            if (text.includes("SERVICE KEY IS NOT REGISTERED ERROR") || text.includes("LIMITED")) {
+                                hasApiServerIssue = true;
+                                break; 
                             }
 
                             const parsedItems = parseHybridData(text);
@@ -1367,21 +1416,16 @@
                         await sleep(50);
                     }
                     await sleep(100); 
-                } // end for loop
+                } 
 
                 globalTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
                 
-                if (globalTransactions.length === 0) {
-                    // 🌟 데이터가 0건일 때, 표 안쪽에 서버 원본 데이터를 통째로 띄웁니다!
-                    let safeText = lastResponseText.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                if (hasApiServerIssue && globalTransactions.length === 0) {
                     document.getElementById('siga-table-body').innerHTML = `
                         <tr>
-                            <td colspan="7" class="py-8 px-4 text-center text-slate-700">
-                                🚨 조건에 맞는 실거래가가 없습니다.<br><br>
-                                <div class="text-left bg-slate-100 p-4 rounded-lg mt-4 max-w-4xl mx-auto overflow-x-auto border border-slate-300">
-                                    <p class="text-xs font-bold text-rose-500 mb-2">🔍 [진단용 X-RAY] 국토부 서버의 실제 응답 데이터:</p>
-                                    <pre class="text-[11px] text-slate-600 whitespace-pre-wrap">${safeText.substring(0, 1500)}</pre>
-                                </div>
+                            <td colspan="7" class="py-12 text-center text-rose-500 font-bold">
+                                🚨 Vercel IP 차단 및 우회망 접속 실패로 데이터를 불러오지 못했습니다.<br>
+                                <span class="text-sm text-slate-500 font-medium mt-2 inline-block">잠시 후 다시 시도해 주세요.</span>
                             </td>
                         </tr>
                     `;
@@ -1404,6 +1448,7 @@
                 btn.disabled = false;
             }
         }
+        
         function populateAreaFilter() {
             const areaSelect = document.getElementById('areaFilter');
             const uniqueAreas = [...new Set(globalTransactions.map(t => Number(t.area.toFixed(2))))].sort((a, b) => a - b);
