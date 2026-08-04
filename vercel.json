@@ -1,12 +1,12 @@
 {
   "rewrites": [
     {
-      "source": "/api/rtms/:path*",
-      "destination": "https://apis.data.go.kr/1613000/:path*"
+      "source": "/api/rtms/(.*)",
+      "destination": "https://apis.data.go.kr/1613000/$1"
     },
     {
-      "source": "/api/rent/:path*",
-      "destination": "https://apis.data.go.kr/1613000/:path*"
+      "source": "/api/rent/(.*)",
+      "destination": "https://apis.data.go.kr/1613000/$1"
     },
     {
       "source": "/api/seoul/(.*)",
