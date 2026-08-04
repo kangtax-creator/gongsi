@@ -1284,21 +1284,24 @@ if (includeSilv) fetchPromises.push(fetch(silvUrl).then(res => ({res, dataType: 
                         const responses = await Promise.all(fetchPromises);
 
                         const processResponse = async (resultObj) => {
-    if (!resultObj.res) return;
-    
-    // 🚨 Vercel 서버나 국토부 서버 에러(404, 500 등) 발생 시 확실하게 경고창을 띄웁니다!
-    if (!resultObj.res.ok) {
-        alert(`실거래가 서버 통신 에러가 발생했습니다. (상태코드: ${resultObj.res.status})\nvercel.json 배포 상태를 다시 확인해 주세요.`);
-        return;
-    }
-    
+    if (!resultObj.res || !resultObj.res.ok) return;
     const text = await resultObj.res.text();
-    if (text.includes("SERVICE KEY IS NOT REGISTERED ERROR")) {
-        alert("국토부 API 인증키 에러입니다! (트래픽 한도 초과 또는 키 만료)");
+    
+    // 👇 이 부분만 추가해 두시면 원인을 바로 알 수 있어 속이 뻥 뚫립니다! 👇
+    if (text.includes("HTTP_ERROR") || text.includes("<errMsg>") || text.includes("DEADLINE_EXCEEDED")) {
+        alert("🚨 국토부 서버 응답 오류입니다. (일시적인 장애 또는 정기점검)"); 
         return;
     }
+    if (text.includes("LIMITED") || text.includes("EXCEEDS")) {
+        alert("🚨 국토부 실거래가 API 일일 트래픽(조회 한도)이 초과되었습니다!");
+        return;
+    }
+    // 👆 ------------------------------------------------------------- 👆
+
+    if (text.includes("SERVICE KEY IS NOT REGISTERED ERROR")) return;
 
     const parsedItems = parseHybridData(text);
+    // ... 기존 로직 계속 ...
 
                             parsedItems.forEach(item => {
                                 let isKeywordMatch = false;
