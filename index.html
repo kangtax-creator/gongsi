@@ -913,7 +913,8 @@
                 // 🌟 [1-2] 과거 토지등급 연혁 (유저님이 찾아내신 VWORLD API로 교체!)
                 globalLandGradeItems = [];
                 try {
-                    const gradeUrl = `https://api.vworld.kr/ned/data/ladfrlList?key=${VWORLD_KEY}&pnu=${pnu}&format=json&domain=${DOMAIN}`;
+                    const LAND_GRADE_KEY = "81B062B8-D228-33F5-9B8A-567937BB7AF5";
+                    const gradeUrl = `https://api.vworld.kr/ned/data/ladfrlList?key=${LAND_GRADE_KEY}&pnu=${pnu}&format=json&domain=${DOMAIN}`;
                     const gradeJson = await fetchJSONP(gradeUrl);
                     
                     let items = [];
