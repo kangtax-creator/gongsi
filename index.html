@@ -519,6 +519,7 @@
         let globalTitleItem = null;
         let globalExposItem = null;
         let globalLandItem = null;
+        let globalLandGradeItems = []; // 🌟 [추가] 토지등급 연혁을 담을 배열
 
         let globalLandUseTags = [];
         let globalViolationItems = [];
@@ -896,38 +897,54 @@
             const rawDongVal = extractNum(document.getElementById('dong').value);
             const rawHoVal = extractNum(document.getElementById('ho').value);
 
-            // 🌟 [1] 토지대장 조회 (VWORLD)
+            // 🌟 [1] 토지대장 조회 (VWORLD) 및 토지등급 (국토부)
             try {
                 const LAND_KEY = "0F6B55A5-3A01-34CF-9C24-AF454E09531E";
                 const landUrl = `https://api.vworld.kr/ned/data/getLandCharacteristics?key=${LAND_KEY}&pnu=${pnu}&format=json&domain=${DOMAIN}`;
                 const landData = await fetchJSONP(landUrl);
                 
-                let landHtml = `<div class="p-4 bg-slate-50 rounded-xl text-center col-span-full text-slate-500">조회된 토지대장 정보가 없습니다.</div>`;
                 let field = null;
                 const rootNode = landData.landCharacteristics || landData.landCharacteristicss || landData;
                 if (rootNode && rootNode.field) {
                     field = Array.isArray(rootNode.field) ? rootNode.field[0] : rootNode.field;
                 }
+                if (field) globalLandItem = field; 
 
-                if (field) {
-                    globalLandItem = field; 
-                    let aptNotice = (propType === "공동주택" || propType === "상가/건물") ? `
-                        <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg col-span-full mb-1">
-                            <p class="text-[11px] text-amber-800 font-bold">💡 지번 공통 토지대장 안내</p>
-                            <p class="text-[10px] text-amber-700 mt-0.5 leading-relaxed">토지대장 API는 지번 단위로 제공되므로 아래 면적은 <b>필지 전체의 총 토지면적</b>입니다.</p>
-                        </div>
-                    ` : '';
+                // 🌟 [1-2] 과거 토지등급 연혁 추가 호출 (국토부 토지임야대장 API)
+                globalLandGradeItems = [];
+                try {
+                    const gradeUrl = `https://apis.data.go.kr/1613000/LandNrgstInfoService/getLandGradeInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=100&pageNo=1&_type=json`;
+                    const gradeJson = await fetchWithProxy(gradeUrl);
+                    if (gradeJson?.response?.body?.items?.item) {
+                        const arr = Array.isArray(gradeJson.response.body.items.item) ? gradeJson.response.body.items.item : [gradeJson.response.body.items.item];
+                        // 날짜 최신순 정렬 (gradMdmd: 등급수정일자, landGrad: 토지등급)
+                        globalLandGradeItems = arr.sort((a, b) => parseInt(b.gradMdmd || 0) - parseInt(a.gradMdmd || 0));
+                    }
+                } catch(e) { console.error("토지등급 에러:", e); }
 
-                    landHtml = aptNotice + `
-                        <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">지목</p><p class="text-sm font-extrabold text-slate-800">${field.lndcgrCodeNm || field.lndcgrCode || '-'}</p></div>
-                        <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">필지 전체 토지면적</p><p class="text-sm font-extrabold text-slate-800">${field.lndpclAr ? Number(field.lndpclAr).toLocaleString() + ' ㎡' : '-'}</p></div>
-                        <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">용도지역</p><p class="text-sm font-extrabold text-slate-800">${field.prposArea1Nm || '-'}</p></div>
-                        <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">이용상황</p><p class="text-sm font-extrabold text-slate-800">${field.landUseSittnNm || '-'}</p></div>
-                    `;
+                let aptNotice = (propType === "공동주택" || propType === "상가/건물") ? `
+                    <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg col-span-full mb-1">
+                        <p class="text-[11px] text-amber-800 font-bold">💡 지번 공통 토지대장 안내</p>
+                        <p class="text-[10px] text-amber-700 mt-0.5 leading-relaxed">토지대장 API는 지번 단위로 제공되므로 아래 면적은 <b>필지 전체의 총 토지면적</b>입니다.</p>
+                    </div>
+                ` : '';
+
+                let landHtml = aptNotice + `
+                    <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">지목</p><p class="text-sm font-extrabold text-slate-800">${field?.lndcgrCodeNm || field?.lndcgrCode || '-'}</p></div>
+                    <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">필지 전체 토지면적</p><p class="text-sm font-extrabold text-slate-800">${field?.lndpclAr ? Number(field.lndpclAr).toLocaleString() + ' ㎡' : '-'}</p></div>
+                    <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">용도지역</p><p class="text-sm font-extrabold text-slate-800">${field?.prposArea1Nm || '-'}</p></div>
+                    <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">이용상황</p><p class="text-sm font-extrabold text-slate-800">${field?.landUseSittnNm || '-'}</p></div>
+                `;
+
+                // 화면에 토지등급 미니 요약 붙이기
+                if (globalLandGradeItems.length > 0) {
+                    let gradesHtml = globalLandGradeItems.slice(0, 4).map(g => `<div class="bg-white border border-blue-100 p-2 rounded-lg text-center shadow-sm"><p class="text-[10px] text-blue-500 font-medium">${g.gradMdmd || '-'}</p><p class="text-xs font-bold text-slate-700">${g.landGrad || '-'}등급</p></div>`).join('');
+                    landHtml += `<div class="col-span-full mt-2 p-3 bg-blue-50/50 rounded-xl border border-blue-100"><p class="text-xs font-bold text-blue-800 mb-2">과거 토지등급 연혁 요약</p><div class="grid grid-cols-4 gap-2">${gradesHtml}</div></div>`;
                 }
+                
                 document.getElementById('land-info').innerHTML = landHtml;
             } catch(e) { console.error("❌ 토지대장 에러:", e); }
-
+            
             // 🌟 [2] 토지이용계획(규제/정비구역) 조회 (VWORLD)
             try {
                 document.getElementById('land-use-info').innerHTML = `<div class="p-4 bg-purple-50 text-purple-600 rounded-xl text-center font-bold animate-pulse">규제 및 정비구역 스캔 중...</div>`;
@@ -985,13 +1002,14 @@
                 document.getElementById('land-use-info').innerHTML = `<div class="p-4 bg-amber-50 rounded-xl text-center text-amber-700 text-xs font-bold border border-amber-200">데이터가 없거나 응답이 지연되었습니다.</div>`;
             }
 
-            // 🌟 [3] 건축물대장
+            // 🌟 [3] 건축물대장 (상가 전유부 스마트 탐색 탑재)
             try {
                 document.getElementById('bldg-info').innerHTML = `<div class="p-4 bg-indigo-50 text-indigo-600 rounded-xl text-center col-span-full font-bold animate-pulse">건축물대장 정보를 불러오는 중입니다...</div>`;
                 
                 let isApiError = false;
                 let titleItem = null;
                 
+                // 표제부 호출 (기존 동일)
                 const titleUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=500&pageNo=1&_type=json`;
                 try {
                     const titleJson = await fetchWithProxy(titleUrl);
@@ -1016,40 +1034,31 @@
                 if (isApiError) {
                     bldgHtml = `<div class="p-4 bg-amber-50 border border-amber-200 rounded-xl text-center col-span-full text-amber-700 font-medium">건축물대장 API 오류가 발생했습니다.</div>`;
                 } else {
-                    if (rawHoVal) {
-                        const hoQueries = [
-                            `&hoNm=${encodeURIComponent(rawHoVal + "호")}`,
-                            `&hoNm=${encodeURIComponent("제" + rawHoVal + "호")}`,
-                            `&hoNm=${encodeURIComponent(rawHoVal)}`
-                        ];
-
-                        for (let hq of hoQueries) {
-                            const exposUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrExposPubuseAreaInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=500&pageNo=1&_type=json${hq}`;
-                            try {
-                                const exposJson = await fetchWithProxy(exposUrl);
-                                if (exposJson?.response?.body?.items?.item) {
-                                    const arr = Array.isArray(exposJson.response.body.items.item) ? exposJson.response.body.items.item : [exposJson.response.body.items.item];
-                                    const validExpos = arr.filter(i => i.exposPubuseGbCd === '1' || !(i.exposPubuseGbCdNm || '').includes('공용'));
-                                    if (validExpos.length > 0) {
-                                        if (!fallbackItem) fallbackItem = validExpos[0];
-                                        const match = validExpos.find(i => isMatch(i.dongNm, rawDongVal) || isMatch(i.bldNm, rawDongVal));
-                                        if (match) { exposItem = match; break; }
-                                    }
-                                }
-                            } catch(e) {}
-                        }
-                    }
-
-                    if (!exposItem && rawHoVal) {
-                        const fbUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrExposPubuseAreaInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=500&pageNo=1&_type=json`;
+                    // 🌟 텍스트 강제 매칭을 버리고 전체 전유부를 싹 가져와 숫자만 비교!
+                    if (propType === "공동주택" || propType === "상가/건물") {
+                        const exposUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrExposPubuseAreaInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=1000&pageNo=1&_type=json`;
                         try {
-                            const fbJson = await fetchWithProxy(fbUrl);
-                            if (fbJson?.response?.body?.items?.item) {
-                                const arr = Array.isArray(fbJson.response.body.items.item) ? fbJson.response.body.items.item : [fbJson.response.body.items.item];
+                            const exposJson = await fetchWithProxy(exposUrl);
+                            if (exposJson?.response?.body?.items?.item) {
+                                const arr = Array.isArray(exposJson.response.body.items.item) ? exposJson.response.body.items.item : [exposJson.response.body.items.item];
                                 const validExpos = arr.filter(i => i.exposPubuseGbCd === '1' || !(i.exposPubuseGbCdNm || '').includes('공용'));
-                                if (validExpos.length > 0 && !fallbackItem) fallbackItem = validExpos[0];
-                                const match = validExpos.find(i => (isMatch(i.dongNm, rawDongVal) || isMatch(i.bldNm, rawDongVal)) && isMatch(i.hoNm, rawHoVal));
-                                if (match) exposItem = match;
+                                
+                                if (validExpos.length > 0) {
+                                    fallbackItem = validExpos[0];
+                                    
+                                    // JS 숫자 필터링 (115호든 제115호든 숫자만 같으면 캐치)
+                                    const match = validExpos.find(i => {
+                                        let dOk = true; let hOk = true;
+                                        if (rawDongVal) {
+                                            dOk = (extractNum(i.dongNm) === rawDongVal) || (extractNum(i.bldNm) === rawDongVal);
+                                        }
+                                        if (rawHoVal) {
+                                            hOk = (extractNum(i.hoNm) === rawHoVal);
+                                        }
+                                        return dOk && hOk;
+                                    });
+                                    if (match) exposItem = match;
+                                }
                             }
                         } catch(e) {}
                     }
@@ -1993,6 +2002,20 @@
                 });
             } else { landBody.innerHTML = '<tr><td class="p-4 text-center text-slate-500">데이터 없음</td></tr>'; }
 
+            // 🌟 [추가] 토지등급 연혁 테이블을 모달에 동적으로 생성해서 붙여넣기
+            if (globalLandGradeItems && globalLandGradeItems.length > 0) {
+                const gradeHtmlRows = globalLandGradeItems.map(g => `<tr><td class="p-2 border-b text-center text-slate-700">${g.gradMdmd||'-'}</td><td class="p-2 border-b text-center font-bold text-blue-700">${g.landGrad||'-'}등급</td></tr>`).join('');
+                const gradeTableHtml = `
+                    <tr class="bg-blue-50/50"><td colspan="2" class="p-0 border-b">
+                        <table class="w-full text-xs">
+                            <thead class="bg-blue-100 text-blue-800"><tr><th class="py-1.5 border-b">등급수정(고시)일자</th><th class="py-1.5 border-b">토지등급</th></tr></thead>
+                            <tbody>${gradeHtmlRows}</tbody>
+                        </table>
+                    </td></tr>
+                `;
+                landBody.innerHTML += gradeTableHtml;
+            }
+
             // 4. 규제(토지이용계획)
             const useBody = document.getElementById('modal-landuse-body');
             if(globalLandUseTags && globalLandUseTags.length > 0) {
@@ -2108,6 +2131,18 @@
     if (globalTitleItem) XLSX.utils.book_append_sheet(workbook, createVerticalSheet(globalTitleItem), "건축물대장_표제부");
     if (globalExposItem) XLSX.utils.book_append_sheet(workbook, createVerticalSheet(globalExposItem), "건축물대장_전유부");
     if (globalLandItem) XLSX.utils.book_append_sheet(workbook, createVerticalSheet(globalLandItem), "토지대장_특성");
+
+    // 🌟 [추가] 토지등급 연혁 엑셀 시트 생성
+    if (globalLandGradeItems && globalLandGradeItems.length > 0) {
+        const lgRows = globalLandGradeItems.map((item, idx) => ({
+            "연번": idx + 1,
+            "등급수정일자": item.gradMdmd || '-',
+            "토지등급": item.landGrad || '-'
+        }));
+        const wsLg = XLSX.utils.json_to_sheet(lgRows);
+        wsLg['!cols'] = [{ wpx: 40 }, { wpx: 120 }, { wpx: 100 }];
+        XLSX.utils.book_append_sheet(workbook, wsLg, "토지등급_연혁");
+    }
     
     if (globalLandUseTags && globalLandUseTags.length > 0) {
         const luRows = globalLandUseTags.map((tag, idx) => ({ "연번": idx + 1, "지정_규제_내역": tag }));
