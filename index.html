@@ -1177,7 +1177,8 @@
                         }
                     } catch(e){}
 
-                    globalViolationItems = vArr.filter(i => {
+                    // 1차: 동/호수 조건에 맞는 것만 거르기
+                    let tempViolations = vArr.filter(i => {
                         let dOk = true; 
                         let hOk = true;
                         
@@ -1185,6 +1186,15 @@
                         if (rawHoVal) hOk = isMatch(i.hoNm, rawHoVal);
                         
                         return dOk && hOk;
+                    });
+
+                    // 🌟 2차: 완벽히 중복되는 위반 내역 싹 쳐내기 (Set을 이용한 중복 제거)
+                    const seenViolations = new Set();
+                    globalViolationItems = tempViolations.filter(item => {
+                        const uniqueKey = `${item.crtnDay}_${item.violtCn}`; // 날짜 + 위반내용을 합쳐서 고유 키로 만듦
+                        if (seenViolations.has(uniqueKey)) return false; // 이미 본 내용이면 버림
+                        seenViolations.add(uniqueKey); // 처음 보는 내용이면 기록하고 통과
+                        return true;
                     });
 
                     globalIsVioltBld = false;
