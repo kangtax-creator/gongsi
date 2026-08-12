@@ -2092,7 +2092,7 @@
             const landBody = document.getElementById('modal-land-body');
             landBody.innerHTML = '';
             if(globalLandItem) {
-                const keys = ['lndcgrCodeNm', 'lndpclAr', 'prposArea1Nm', 'landUseSittnNm'];
+                const keys = ['lndcgrCodeNm', 'lndpclAr', 'prposArea1Nm', 'ownerDisplay']; 
                 keys.forEach(k => {
                     if(globalLandItem[k]) landBody.innerHTML += `<tr><th class="p-2 bg-slate-50 border-b w-1/3 text-slate-600">${DAEJANG_DICT[k]||k}</th><td class="p-2 border-b text-slate-800 font-bold">${globalLandItem[k]}</td></tr>`;
                 });
