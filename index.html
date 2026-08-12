@@ -951,6 +951,28 @@
                 } catch(e) { 
                     console.error("VWORLD 토지등급 에러:", e); 
                 }
+
+                let aptNotice = (propType === "공동주택" || propType === "상가/건물") ? `
+                    <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg col-span-full mb-1">
+                        <p class="text-[11px] text-amber-800 font-bold">💡 지번 공통 토지대장 안내</p>
+                        <p class="text-[10px] text-amber-700 mt-0.5 leading-relaxed">토지대장 API는 지번 단위로 제공되므로 아래 면적은 <b>필지 전체의 총 토지면적</b>입니다.</p>
+                    </div>
+                ` : '';
+
+                let landHtml = aptNotice + `
+                    <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">지목</p><p class="text-sm font-extrabold text-slate-800">${field?.lndcgrCodeNm || field?.lndcgrCode || '-'}</p></div>
+                    <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">필지 전체 토지면적</p><p class="text-sm font-extrabold text-slate-800">${field?.lndpclAr ? Number(field.lndpclAr).toLocaleString() + ' ㎡' : '-'}</p></div>
+                    <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">용도지역</p><p class="text-sm font-extrabold text-slate-800">${field?.prposArea1Nm || '-'}</p></div>
+                    <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">이용상황</p><p class="text-sm font-extrabold text-slate-800">${field?.landUseSittnNm || '-'}</p></div>
+                `;
+
+                if (globalLandGradeItems.length > 0) {
+                    let gradesHtml = globalLandGradeItems.slice(0, 4).map(g => `<div class="bg-white border border-blue-100 p-2 rounded-lg text-center shadow-sm"><p class="text-[10px] text-blue-500 font-medium">${g.gradMdmd || '-'}</p><p class="text-xs font-bold text-slate-700">${g.landGrad || '-'}등급</p></div>`).join('');
+                    landHtml += `<div class="col-span-full mt-2 p-3 bg-blue-50/50 rounded-xl border border-blue-100"><p class="text-xs font-bold text-blue-800 mb-2">과거 토지등급 연혁 요약</p><div class="grid grid-cols-4 gap-2">${gradesHtml}</div></div>`;
+                }
+                
+                document.getElementById('land-info').innerHTML = landHtml;
+            } catch(e) { console.error("❌ 토지대장 에러:", e); }
             
             // 🌟 [2] 토지이용계획(규제/정비구역) 조회 (VWORLD)
             try {
