@@ -565,7 +565,8 @@
             "pblntfPclnd": "개별공시지가(원/㎡)","ladSn": "토지일련번호","regstrSeCodeNm": "대장구분",
             "regstrSeCode": "대장구분코드","ldCodeNm": "법정동명","ldCode": "법정동코드",
             "prposArea1": "용도지역1코드","prposArea2": "용도지역2코드","mnnmSlno": "본번-부번",
-            "stdrMt": "기준월","lastUpdtDt": "데이터최종수정일","stdrYear": "기준연도","roadSideCode": "도로접면코드"
+            "stdrMt": "기준월","lastUpdtDt": "데이터최종수정일","stdrYear": "기준연도","roadSideCode": "도로접면코드",
+            "ownerDisplay": "소유형태 / 공유인"
         };
 
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -934,6 +935,7 @@
                 } else if (ownerType !== "-") {
                     ownerDisplay = `${ownerType} (단독)`;
                 }
+                if (globalLandItem) globalLandItem.ownerDisplay = ownerDisplay;
 
                 // =================================================================
                 // 🌟 [1-2] 과거 토지등급 연혁 조회 (VWORLD 최종 완성본)
