@@ -916,6 +916,7 @@
                 // =================================================================
                 let ownerType = "-";
                 let coOwnerCnt = "0";
+                let lastUpdtDt = "";
                 try {
                     const LAND_LIST_KEY = "81B062B8-D228-33F5-9B8A-567937BB7AF5"; // 👈 앞서 발굴하신 키
                     const listUrl = `https://api.vworld.kr/ned/data/ladfrlList?key=${LAND_LIST_KEY}&pnu=${pnu}&format=json&domain=${DOMAIN}`;
@@ -925,6 +926,7 @@
                         const fieldData = Array.isArray(listNode.ladfrlVOList) ? listNode.ladfrlVOList[0] : listNode.ladfrlVOList;
                         ownerType = fieldData.posesnSeCodeNm || "-";
                         coOwnerCnt = fieldData.cnrsPsnCo || "0";
+                        lastUpdtDt = fieldData.lastUpdtDt || "";
                     }
                 } catch(e) { console.error("VWORLD 소유정보 에러:", e); }
 
@@ -935,7 +937,10 @@
                 } else if (ownerType !== "-") {
                     ownerDisplay = `${ownerType} (단독)`;
                 }
-                if (globalLandItem) globalLandItem.ownerDisplay = ownerDisplay;
+                if (globalLandItem) {
+                    globalLandItem.ownerDisplay = ownerDisplay;
+                    if (lastUpdtDt) globalLandItem.lastUpdtDt = lastUpdtDt;
+                }
 
                 // =================================================================
                 // 🌟 [1-2] 과거 토지등급 연혁 조회 (VWORLD 최종 완성본)
@@ -983,6 +988,23 @@
                     <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">용도지역</p><p class="text-sm font-extrabold text-slate-800">${field?.prposArea1Nm || '-'}</p></div>
                     <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">소유형태 / 공유인</p><p class="text-sm font-extrabold text-slate-800">${ownerDisplay}</p></div>
                 `;
+                // 🌟 [추가] 파란 박스 밑에 조그맣게 갱신일자 달아주기
+                if (lastUpdtDt) {
+                    landHtml += `<div class="col-span-full text-right mt-0.5 mb-1"><p class="text-[10px] text-slate-400 font-medium">※ 토지대장 갱신일자: ${lastUpdtDt}</p></div>`;
+                }
+
+                // 화면에 토지등급 미니 요약 붙이기 (모든 연혁 무제한 표출)
+                if (globalLandGradeItems.length > 0) {
+                    let gradesHtml = globalLandGradeItems.map(g => {
+                        return `<div class="bg-white border border-blue-100 p-2 rounded-lg text-center shadow-sm"><p class="text-[10px] text-blue-500 font-medium">${g.gradMdmd || '-'}</p><p class="text-xs font-bold text-slate-700">${g.landGrad || '-'}등급</p></div>`;
+                    }).join('');
+                    
+                    landHtml += `
+                        <div class="col-span-full mt-2 p-3 bg-blue-50/50 rounded-xl border border-blue-100">
+                            <p class="text-xs font-bold text-blue-800 mb-2">과거 토지등급 연혁 전체</p>
+                            <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">${gradesHtml}</div>
+                        </div>`;
+                }
 
                 // 화면에 토지등급 미니 요약 붙이기 (모든 연혁 무제한 표출)
                 if (globalLandGradeItems.length > 0) {
