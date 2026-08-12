@@ -910,50 +910,47 @@
                 }
                 if (field) globalLandItem = field; 
 
-                // 🌟 [1-2] 과거 토지등급 연혁 (유저님이 찾아내신 VWORLD API로 교체!)
+                // =================================================================
+                // 🌟 [1-2] 과거 토지등급 연혁 (VWORLD ladfrlList 전용 X-RAY 모드)
+                // =================================================================
                 globalLandGradeItems = [];
                 try {
                     const LAND_GRADE_KEY = "81B062B8-D228-33F5-9B8A-567937BB7AF5";
                     const gradeUrl = `https://api.vworld.kr/ned/data/ladfrlList?key=${LAND_GRADE_KEY}&pnu=${pnu}&format=json&domain=${DOMAIN}`;
                     const gradeJson = await fetchJSONP(gradeUrl);
                     
+                    console.log("🔍 VWORLD 토지임야목록 원본 응답:", gradeJson);
+                    
                     let items = [];
-                    // VWORLD 응답 구조 대응
-                    const listNode = gradeJson.ladfrlList || gradeJson.ladfrlLists;
+                    // VWORLD 데이터 껍데기 벗기기
+                    const listNode = gradeJson.ladfrlList || gradeJson.ladfrlLists || gradeJson;
                     if (listNode && listNode.field) {
                         items = Array.isArray(listNode.field) ? listNode.field : [listNode.field];
                     }
 
-                    if (items.length > 0) {
-                        // 날짜와 등급이 있는 데이터만 골라 최신순 정렬
+                    // 기존 필드명(gradMdmd, landGrad)이 브이월드에도 똑같이 존재할 경우
+                    if (items.length > 0 && items[0].gradMdmd) {
                         globalLandGradeItems = items
                             .filter(i => i.gradMdmd && i.landGrad)
                             .sort((a, b) => parseInt(b.gradMdmd) - parseInt(a.gradMdmd));
+                    } 
+                    // 필드명이 다르거나 구조가 달라서 못 찾았을 경우 (화면에 X-RAY 강제 출력)
+                    else {
+                        setTimeout(() => {
+                            const landInfoDiv = document.getElementById('land-info');
+                            if(landInfoDiv) {
+                                landInfoDiv.innerHTML += `
+                                    <div class="col-span-full mt-2 p-3 bg-rose-50 rounded-xl border border-rose-200">
+                                        <p class="text-xs font-bold text-rose-700">🚨 VWORLD API 응답 원본 (필드명 확인용 X-RAY):</p>
+                                        <p class="text-[11px] text-rose-600 mt-1 break-all">${JSON.stringify(gradeJson).substring(0, 1000)}...</p>
+                                    </div>
+                                `;
+                            }
+                        }, 500);
                     }
-                } catch(e) { console.error("VWORLD 토지등급 에러:", e); }
-
-                let aptNotice = (propType === "공동주택" || propType === "상가/건물") ? `
-                    <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg col-span-full mb-1">
-                        <p class="text-[11px] text-amber-800 font-bold">💡 지번 공통 토지대장 안내</p>
-                        <p class="text-[10px] text-amber-700 mt-0.5 leading-relaxed">토지대장 API는 지번 단위로 제공되므로 아래 면적은 <b>필지 전체의 총 토지면적</b>입니다.</p>
-                    </div>
-                ` : '';
-
-                let landHtml = aptNotice + `
-                    <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">지목</p><p class="text-sm font-extrabold text-slate-800">${field?.lndcgrCodeNm || field?.lndcgrCode || '-'}</p></div>
-                    <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">필지 전체 토지면적</p><p class="text-sm font-extrabold text-slate-800">${field?.lndpclAr ? Number(field.lndpclAr).toLocaleString() + ' ㎡' : '-'}</p></div>
-                    <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">용도지역</p><p class="text-sm font-extrabold text-slate-800">${field?.prposArea1Nm || '-'}</p></div>
-                    <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">이용상황</p><p class="text-sm font-extrabold text-slate-800">${field?.landUseSittnNm || '-'}</p></div>
-                `;
-
-                // 화면에 토지등급 미니 요약 붙이기
-                if (globalLandGradeItems.length > 0) {
-                    let gradesHtml = globalLandGradeItems.slice(0, 4).map(g => `<div class="bg-white border border-blue-100 p-2 rounded-lg text-center shadow-sm"><p class="text-[10px] text-blue-500 font-medium">${g.gradMdmd || '-'}</p><p class="text-xs font-bold text-slate-700">${g.landGrad || '-'}등급</p></div>`).join('');
-                    landHtml += `<div class="col-span-full mt-2 p-3 bg-blue-50/50 rounded-xl border border-blue-100"><p class="text-xs font-bold text-blue-800 mb-2">과거 토지등급 연혁 요약</p><div class="grid grid-cols-4 gap-2">${gradesHtml}</div></div>`;
+                } catch(e) { 
+                    console.error("VWORLD 토지등급 에러:", e); 
                 }
-                
-                document.getElementById('land-info').innerHTML = landHtml;
-            } catch(e) { console.error("❌ 토지대장 에러:", e); }
             
             // 🌟 [2] 토지이용계획(규제/정비구역) 조회 (VWORLD)
             try {
