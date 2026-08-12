@@ -936,7 +936,7 @@
                 }
 
                 // =================================================================
-                // 🌟 [1-2] 과거 토지등급 연혁 조회 (X-RAY 강제 출력 모드)
+                // 🌟 [1-2] 과거 토지등급 연혁 조회 (VWORLD 최종 완성본)
                 // =================================================================
                 globalLandGradeItems = [];
                 try {
@@ -945,31 +945,29 @@
                     const gradeJson = await fetchJSONP(gradeUrl);
                     
                     let items = [];
-                    const listNode = gradeJson.ladgrdVOList || gradeJson.ladgrdList || gradeJson;
+                    const listNode = gradeJson.ladgrdVOList;
                     if (listNode && listNode.ladgrdVOList) {
                         items = Array.isArray(listNode.ladgrdVOList) ? listNode.ladgrdVOList : [listNode.ladgrdVOList];
-                    } else if (listNode && listNode.field) {
-                        items = Array.isArray(listNode.field) ? listNode.field : [listNode.field];
                     }
 
-                    if (items.length > 0 && items[0]) {
-                        globalLandGradeItems = items; // 필터링 없이 일단 싹 다 담습니다!
+                    if (items.length > 0) {
+                        // 🌟 VWORLD 이름표(ladGradChangeDe, ladGrad)를 우리 앱 표준(gradMdmd, landGrad)으로 강제 번역!
+                        globalLandGradeItems = items
+                            .filter(i => i.ladGradChangeDe && i.ladGrad)
+                            .map(i => ({
+                                gradMdmd: i.ladGradChangeDe, // 예: "1980-05-14" (이미 하이픈이 있어서 더 편합니다)
+                                landGrad: i.ladGrad
+                            }))
+                            .sort((a, b) => {
+                                // 하이픈(-)을 임시로 지우고 숫자로 만들어서 최신순 정렬
+                                let dateA = parseInt(a.gradMdmd.replace(/-/g, '')) || 0;
+                                let dateB = parseInt(b.gradMdmd.replace(/-/g, '')) || 0;
+                                return dateB - dateA; 
+                            });
                     }
-
-                    // 🚨 무조건 X-RAY 박스를 띄워서 원본 데이터 이름표를 눈으로 확인합니다!
-                    setTimeout(() => {
-                        const landInfoDiv = document.getElementById('land-info');
-                        if(landInfoDiv) {
-                            landInfoDiv.innerHTML += `
-                                <div class="col-span-full mt-2 p-3 bg-amber-50 rounded-xl border border-amber-200">
-                                    <p class="text-xs font-bold text-amber-700">🚨 토지등급 API X-RAY (필드명 확인용 강제 출력):</p>
-                                    <p class="text-[11px] text-amber-600 mt-1 break-all">${JSON.stringify(gradeJson).substring(0, 1000)}</p>
-                                </div>
-                            `;
-                        }
-                    }, 500);
                 } catch(e) { console.error("VWORLD 토지등급 에러:", e); }
                 // =================================================================
+
                 let aptNotice = (propType === "공동주택" || propType === "상가/건물") ? `
                     <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg col-span-full mb-1">
                         <p class="text-[11px] text-amber-800 font-bold">💡 지번 공통 토지대장 안내</p>
@@ -977,7 +975,6 @@
                     </div>
                 ` : '';
 
-                // 기존 '이용상황' 칸을 유저님이 발굴하신 '소유형태/공유인'으로 바꿨습니다!
                 let landHtml = aptNotice + `
                     <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">지목</p><p class="text-sm font-extrabold text-slate-800">${field?.lndcgrCodeNm || field?.lndcgrCode || '-'}</p></div>
                     <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">필지 전체 토지면적</p><p class="text-sm font-extrabold text-slate-800">${field?.lndpclAr ? Number(field.lndpclAr).toLocaleString() + ' ㎡' : '-'}</p></div>
@@ -985,12 +982,10 @@
                     <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">소유형태 / 공유인</p><p class="text-sm font-extrabold text-slate-800">${ownerDisplay}</p></div>
                 `;
 
-                // 화면에 토지등급 미니 요약 붙이기 (날짜에 짝대기[-] 넣어서 예쁘게 출력)
+                // 화면에 토지등급 미니 요약 붙이기 (브이월드는 이미 날짜가 예쁘게 세팅되어 출력하기 아주 좋습니다)
                 if (globalLandGradeItems.length > 0) {
                     let gradesHtml = globalLandGradeItems.slice(0, 4).map(g => {
-                        let ymd = String(g.gradMdmd || '');
-                        if(ymd.length === 8) ymd = ymd.substring(0,4) + '-' + ymd.substring(4,6) + '-' + ymd.substring(6,8);
-                        return `<div class="bg-white border border-blue-100 p-2 rounded-lg text-center shadow-sm"><p class="text-[10px] text-blue-500 font-medium">${ymd || '-'}</p><p class="text-xs font-bold text-slate-700">${g.landGrad || '-'}등급</p></div>`;
+                        return `<div class="bg-white border border-blue-100 p-2 rounded-lg text-center shadow-sm"><p class="text-[10px] text-blue-500 font-medium">${g.gradMdmd || '-'}</p><p class="text-xs font-bold text-slate-700">${g.landGrad || '-'}등급</p></div>`;
                     }).join('');
                     landHtml += `<div class="col-span-full mt-2 p-3 bg-blue-50/50 rounded-xl border border-blue-100"><p class="text-xs font-bold text-blue-800 mb-2">과거 토지등급 연혁 요약</p><div class="grid grid-cols-4 gap-2">${gradesHtml}</div></div>`;
                 }
