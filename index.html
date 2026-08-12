@@ -988,32 +988,17 @@
                     <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">용도지역</p><p class="text-sm font-extrabold text-slate-800">${field?.prposArea1Nm || '-'}</p></div>
                     <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-blue-800 font-bold mb-1">소유형태 / 공유인</p><p class="text-sm font-extrabold text-slate-800">${ownerDisplay}</p></div>
                 `;
-                // 🌟 [추가] 파란 박스 밑에 조그맣게 갱신일자 달아주기
+                // 🌟 [수정] 갱신일자 폰트 크기를 키우고 더 진하고 굵게 변경했습니다
                 if (lastUpdtDt) {
-                    landHtml += `<div class="col-span-full text-right mt-0.5 mb-1"><p class="text-[10px] text-slate-400 font-medium">※ 토지대장 갱신일자: ${lastUpdtDt}</p></div>`;
+                    landHtml += `<div class="col-span-full text-right mt-1 mb-2"><p class="text-xs text-slate-600 font-bold">※ 토지대장 갱신일자: ${lastUpdtDt}</p></div>`;
                 }
 
-                // 화면에 토지등급 미니 요약 붙이기 (모든 연혁 무제한 표출)
+                // 화면에 토지등급 미니 요약 붙이기
                 if (globalLandGradeItems.length > 0) {
                     let gradesHtml = globalLandGradeItems.map(g => {
                         return `<div class="bg-white border border-blue-100 p-2 rounded-lg text-center shadow-sm"><p class="text-[10px] text-blue-500 font-medium">${g.gradMdmd || '-'}</p><p class="text-xs font-bold text-slate-700">${g.landGrad || '-'}등급</p></div>`;
                     }).join('');
                     
-                    landHtml += `
-                        <div class="col-span-full mt-2 p-3 bg-blue-50/50 rounded-xl border border-blue-100">
-                            <p class="text-xs font-bold text-blue-800 mb-2">과거 토지등급 연혁 전체</p>
-                            <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">${gradesHtml}</div>
-                        </div>`;
-                }
-
-                // 화면에 토지등급 미니 요약 붙이기 (모든 연혁 무제한 표출)
-                if (globalLandGradeItems.length > 0) {
-                    // slice(0, 4)를 빼버려서 8개든 10개든 있는 대로 다 가져옵니다.
-                    let gradesHtml = globalLandGradeItems.map(g => {
-                        return `<div class="bg-white border border-blue-100 p-2 rounded-lg text-center shadow-sm"><p class="text-[10px] text-blue-500 font-medium">${g.gradMdmd || '-'}</p><p class="text-xs font-bold text-slate-700">${g.landGrad || '-'}등급</p></div>`;
-                    }).join('');
-                    
-                    // grid-cols-4 (고정 4칸) 대신, 화면 크기에 따라 3칸~5칸으로 유연하게 늘어나고 다음 줄로 넘어가는 grid 속성을 적용합니다.
                     landHtml += `
                         <div class="col-span-full mt-2 p-3 bg-blue-50/50 rounded-xl border border-blue-100">
                             <p class="text-xs font-bold text-blue-800 mb-2">과거 토지등급 연혁 전체</p>
