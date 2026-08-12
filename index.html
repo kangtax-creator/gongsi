@@ -936,7 +936,7 @@
                 }
 
                 // =================================================================
-                // 🌟 [1-2] 과거 토지등급 연혁 조회 (X-RAY 진단 모드)
+                // 🌟 [1-2] 과거 토지등급 연혁 조회 (X-RAY 강제 출력 모드)
                 // =================================================================
                 globalLandGradeItems = [];
                 try {
@@ -945,7 +945,6 @@
                     const gradeJson = await fetchJSONP(gradeUrl);
                     
                     let items = [];
-                    // VWORLD 데이터 포장지 뜯기 (다양한 경우의 수 대비)
                     const listNode = gradeJson.ladgrdVOList || gradeJson.ladgrdList || gradeJson;
                     if (listNode && listNode.ladgrdVOList) {
                         items = Array.isArray(listNode.ladgrdVOList) ? listNode.ladgrdVOList : [listNode.ladgrdVOList];
@@ -953,29 +952,24 @@
                         items = Array.isArray(listNode.field) ? listNode.field : [listNode.field];
                     }
 
-                    // 여기서 데이터가 잡히면 정상 출력!
                     if (items.length > 0 && items[0]) {
-                        // 필드명이 mdmd, gradeDt 등 다양할 수 있으므로 강제 필터링 제거하고 일단 다 담습니다.
-                        globalLandGradeItems = items;
+                        globalLandGradeItems = items; // 필터링 없이 일단 싹 다 담습니다!
                     }
 
-                    // 🚨 데이터가 텅 비었거나 필드명을 못 찾았을 경우 화면에 강제 출력!
-                    if (globalLandGradeItems.length === 0) {
-                        setTimeout(() => {
-                            const landInfoDiv = document.getElementById('land-info');
-                            if(landInfoDiv) {
-                                landInfoDiv.innerHTML += `
-                                    <div class="col-span-full mt-2 p-3 bg-amber-50 rounded-xl border border-amber-200">
-                                        <p class="text-xs font-bold text-amber-700">🚨 토지등급 API X-RAY (필드명 확인용):</p>
-                                        <p class="text-[11px] text-amber-600 mt-1 break-all">${JSON.stringify(gradeJson).substring(0, 800)}</p>
-                                    </div>
-                                `;
-                            }
-                        }, 500);
-                    }
+                    // 🚨 무조건 X-RAY 박스를 띄워서 원본 데이터 이름표를 눈으로 확인합니다!
+                    setTimeout(() => {
+                        const landInfoDiv = document.getElementById('land-info');
+                        if(landInfoDiv) {
+                            landInfoDiv.innerHTML += `
+                                <div class="col-span-full mt-2 p-3 bg-amber-50 rounded-xl border border-amber-200">
+                                    <p class="text-xs font-bold text-amber-700">🚨 토지등급 API X-RAY (필드명 확인용 강제 출력):</p>
+                                    <p class="text-[11px] text-amber-600 mt-1 break-all">${JSON.stringify(gradeJson).substring(0, 1000)}</p>
+                                </div>
+                            `;
+                        }
+                    }, 500);
                 } catch(e) { console.error("VWORLD 토지등급 에러:", e); }
                 // =================================================================
-
                 let aptNotice = (propType === "공동주택" || propType === "상가/건물") ? `
                     <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg col-span-full mb-1">
                         <p class="text-[11px] text-amber-800 font-bold">💡 지번 공통 토지대장 안내</p>
