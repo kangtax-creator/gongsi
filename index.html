@@ -919,9 +919,9 @@
                     const LAND_LIST_KEY = "81B062B8-D228-33F5-9B8A-567937BB7AF5"; // 👈 앞서 발굴하신 키
                     const listUrl = `https://api.vworld.kr/ned/data/ladfrlList?key=${LAND_LIST_KEY}&pnu=${pnu}&format=json&domain=${DOMAIN}`;
                     const listJson = await fetchJSONP(listUrl);
-                    const listNode = listJson.ladfrlList || listJson.ladfrlLists;
-                    if (listNode && listNode.field) {
-                        const fieldData = Array.isArray(listNode.field) ? listNode.field[0] : listNode.field;
+                    const listNode = listJson.ladfrlVOList;
+                    if (listNode && listNode.ladfrlVOList) {
+                        const fieldData = Array.isArray(listNode.ladfrlVOList) ? listNode.ladfrlVOList[0] : listNode.ladfrlVOList;
                         ownerType = fieldData.posesnSeCodeNm || "-";
                         coOwnerCnt = fieldData.cnrsPsnCo || "0";
                     }
@@ -944,10 +944,10 @@
                     const gradeUrl = `https://api.vworld.kr/ned/data/ladgrdList?key=${LAND_GRADE_KEY}&pnu=${pnu}&format=json&domain=${DOMAIN}`;
                     const gradeJson = await fetchJSONP(gradeUrl);
                     
-                    let items = [];
-                    const listNode = gradeJson.ladgrdList || gradeJson.ladgrdLists || gradeJson;
-                    if (listNode && listNode.field) {
-                        items = Array.isArray(listNode.field) ? listNode.field : [listNode.field];
+                   let items = [];
+                    const listNode = gradeJson.ladgrdVOList;
+                    if (listNode && listNode.ladgrdVOList) {
+                        items = Array.isArray(listNode.ladgrdVOList) ? listNode.ladgrdVOList : [listNode.ladgrdVOList];
                     }
 
                     if (items.length > 0) {
