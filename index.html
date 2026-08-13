@@ -1305,10 +1305,10 @@
                 
                 if (Array.isArray(items) && items.length > 0) {
                     items.forEach(item => {
-                        let umdNm = String(item.umdNm || item.법정동 || "").trim();
-                        let jibun = String(item.jibun || item.지번 || "").trim();
-                        let purps = String(item.purps || item.건물주용도 || "").trim();
-                        let bldNm = String(item.aptNm || item.bldNm || item.mhouseNm || item.offiNm || item.단지명 || item.건물명 || item.아파트 || item.연립다세대 || item.단지 || "").trim();
+                       let umdNm = String(item.umdNm || item.dongNm || item.dong || item.sggNm || item.법정동 || "").trim();
+                        let jibun = String(item.jibun || item.bunji || item.지번 || "").trim();
+                        let purps = String(item.purps || item.purpsNm || item.건물주용도 || item.용도 || "").trim();
+                        let bldNm = String(item.bldgNm || item.bldNm || item.aptNm || item.mhouseNm || item.offiNm || item.단지명 || item.건물명 || "").trim();
                         
                         let regionStr = (umdNm && jibun) ? `${umdNm} ${jibun}` : umdNm;
                         let complexName = "";
@@ -1320,7 +1320,7 @@
                         extractedItems.push({
                             dealAmount: String(item.dealAmount || item.거래금액 || item.deposit || item.보증금액 || "0"),
                             monthly: String(item.monthlyRent || item.월세금액 || "0"),
-                            area: parseFloat(item.bldMarea || item.건물면적 || item.plutAr || item.대지면적 || item.excluUseAr || item.전용면적 || item.area || "0"),
+                            area: parseFloat(item.bldgMarea || item.bldMarea || item.bldgArea || item.totArea || item.plutAr || item.건물면적 || item.excluUseAr || item.전용면적 || item.area || "0"),
                             year: String(item.dealYear || item.년 || ""),
                             month: String(item.dealMonth || item.월 || ""),
                             day: String(item.dealDay || item.일 || "1").split('~')[0].trim(),
@@ -1347,23 +1347,28 @@
             };
 
             for (let item of xmlItems) {
-                let purps = getText(item, ["purps", "건물주용도"]);
-                let bldNm = getText(item, ["bldNm", "건물명", "aptNm", "mhouseNm", "offiNm", "단지명", "아파트", "연립다세대", "단지"]);
+                let umdNm = getText(item, ["umdNm", "dongNm", "dong", "sggNm", "법정동"]).trim();
+                let jibun = getText(item, ["jibun", "bunji", "지번"]).trim();
+                let purps = getText(item, ["purps", "purpsNm", "건물주용도", "용도"]).trim();
+                let bldNm = getText(item, ["bldgNm", "bldNm", "건물명", "aptNm", "단지명"]).trim();
                 
-                let complexName = bldNm;
-                if (!complexName && purps) complexName = `[${purps}]`;
-                else if (complexName && purps) complexName = `[${purps}] ${complexName}`;
+                let regionStr = (umdNm && jibun) ? `${umdNm} ${jibun}` : umdNm;
+                let complexName = "";
+                if (regionStr) complexName += `${regionStr} `;
+                if (purps) complexName += `[${purps}] `;
+                if (bldNm) complexName += bldNm;
+                if (!complexName.trim()) complexName = "-";
                 
                 extractedItems.push({
                     dealAmount: getText(item, ["dealAmount", "거래금액", "deposit", "보증금액"]) || "0",
                     monthly: getText(item, ["monthlyRent", "월세금액"]) || "0",
-                    area: parseFloat(getText(item, ["bldMarea", "건물면적", "excluUseAr", "전용면적"]) || "0"),
+                    area: parseFloat(getText(item, ["bldgMarea", "bldMarea", "bldgArea", "totArea", "plutAr", "건물면적", "excluUseAr", "전용면적"]) || "0"),
                     year: getText(item, ["dealYear", "년"]),
                     month: getText(item, ["dealMonth", "월"]),
                     day: (getText(item, ["dealDay", "일"]) || "1").split('~')[0].trim(),
-                    complexName: complexName,
-                    jibun: getText(item, ["jibun", "지번"]),
-                    floor: getText(item, ["floor", "층"]) || "-",
+                    complexName: complexName.trim(),
+                    jibun: jibun,
+                    floor: getText(item, ["flr", "floor", "층"]) || "-",
                     ownershipGbn: getText(item, ["ownershipGbn", "구분"]) || ""
                 });
             }
@@ -2358,6 +2363,33 @@
     const addressValue = document.getElementById('address') ? document.getElementById('address').value : '상세내역';
     XLSX.writeFile(workbook, `강승완세무사_실거래가_${addressValue}.xlsx`);
 }
+        // =================================================================
+        // 🌟 [UI 편의성] 부동산 유형(라디오 버튼) 변경 시 동/호수 입력칸 자동 숨김 처리
+        // =================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            const propRadios = document.querySelectorAll('input[name="propType"]');
+            
+            // 동/호수 입력칸을 찾습니다
+            const dongInput = document.getElementById('dongInput') || document.querySelector('input[placeholder*="동"]');
+            const hoInput = document.getElementById('hoInput') || document.querySelector('input[placeholder*="호"]');
+            
+            // 동/호수 칸을 감싸고 있는 껍데기(div)를 찾습니다
+            const dongHoContainer = dongInput ? dongInput.closest('div.flex') || dongInput.parentElement : null;
+
+            if (propRadios && dongHoContainer) {
+                propRadios.forEach(radio => {
+                    radio.addEventListener('change', (e) => {
+                        if (e.target.value === "공동주택") {
+                            dongHoContainer.style.display = ""; // 다시 보이기
+                        } else {
+                            if (dongInput) dongInput.value = "";
+                            if (hoInput) hoInput.value = "";
+                            dongHoContainer.style.display = "none"; // 단독/상가/토지일 땐 숨기기
+                        }
+                    });
+                });
+            }
+        });
     </script>
 </body>
 </html>
