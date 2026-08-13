@@ -1008,6 +1008,10 @@
                 }
                 
                 document.getElementById('land-info').innerHTML = landHtml;
+                const sigaSelect = document.getElementById('sigaTargetType');
+                if (sigaSelect && typeof propType !== 'undefined') {
+                    sigaSelect.value = (propType === "상가/건물" || propType === "단독/다가구") ? "NRG" : "APT";
+                }
             } catch(e) { console.error("❌ 토지대장 에러:", e); }
             
             // 🌟 [2] 토지이용계획(규제/정비구역) 조회 (VWORLD)
@@ -1301,22 +1305,28 @@
                 
                 if (Array.isArray(items) && items.length > 0) {
                     items.forEach(item => {
-                        let purps = String(item.purps || item.건물주용도 || "");
-                        let bldNm = String(item.aptNm || item.bldNm || item.mhouseNm || item.offiNm || item.단지명 || item.건물명 || item.아파트 || item.연립다세대 || item.단지 || "");
-                        let complexName = bldNm;
-                        if (!complexName && purps) complexName = `[${purps}]`;
-                        else if (complexName && purps) complexName = `[${purps}] ${complexName}`;
+                        let umdNm = String(item.umdNm || item.법정동 || "").trim();
+                        let jibun = String(item.jibun || item.지번 || "").trim();
+                        let purps = String(item.purps || item.건물주용도 || "").trim();
+                        let bldNm = String(item.aptNm || item.bldNm || item.mhouseNm || item.offiNm || item.단지명 || item.건물명 || item.아파트 || item.연립다세대 || item.단지 || "").trim();
+                        
+                        let regionStr = (umdNm && jibun) ? `${umdNm} ${jibun}` : umdNm;
+                        let complexName = "";
+                        if (regionStr) complexName += `${regionStr} `;
+                        if (purps) complexName += `[${purps}] `;
+                        if (bldNm) complexName += bldNm;
+                        if (!complexName.trim()) complexName = "-";
                         
                         extractedItems.push({
                             dealAmount: String(item.dealAmount || item.거래금액 || item.deposit || item.보증금액 || "0"),
                             monthly: String(item.monthlyRent || item.월세금액 || "0"),
-                            area: parseFloat(item.bldMarea || item.건물면적 || item.excluUseAr || item.전용면적 || "0"),
+                            area: parseFloat(item.bldMarea || item.건물면적 || item.plutAr || item.대지면적 || item.excluUseAr || item.전용면적 || item.area || "0"),
                             year: String(item.dealYear || item.년 || ""),
                             month: String(item.dealMonth || item.월 || ""),
                             day: String(item.dealDay || item.일 || "1").split('~')[0].trim(),
-                            complexName: complexName,
-                            jibun: String(item.jibun || item.지번 || ""),
-                            floor: String(item.floor || item.층 || "-"),
+                            complexName: complexName.trim(),
+                            jibun: jibun,
+                            floor: String(item.flr || item.floor || item.층 || "-"),
                             ownershipGbn: String(item.ownershipGbn || item.구분 || "")
                         });
                     });
