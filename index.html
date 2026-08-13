@@ -1316,11 +1316,39 @@
                         if (purps) complexName += `[${purps}] `;
                         if (bldNm) complexName += bldNm;
                         if (!complexName.trim()) complexName = "-";
+
+                        // 🌟 [독한 모드] 면적(Area) 변수명 무차별 스캔 로직
+                        let rawArea = 0;
+                        const knownAreaKeys = ['bldgMarea', 'bldMarea', 'bldgArea', 'bldgAr', 'bldAr', 'totArea', 'totAr', 'plutAr', '건물면적', '대지면적', '연면적', '전용면적', 'excluUseAr', 'area'];
+                        
+                        // 1. 흔히 쓰는 이름표 중에서 먼저 찾아봅니다. (혹시 쉼표가 섞여 있으면 제거)
+                        for (let k of knownAreaKeys) {
+                            if (item[k]) {
+                                rawArea = parseFloat(String(item[k]).replace(/,/g, ''));
+                                if (!isNaN(rawArea) && rawArea > 0) break;
+                            }
+                        }
+
+                        // 2. 만약 정해진 이름표 중에 없으면, Object 전체를 뒤져서 '면적' 비스무리한 걸 강제로 찾아냅니다!
+                        if (!rawArea || rawArea === 0) {
+                            for (let k in item) {
+                                let lk = k.toLowerCase();
+                                // 이름에 area, ar, 면적이 들어가면서, 날짜(year)나 거래(deal)와 상관없는 항목일 경우
+                                if ((lk.includes('area') || lk.includes('ar') || k.includes('면적')) && 
+                                    !lk.includes('year') && !lk.includes('month') && !lk.includes('day') && !lk.includes('deal') && !lk.includes('mark')) {
+                                    let val = parseFloat(String(item[k]).replace(/,/g, ''));
+                                    if (!isNaN(val) && val > 0) {
+                                        rawArea = val;
+                                        break; // 찾았으면 스톱!
+                                    }
+                                }
+                            }
+                        }
                         
                         extractedItems.push({
                             dealAmount: String(item.dealAmount || item.거래금액 || item.deposit || item.보증금액 || "0"),
                             monthly: String(item.monthlyRent || item.월세금액 || "0"),
-                            area: parseFloat(item.bldgMarea || item.bldMarea || item.bldgArea || item.totArea || item.plutAr || item.건물면적 || item.excluUseAr || item.전용면적 || item.area || "0"),
+                            area: rawArea, // 👈 무자비하게 찾아낸 면적 데이터 투입!
                             year: String(item.dealYear || item.년 || ""),
                             month: String(item.dealMonth || item.월 || ""),
                             day: String(item.dealDay || item.일 || "1").split('~')[0].trim(),
@@ -1358,6 +1386,38 @@
                 if (purps) complexName += `[${purps}] `;
                 if (bldNm) complexName += bldNm;
                 if (!complexName.trim()) complexName = "-";
+                // XML에서도 면적 강제 스캔
+                let rawArea = 0;
+                let possibleTags = ["bldgMarea", "bldMarea", "bldgArea", "bldgAr", "bldAr", "totArea", "totAr", "plutAr", "건물면적", "대지면적", "연면적", "전용면적", "excluUseAr"];
+                for (let tag of possibleTags) {
+                    let el = item.getElementsByTagName(tag)[0];
+                    if (el && el.textContent) {
+                        let val = parseFloat(el.textContent.replace(/,/g, ''));
+                        if (!isNaN(val) && val > 0) {
+                            rawArea = val;
+                            break;
+                        }
+                    }
+                }
+
+                // 태그 목록을 싹 다 뒤져서 면적 찾기 (XML용)
+                if (!rawArea || rawArea === 0) {
+                    let allNodes = item.childNodes;
+                    for (let i = 0; i < allNodes.length; i++) {
+                        let node = allNodes[i];
+                        if (node.nodeType === 1) { 
+                            let tag = node.nodeName.toLowerCase();
+                            if ((tag.includes('area') || tag.includes('ar') || tag.includes('면적')) && 
+                                !tag.includes('year') && !tag.includes('month') && !tag.includes('day') && !tag.includes('deal') && !tag.includes('mark')) {
+                                let val = parseFloat(node.textContent.replace(/,/g, ''));
+                                if (!isNaN(val) && val > 0) {
+                                    rawArea = val;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
                 
                 extractedItems.push({
                     dealAmount: getText(item, ["dealAmount", "거래금액", "deposit", "보증금액"]) || "0",
