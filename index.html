@@ -209,6 +209,7 @@
                                 <option value="APT">아파트 (분양권 포함)</option>
                                 <option value="RH">연립다세대</option>
                                 <option value="OFFI">오피스텔</option>
+                                <option value="NRG">상업/업무용 (상가·빌딩)</option>
                             </select>
                         </div>
                     </div>
@@ -1300,14 +1301,20 @@
                 
                 if (Array.isArray(items) && items.length > 0) {
                     items.forEach(item => {
+                        let purps = String(item.purps || item.건물주용도 || "");
+                        let bldNm = String(item.aptNm || item.bldNm || item.mhouseNm || item.offiNm || item.단지명 || item.건물명 || item.아파트 || item.연립다세대 || item.단지 || "");
+                        let complexName = bldNm;
+                        if (!complexName && purps) complexName = `[${purps}]`;
+                        else if (complexName && purps) complexName = `[${purps}] ${complexName}`;
+                        
                         extractedItems.push({
                             dealAmount: String(item.dealAmount || item.거래금액 || item.deposit || item.보증금액 || "0"),
                             monthly: String(item.monthlyRent || item.월세금액 || "0"),
-                            area: parseFloat(item.excluUseAr || item.전용면적 || "0"),
+                            area: parseFloat(item.bldMarea || item.건물면적 || item.excluUseAr || item.전용면적 || "0"),
                             year: String(item.dealYear || item.년 || ""),
                             month: String(item.dealMonth || item.월 || ""),
                             day: String(item.dealDay || item.일 || "1").split('~')[0].trim(),
-                            complexName: String(item.aptNm || item.mhouseNm || item.offiNm || item.단지명 || item.아파트 || item.연립다세대 || item.단지 || ""),
+                            complexName: complexName,
                             jibun: String(item.jibun || item.지번 || ""),
                             floor: String(item.floor || item.층 || "-"),
                             ownershipGbn: String(item.ownershipGbn || item.구분 || "")
@@ -1330,14 +1337,21 @@
             };
 
             for (let item of xmlItems) {
+                let purps = getText(item, ["purps", "건물주용도"]);
+                let bldNm = getText(item, ["bldNm", "건물명", "aptNm", "mhouseNm", "offiNm", "단지명", "아파트", "연립다세대", "단지"]);
+                
+                let complexName = bldNm;
+                if (!complexName && purps) complexName = `[${purps}]`;
+                else if (complexName && purps) complexName = `[${purps}] ${complexName}`;
+                
                 extractedItems.push({
                     dealAmount: getText(item, ["dealAmount", "거래금액", "deposit", "보증금액"]) || "0",
                     monthly: getText(item, ["monthlyRent", "월세금액"]) || "0",
-                    area: parseFloat(getText(item, ["excluUseAr", "전용면적"]) || "0"),
+                    area: parseFloat(getText(item, ["bldMarea", "건물면적", "excluUseAr", "전용면적"]) || "0"),
                     year: getText(item, ["dealYear", "년"]),
                     month: getText(item, ["dealMonth", "월"]),
                     day: (getText(item, ["dealDay", "일"]) || "1").split('~')[0].trim(),
-                    complexName: getText(item, ["aptNm", "mhouseNm", "offiNm", "단지명", "아파트", "연립다세대", "단지"]),
+                    complexName: complexName,
                     jibun: getText(item, ["jibun", "지번"]),
                     floor: getText(item, ["floor", "층"]) || "-",
                     ownershipGbn: getText(item, ["ownershipGbn", "구분"]) || ""
@@ -1442,6 +1456,10 @@
                 } else if (targetType === "OFFI") {
                     tradeApiPath = "RTMSDataSvcOffiTrade/getRTMSDataSvcOffiTrade";
                     rentApiPath = "RTMSDataSvcOffiRent/getRTMSDataSvcOffiRent";
+                } else if (targetType === "NRG") {
+                    tradeApiPath = "RTMSDataSvcNrgTrade/getRTMSDataSvcNrgTrade";
+                    includeRent = false; // 공공데이터포털에 상업용 전월세 통합 API는 없음
+                    includeSilv = false; // 상업용은 분양/입주권 조회 제외    
                 }
 
                 for (const ym of targetMonths) {
@@ -1485,9 +1503,11 @@
 
                             parsedItems.forEach(item => {
                                 let isKeywordMatch = false;
-                                if (keywordInput && item.complexName) {
+                                if (keywordInput) {
                                     let cleanApi = item.complexName.replace(/\s/g, '').toLowerCase();
-                                    if (cleanApi.includes(keywordInput)) isKeywordMatch = true;
+                                    let cleanJibun = item.jibun.replace(/\s/g, '').toLowerCase();
+                                    // 🌟 키워드 검색 시, 건물명/용도명 뿐만 아니라 '지번'으로 검색해도 걸리도록 유연화
+                                    if (cleanApi.includes(keywordInput) || cleanJibun.includes(keywordInput)) isKeywordMatch = true;
                                 }
 
                                 let isJibunValid = matchJibun(item.jibun, isSan, bon, bu);
