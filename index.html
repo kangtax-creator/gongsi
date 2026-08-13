@@ -1308,10 +1308,10 @@
                         let umdNm = String(item.umdNm || item.umdnm || item.dongNm || item.dong || item.sggNm || item.법정동 || "").trim();
                         let jibun = String(item.jibun || item.bunji || item.지번 || "").trim();
                         
-                        // 🌟 문서 기준: buildingUse (신규), buildinguse (구형)
                         let purps = String(item.buildingUse || item.buildinguse || item.purps || item.purpsNm || item.건물주용도 || item.용도 || "").trim();
                         let bldNm = String(item.bldgNm || item.bldNm || item.aptNm || item.mhouseNm || item.offiNm || item.단지명 || item.건물명 || "").trim();
-                        // 🌟 1. 건물면적(bldAr)과 대지면적(plotAr)을 각각 따로 빼냅니다.
+                        
+                        // 🌟 1. 건물면적(bldAr)과 대지면적(plotAr) 분리 추출
                         let bldAr = 0;
                         let plotAr = 0;
                         if (item.buildingAr || item.buildingar) bldAr = parseFloat(String(item.buildingAr || item.buildingar).replace(/,/g, ''));
@@ -1324,7 +1324,7 @@
                         if (bldNm) complexName += bldNm;
                         if (!complexName.trim()) complexName = "-";
                         
-                        // 🌟 2. 단지명 뒤에 대지면적을 괄호로 예쁘게 붙여줍니다!
+                        // 🌟 2. 단지명 뒤에 대지면적 괄호 추가
                         if (!isNaN(plotAr) && plotAr > 0) {
                             if (complexName === "-") complexName = `(대지: ${plotAr}㎡)`;
                             else complexName += ` (대지: ${plotAr}㎡)`;
@@ -1353,14 +1353,14 @@
                                 }
                             }
                         }
-                        // 🌟 3. 숫자 전용인 면적 칸(area)에는 1순위 건물면적, 2순위 대지면적 순으로!
+
+                        // 🌟 3. 최종 면적 세팅 (건물면적 우선, 없으면 대지면적)
                         let finalArea = bldAr > 0 ? bldAr : (plotAr > 0 ? plotAr : rawArea);
 
                         extractedItems.push({
-                            // 🌟 문서 기준 금액 및 기타 필드
                             dealAmount: String(item.dealAmount || item.dealamount || item.거래금액 || item.deposit || item.보증금액 || "0"),
                             monthly: String(item.monthlyRent || item.월세금액 || "0"),
-                            area: rawArea,
+                            area: finalArea, // 👈 핵심 수정 부위 (rawArea -> finalArea)
                             year: String(item.dealYear || item.dealyear || item.년 || ""),
                             month: String(item.dealMonth || item.dealmonth || item.월 || ""),
                             day: String(item.dealDay || item.dealday || item.일 || "1").split('~')[0].trim(),
@@ -1392,7 +1392,6 @@
                 let purps = getText(item, ["buildingUse", "buildinguse", "purps", "purpsNm", "건물주용도", "용도"]).trim();
                 let bldNm = getText(item, ["bldgNm", "bldNm", "건물명", "aptNm", "단지명"]).trim();
                 
-                // 🌟 1. 건물면적과 대지면적 추출 (XML)
                 let bldAr = 0;
                 let plotAr = 0;
                 let bldArText = getText(item, ["buildingAr", "buildingar"]);
@@ -1408,7 +1407,6 @@
                 if (bldNm) complexName += bldNm;
                 if (!complexName.trim()) complexName = "-";
                 
-                // 🌟 2. 단지명 뒤에 대지면적 괄호 추가 (XML)
                 if (!isNaN(plotAr) && plotAr > 0) {
                     if (complexName === "-") complexName = `(대지: ${plotAr}㎡)`;
                     else complexName += ` (대지: ${plotAr}㎡)`;
@@ -1445,13 +1443,12 @@
                     }
                 }
 
-                // 🌟 3. 최종 면적 세팅 (XML)
                 let finalArea = bldAr > 0 ? bldAr : (plotAr > 0 ? plotAr : rawArea);
 
                 extractedItems.push({
                     dealAmount: getText(item, ["dealAmount", "dealamount", "거래금액", "deposit", "보증금액"]) || "0",
                     monthly: getText(item, ["monthlyRent", "월세금액"]) || "0",
-                    area: rawArea,
+                    area: finalArea, // 👈 핵심 수정 부위 (XML 파싱 부분)
                     year: getText(item, ["dealYear", "dealyear", "년"]),
                     month: getText(item, ["dealMonth", "dealmonth", "월"]),
                     day: (getText(item, ["dealDay", "dealday", "일"]) || "1").split('~')[0].trim(),
