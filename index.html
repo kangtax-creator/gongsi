@@ -1305,23 +1305,34 @@
                 
                 if (Array.isArray(items) && items.length > 0) {
                     items.forEach(item => {
-                       let umdNm = String(item.umdNm || item.dongNm || item.dong || item.sggNm || item.법정동 || "").trim();
+                        let umdNm = String(item.umdNm || item.umdnm || item.dongNm || item.dong || item.sggNm || item.법정동 || "").trim();
                         let jibun = String(item.jibun || item.bunji || item.지번 || "").trim();
-                        let purps = String(item.purps || item.purpsNm || item.건물주용도 || item.용도 || "").trim();
-                        let bldNm = String(item.bldgNm || item.bldNm || item.aptNm || item.mhouseNm || item.offiNm || item.단지명 || item.건물명 || "").trim();
                         
+                        // 🌟 문서 기준: buildingUse (신규), buildinguse (구형)
+                        let purps = String(item.buildingUse || item.buildinguse || item.purps || item.purpsNm || item.건물주용도 || item.용도 || "").trim();
+                        let bldNm = String(item.bldgNm || item.bldNm || item.aptNm || item.mhouseNm || item.offiNm || item.단지명 || item.건물명 || "").trim();
+                        // 🌟 1. 건물면적(bldAr)과 대지면적(plotAr)을 각각 따로 빼냅니다.
+                        let bldAr = 0;
+                        let plotAr = 0;
+                        if (item.buildingAr || item.buildingar) bldAr = parseFloat(String(item.buildingAr || item.buildingar).replace(/,/g, ''));
+                        if (item.plottageAr || item.plottagear) plotAr = parseFloat(String(item.plottageAr || item.plottagear).replace(/,/g, ''));
+
                         let regionStr = (umdNm && jibun) ? `${umdNm} ${jibun}` : umdNm;
                         let complexName = "";
                         if (regionStr) complexName += `${regionStr} `;
                         if (purps) complexName += `[${purps}] `;
                         if (bldNm) complexName += bldNm;
                         if (!complexName.trim()) complexName = "-";
+                        
+                        // 🌟 2. 단지명 뒤에 대지면적을 괄호로 예쁘게 붙여줍니다!
+                        if (!isNaN(plotAr) && plotAr > 0) {
+                            if (complexName === "-") complexName = `(대지: ${plotAr}㎡)`;
+                            else complexName += ` (대지: ${plotAr}㎡)`;
+                        }
 
-                        // 🌟 [독한 모드] 면적(Area) 변수명 무차별 스캔 로직
                         let rawArea = 0;
                         const knownAreaKeys = ['bldgMarea', 'bldMarea', 'bldgArea', 'bldgAr', 'bldAr', 'totArea', 'totAr', 'plutAr', '건물면적', '대지면적', '연면적', '전용면적', 'excluUseAr', 'area'];
                         
-                        // 1. 흔히 쓰는 이름표 중에서 먼저 찾아봅니다. (혹시 쉼표가 섞여 있으면 제거)
                         for (let k of knownAreaKeys) {
                             if (item[k]) {
                                 rawArea = parseFloat(String(item[k]).replace(/,/g, ''));
@@ -1329,33 +1340,34 @@
                             }
                         }
 
-                        // 2. 만약 정해진 이름표 중에 없으면, Object 전체를 뒤져서 '면적' 비스무리한 걸 강제로 찾아냅니다!
                         if (!rawArea || rawArea === 0) {
                             for (let k in item) {
                                 let lk = k.toLowerCase();
-                                // 이름에 area, ar, 면적이 들어가면서, 날짜(year)나 거래(deal)와 상관없는 항목일 경우
                                 if ((lk.includes('area') || lk.includes('ar') || k.includes('면적')) && 
                                     !lk.includes('year') && !lk.includes('month') && !lk.includes('day') && !lk.includes('deal') && !lk.includes('mark')) {
                                     let val = parseFloat(String(item[k]).replace(/,/g, ''));
                                     if (!isNaN(val) && val > 0) {
                                         rawArea = val;
-                                        break; // 찾았으면 스톱!
+                                        break;
                                     }
                                 }
                             }
                         }
-                        
+                        // 🌟 3. 숫자 전용인 면적 칸(area)에는 1순위 건물면적, 2순위 대지면적 순으로!
+                        let finalArea = bldAr > 0 ? bldAr : (plotAr > 0 ? plotAr : rawArea);
+
                         extractedItems.push({
-                            dealAmount: String(item.dealAmount || item.거래금액 || item.deposit || item.보증금액 || "0"),
+                            // 🌟 문서 기준 금액 및 기타 필드
+                            dealAmount: String(item.dealAmount || item.dealamount || item.거래금액 || item.deposit || item.보증금액 || "0"),
                             monthly: String(item.monthlyRent || item.월세금액 || "0"),
-                            area: rawArea, // 👈 무자비하게 찾아낸 면적 데이터 투입!
-                            year: String(item.dealYear || item.년 || ""),
-                            month: String(item.dealMonth || item.월 || ""),
-                            day: String(item.dealDay || item.일 || "1").split('~')[0].trim(),
+                            area: rawArea,
+                            year: String(item.dealYear || item.dealyear || item.년 || ""),
+                            month: String(item.dealMonth || item.dealmonth || item.월 || ""),
+                            day: String(item.dealDay || item.dealday || item.일 || "1").split('~')[0].trim(),
                             complexName: complexName.trim(),
                             jibun: jibun,
-                            floor: String(item.flr || item.floor || item.층 || "-"),
-                            ownershipGbn: String(item.ownershipGbn || item.구분 || "")
+                            floor: String(item.floor || item.flr || item.층 || "-"),
+                            ownershipGbn: String(item.shareDealingType || item.pdealingtype || item.ownershipGbn || item.구분 || "")
                         });
                     });
                     return extractedItems;
@@ -1375,18 +1387,33 @@
             };
 
             for (let item of xmlItems) {
-                let umdNm = getText(item, ["umdNm", "dongNm", "dong", "sggNm", "법정동"]).trim();
+                let umdNm = getText(item, ["umdNm", "umdnm", "dongNm", "dong", "sggNm", "법정동"]).trim();
                 let jibun = getText(item, ["jibun", "bunji", "지번"]).trim();
-                let purps = getText(item, ["purps", "purpsNm", "건물주용도", "용도"]).trim();
+                let purps = getText(item, ["buildingUse", "buildinguse", "purps", "purpsNm", "건물주용도", "용도"]).trim();
                 let bldNm = getText(item, ["bldgNm", "bldNm", "건물명", "aptNm", "단지명"]).trim();
                 
+                // 🌟 1. 건물면적과 대지면적 추출 (XML)
+                let bldAr = 0;
+                let plotAr = 0;
+                let bldArText = getText(item, ["buildingAr", "buildingar"]);
+                let plotArText = getText(item, ["plottageAr", "plottagear"]);
+                
+                if (bldArText) bldAr = parseFloat(bldArText.replace(/,/g, ''));
+                if (plotArText) plotAr = parseFloat(plotArText.replace(/,/g, ''));
+
                 let regionStr = (umdNm && jibun) ? `${umdNm} ${jibun}` : umdNm;
                 let complexName = "";
                 if (regionStr) complexName += `${regionStr} `;
                 if (purps) complexName += `[${purps}] `;
                 if (bldNm) complexName += bldNm;
                 if (!complexName.trim()) complexName = "-";
-                // XML에서도 면적 강제 스캔
+                
+                // 🌟 2. 단지명 뒤에 대지면적 괄호 추가 (XML)
+                if (!isNaN(plotAr) && plotAr > 0) {
+                    if (complexName === "-") complexName = `(대지: ${plotAr}㎡)`;
+                    else complexName += ` (대지: ${plotAr}㎡)`;
+                }
+
                 let rawArea = 0;
                 let possibleTags = ["bldgMarea", "bldMarea", "bldgArea", "bldgAr", "bldAr", "totArea", "totAr", "plutAr", "건물면적", "대지면적", "연면적", "전용면적", "excluUseAr"];
                 for (let tag of possibleTags) {
@@ -1400,7 +1427,6 @@
                     }
                 }
 
-                // 태그 목록을 싹 다 뒤져서 면적 찾기 (XML용)
                 if (!rawArea || rawArea === 0) {
                     let allNodes = item.childNodes;
                     for (let i = 0; i < allNodes.length; i++) {
@@ -1418,18 +1444,21 @@
                         }
                     }
                 }
-                
+
+                // 🌟 3. 최종 면적 세팅 (XML)
+                let finalArea = bldAr > 0 ? bldAr : (plotAr > 0 ? plotAr : rawArea);
+
                 extractedItems.push({
-                    dealAmount: getText(item, ["dealAmount", "거래금액", "deposit", "보증금액"]) || "0",
+                    dealAmount: getText(item, ["dealAmount", "dealamount", "거래금액", "deposit", "보증금액"]) || "0",
                     monthly: getText(item, ["monthlyRent", "월세금액"]) || "0",
-                    area: parseFloat(getText(item, ["bldgMarea", "bldMarea", "bldgArea", "totArea", "plutAr", "건물면적", "excluUseAr", "전용면적"]) || "0"),
-                    year: getText(item, ["dealYear", "년"]),
-                    month: getText(item, ["dealMonth", "월"]),
-                    day: (getText(item, ["dealDay", "일"]) || "1").split('~')[0].trim(),
+                    area: rawArea,
+                    year: getText(item, ["dealYear", "dealyear", "년"]),
+                    month: getText(item, ["dealMonth", "dealmonth", "월"]),
+                    day: (getText(item, ["dealDay", "dealday", "일"]) || "1").split('~')[0].trim(),
                     complexName: complexName.trim(),
                     jibun: jibun,
-                    floor: getText(item, ["flr", "floor", "층"]) || "-",
-                    ownershipGbn: getText(item, ["ownershipGbn", "구분"]) || ""
+                    floor: getText(item, ["floor", "층"]) || "-",
+                    ownershipGbn: getText(item, ["shareDealingType", "pdealingtype", "ownershipGbn", "구분"]) || ""
                 });
             }
             return extractedItems;
