@@ -253,20 +253,19 @@
                     </div>
                     <div class="overflow-x-auto max-h-[600px] border border-slate-100 rounded-lg">
                         <table class="w-full text-left border-collapse relative">
-                            <thead class="sticky top-0 bg-slate-50 shadow-sm z-10">
-                                <tr class="border-b border-slate-200 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
-                                    <th class="py-3 px-4 min-w-[90px]">계약일자</th>
-                                    <th class="py-3 px-4">유형</th>
-                                    <th class="py-3 px-4 min-w-[120px]">단지명</th>
-                                    <th class="py-3 px-4">전용면적(㎡)</th>
-                                    <th class="py-3 px-4">층수</th>
-                                    <th class="py-3 px-4 text-right">거래금액(매매/보증금)</th>
-                                    <th class="py-3 px-4 text-right">월세</th>
+                            <thead class="sticky top-0 bg-white border-b-2 border-slate-600 shadow-sm z-10">
+                                <tr class="text-slate-600 text-[10px] md:text-[11px] font-black uppercase tracking-wider">
+                                    <th class="py-2.5 px-2 md:px-4 text-left whitespace-nowrap">계약일</th>
+                                    <th class="py-2.5 px-2 md:px-4 text-left whitespace-nowrap">유형</th>
+                                    <th class="py-2.5 px-4 hidden md:table-cell text-left whitespace-nowrap">단지명</th>
+                                    <th class="py-2.5 px-2 md:px-4 text-center whitespace-nowrap">면적</th>
+                                    <th class="py-2.5 px-2 md:px-4 text-center whitespace-nowrap">층</th>
+                                    <th class="py-2.5 px-2 md:px-4 text-right whitespace-nowrap">거래금액(만원)</th>
                                 </tr>
                             </thead>
                             <tbody id="siga-table-body" class="text-xs divide-y divide-slate-100 text-slate-700">
                                 <tr>
-                                    <td colspan="7" class="py-12 text-center text-slate-400 font-medium">조회 기간을 설정하고 스캔 버튼을 눌러주세요.</td>
+                                    <td colspan="6" class="py-12 text-center text-slate-400 font-medium">조회 기간을 설정하고 스캔 버튼을 눌러주세요.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1818,48 +1817,65 @@
             const tbody = document.getElementById('siga-table-body');
             tbody.innerHTML = "";
 
+            // 🌟 아실 스타일: 한국어 금액 축약 헬퍼 함수 (예: 17억 8,500)
+            const formatMoney = (money) => {
+                if (!money || money === 0) return "0";
+                let uk = Math.floor(money / 100000000);
+                let man = Math.floor((money % 100000000) / 10000);
+                let res = "";
+                if (uk > 0) res += `${uk}억`;
+                if (man > 0) res += (uk > 0 ? " " : "") + man.toLocaleString();
+                return res;
+            };
+
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="py-12 text-center text-slate-500 font-medium">선택한 조건에 맞는 실거래가 내역이 없습니다.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-slate-500 font-medium">선택한 조건에 맞는 실거래가 내역이 없습니다.</td></tr>`;
             } else {
                 filtered.forEach((row) => {
-                    let typeBadge = '';
-                    if (row.type === '매매') typeBadge = '<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded">매매</span>';
-                    else if (row.type === '전세') typeBadge = '<span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded">전세</span>';
-                    else if (row.type === '월세') typeBadge = '<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded">월세</span>';
-                    else if (row.type === '분양권') typeBadge = '<span class="bg-purple-100 text-purple-800 text-[10px] font-bold px-2 py-0.5 rounded">분양권</span>';
-                    else typeBadge = '<span class="bg-fuchsia-100 text-fuchsia-800 text-[10px] font-bold px-2 py-0.5 rounded">입주권</span>';
+                    // 🌟 텍스트 중심 압축형 뱃지 색상 세팅 (아실 컬러코드 적용)
+                    let typeClass = '';
+                    if (row.type === '매매') typeClass = 'text-blue-600';
+                    else if (row.type === '전세') typeClass = 'text-rose-500';
+                    else if (row.type === '월세') typeClass = 'text-emerald-600';
+                    else typeClass = 'text-purple-600';
 
-                    // 🌟 직거래 / 갱신 / 취소 뱃지 로직 추가
                     let extraBadge = '';
                     if (row.type === '매매' || row.type.includes('권')) {
-                        if (row.dealingGbn === '직거래') extraBadge += '<span class="bg-rose-100 text-rose-800 text-[10px] font-bold px-1.5 py-0.5 rounded border border-rose-200">직거래</span>';
-                        if (row.cdealType) extraBadge += '<span class="bg-slate-200 text-slate-600 text-[10px] font-bold px-1.5 py-0.5 rounded">취소됨</span>';
+                        if (row.dealingGbn === '직거래') extraBadge += '<span class="text-rose-500 text-[10px] font-bold block leading-none mt-1">직거래</span>';
+                        if (row.cdealType) extraBadge += '<span class="text-slate-400 text-[10px] font-bold block leading-none mt-1">취소됨</span>';
                     } else {
-                        if (row.contractType === '갱신') extraBadge += '<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-1.5 py-0.5 rounded border border-amber-200">갱신</span>';
-                        if (row.useRRRight === '사용') extraBadge += '<span class="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-1.5 py-0.5 rounded border border-indigo-200">청구권</span>';
+                        if (row.contractType === '갱신') extraBadge += '<span class="text-slate-800 text-[10px] font-extrabold block leading-none mt-1">갱신</span>';
+                        if (row.useRRRight === '사용') extraBadge += '<span class="text-indigo-500 text-[10px] font-bold block leading-none mt-1">청구권</span>';
                     }
 
-                    let amountText = row.amount.toLocaleString() + '원';
-                    let monthlyText = row.monthlyRent > 0 ? row.monthlyRent.toLocaleString() + '원' : '-';
+                    // 🌟 날짜, 면적, 층수 축약 (2026-08-11 -> 26.08.11 / 소수점 제거)
+                    let shortDate = row.date.substring(2).replace(/-/g, '.'); 
+                    let shortArea = Math.round(row.area);
 
-                    // 🌟 취소된 거래면 금액 텍스트에 취소선(line-through) 그어주기
-                    let amountClass = (row.type === '매매' || row.type.includes('권')) ? 'text-emerald-600' : 'text-slate-800';
-                    if (row.cdealType) amountClass += ' line-through opacity-50';
+                    // 🌟 금액 포맷팅 (월세 합치기 포함)
+                    let amountText = formatMoney(row.amount);
+                    let monthlyText = row.monthlyRent > 0 ? `<span class="text-emerald-600"> / ${formatMoney(row.monthlyRent)}</span>` : '';
+                    
+                    // 계약 취소된 경우 취소선 처리
+                    let amountClass = typeClass;
+                    if (row.cdealType) amountClass = 'line-through opacity-50 text-slate-400';
 
                     tbody.innerHTML += `
-                        <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0">
-                            <td class="py-3 px-4 font-medium text-slate-700">${row.date}</td>
-                            <td class="py-3 px-4 flex gap-1 flex-wrap items-center">${typeBadge}${extraBadge}</td>
-                            <td class="py-3 px-4 text-slate-600 font-medium truncate max-w-[120px]" title="${row.name}">${row.name}</td>
-                            <td class="py-3 px-4 font-mono font-bold text-slate-700">${row.area.toFixed(2)}㎡</td>
-                            <td class="py-3 px-4 text-slate-500">${row.floor}층</td>
-                            <td class="py-3 px-4 font-extrabold text-right ${amountClass}">${amountText}</td>
-                            <td class="py-3 px-4 font-bold text-amber-600 text-right">${monthlyText}</td>
+                        <tr class="hover:bg-slate-50 transition-colors border-b border-slate-200 last:border-0">
+                            <td class="py-3 px-2 md:px-4 font-bold text-slate-800 text-[11px] md:text-xs whitespace-nowrap">${shortDate}</td>
+                            <td class="py-3 px-2 md:px-4 flex flex-col justify-center whitespace-nowrap">
+                                <span class="font-extrabold text-[11px] md:text-xs ${typeClass}">${row.type}</span>
+                                ${extraBadge}
+                            </td>
+                            <!-- 모바일에서 단지명 텍스트 숨김 (hidden md:table-cell) -->
+                            <td class="py-3 px-4 text-slate-600 font-medium truncate max-w-[120px] hidden md:table-cell" title="${row.name}">${row.name}</td>
+                            <td class="py-3 px-2 md:px-4 font-mono font-medium text-slate-600 text-[11px] md:text-xs text-center">${shortArea}</td>
+                            <td class="py-3 px-2 md:px-4 text-slate-600 text-[11px] md:text-xs text-center">${row.floor}층</td>
+                            <td class="py-3 px-2 md:px-4 font-extrabold text-right text-[13px] md:text-sm whitespace-nowrap"><span class="${amountClass}">${amountText}</span>${monthlyText}</td>
                         </tr>`;
                 });
             }
         }
-
         function initSigaChart(data) {
             const ctx = document.getElementById('sigaChart').getContext('2d');
             if (sigaChartInstance) { sigaChartInstance.destroy(); }
@@ -1930,17 +1946,17 @@
                 if (propType === "공동주택") { extraInfo = `전용면적: ${row.area}㎡`; } 
                 else if (propType === "단독주택" || propType === "상가/건물") { extraInfo = `대지(전체/산정): ${row.landTotal}/${row.landCalc}㎡ │ 건물(전체/산정): ${row.bldTotal}/${row.bldCalc}㎡`; }
 
-                let dateDisplay = `<span class="text-xs text-slate-500 ml-3 pl-3 border-l border-slate-300 font-medium">기준일: ${row.baseDate}</span>`;
-                if(row.pubDate) { dateDisplay += `<span class="text-xs text-slate-500 ml-2 font-medium">/ 공시일: ${row.pubDate}</span>`; }
+                let dateDisplay = `<span class="text-[11px] text-slate-500 ml-2 md:ml-3 pl-2 md:pl-3 border-l border-slate-300 font-medium whitespace-nowrap">기준일: ${row.baseDate}</span>`;
+                if(row.pubDate) { dateDisplay += `<span class="text-[11px] text-slate-500 ml-1 md:ml-2 font-medium whitespace-nowrap">/ 공시일: ${row.pubDate}</span>`; }
                 
                 container.innerHTML += `
-                    <div class="flex flex-col bg-white border border-slate-200 rounded-xl px-5 py-4 shadow-sm">
+                    <div class="flex flex-col bg-white border border-slate-200 rounded-xl px-4 py-4 shadow-sm overflow-x-auto hide-scrollbar">
                         <div class="flex items-center mb-1">
-                            <span class="font-extrabold text-slate-800 text-sm mr-3">${row.year}</span>
-                            <span class="text-indigo-600 font-bold text-base">${row.price.toLocaleString()}<span class="text-sm font-medium ml-1 text-indigo-400">원</span></span>
+                            <span class="whitespace-nowrap font-extrabold text-slate-800 text-[13px] md:text-sm mr-2 md:mr-3">${row.year}</span>
+                            <span class="whitespace-nowrap text-indigo-600 font-bold text-[15px] md:text-base">${row.price.toLocaleString()}<span class="text-xs font-medium ml-1 text-indigo-400">원</span></span>
                             ${dateDisplay}
                         </div>
-                        ${extraInfo ? `<span class="text-xs text-slate-400 font-normal mt-1">${extraInfo}</span>` : ""}
+                        ${extraInfo ? `<span class="whitespace-nowrap text-[11px] md:text-xs text-slate-400 font-normal mt-1">${extraInfo}</span>` : ""}
                     </div>`;
             });
         }
