@@ -853,19 +853,55 @@
                 let finalData = filteredHistoryData.length > 0 ? filteredHistoryData : rawHistoryData;
 
                 if (finalData.length > 0) {
-                    const uniqueData = []; const seen = new Set();
-                    finalData.forEach(row => {
-                        const key = `${row.year}`;
-                        if (!seen.has(key)) { seen.add(key); uniqueData.push(row); }
-                    });
-                    uniqueData.sort((a, b) => parseInt(b.year) - parseInt(a.year));
-                    currentExcelData = uniqueData; currentPropType = propType;
+                        const uniqueData = []; const seen = new Set();
+                        finalData.forEach(row => {
+                            const key = `${row.year}`;
+                            if (!seen.has(key)) { seen.add(key); uniqueData.push(row); }
+                        });
+                        uniqueData.sort((a, b) => parseInt(b.year) - parseInt(a.year));
+                        currentExcelData = uniqueData; currentPropType = propType;
 
-                    renderChart(uniqueData);
-                    renderTags(propType, uniqueData);
-                    document.getElementById('result-container').classList.remove('hidden');
+                        // ====================================================================
+                        // 🌟 [추가] API가 실제로 물고 온 택배 송장(실제 매칭된 동/호수) 추출 및 경고창 생성
+                        // ====================================================================
+                        let apiMatchedStr = "단일 건물 또는 지번 매칭 (동·호수 없음)";
+                        if (propType === "공동주택" && uniqueData.length > 0) {
+                            let apiDong = String(uniqueData[0].dong || "").trim();
+                            let apiHo = String(uniqueData[0].ho || "").trim();
+                            
+                            // 동, 호 글자가 없으면 붙여주기
+                            if (apiDong && !apiDong.includes('동')) apiDong += '동';
+                            if (apiHo && !apiHo.includes('호')) apiHo += '호';
+                            
+                            if (apiDong || apiHo) {
+                                apiMatchedStr = `${apiDong} ${apiHo}`.trim();
+                            }
+                        }
 
-                } else {
+                        let matchNoticeBanner = document.getElementById('matched-address-notice');
+                        if (!matchNoticeBanner) {
+                            matchNoticeBanner = document.createElement('div');
+                            matchNoticeBanner.id = 'matched-address-notice';
+                            // 공시가격 결과 컨테이너의 맨 첫 번째(차트 위) 요소로 꽂아 넣습니다.
+                            document.getElementById('result-container').prepend(matchNoticeBanner);
+                        }
+
+                        matchNoticeBanner.innerHTML = `
+                            <div class="p-4 bg-indigo-50 border border-indigo-200 rounded-2xl shadow-sm">
+                                <p class="text-xs text-indigo-800 font-bold mb-1">🚨 API 실제 매칭 주소 교차 검증</p>
+                                <p class="text-xs text-indigo-700 leading-relaxed">
+                                    📌 국토부 데이터 매칭 기준: <span class="font-extrabold text-rose-600 text-sm">[ ${apiMatchedStr} ]</span><br>
+                                    위 주소가 평가하고자 하는 대상 물건의 공부상 동·호수와 정확히 일치하는지 확인 후 활용해 주세요.
+                                </p>
+                            </div>
+                        `;
+                        // ====================================================================
+
+                        renderChart(uniqueData);
+                        renderTags(propType, uniqueData);
+                        document.getElementById('result-container').classList.remove('hidden');
+
+                    } else {
                     document.getElementById('result-container').classList.add('hidden');
                     alert("공시가 내역이 존재하지 않습니다.\n(단, 지역 코드는 정상적으로 획득했으므로 [2번 탭] 실거래가 분석은 정상 이용 가능합니다.)"); 
                 }
