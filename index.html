@@ -901,6 +901,10 @@
                         renderChart(uniqueData);
                         renderTags(propType, uniqueData);
                         document.getElementById('result-container').classList.remove('hidden');
+                        // 🌟 [추가] 결과창 렌더링 직후, 화면을 아래로 부드럽게 자동 스크롤!
+                        setTimeout(() => {
+                            document.getElementById('result-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 100);
 
                     } else {
                     document.getElementById('result-container').classList.add('hidden');
