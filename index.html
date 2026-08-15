@@ -2246,7 +2246,10 @@
                     // 🌟 [수정 3] 뚱뚱한 뱃지 제거 및 아실 스타일 텍스트 배치
                     mainTr.innerHTML = `
                         <td class="py-3 px-2 md:px-4 font-bold text-slate-600 hidden md:table-cell">${gu}</td>
-                        <td class="py-3 px-2 md:px-4 whitespace-nowrap text-center font-extrabold text-[11px] md:text-xs text-indigo-600">${shortType}</td>
+                        <td class="py-3 px-2 md:px-4 whitespace-nowrap text-center font-extrabold text-[11px] md:text-xs text-indigo-600">
+                            <span class="hidden md:inline">${type}</span> <!-- PC 화면(넓을 때) 등장: 원본 텍스트 -->
+                            <span class="md:hidden">${shortType}</span>   <!-- 모바일 화면(좁을 때) 등장: 압축 텍스트 -->
+                        </td>
                         <td class="py-3 px-2 md:px-4 text-slate-800 font-extrabold max-w-[130px] md:max-w-[200px] truncate text-[12px] md:text-[13px]" title="${name}">${name}</td>
                         <td class="py-3 px-2 md:px-4 font-bold text-rose-600 text-[11px] md:text-xs whitespace-nowrap">${step}</td>
                         <td class="py-3 px-2 md:px-4 text-slate-500 text-[11px] max-w-[150px] truncate hidden md:table-cell" title="${addr}">${addr}</td>
