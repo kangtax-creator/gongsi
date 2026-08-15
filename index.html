@@ -2155,16 +2155,16 @@
             reader.readAsArrayBuffer(file);
         }
 
-        // 🌟 [4] 서울시 정비사업 현황 🌟
         async function fetchSeoulRenewal() {
             const thead = document.getElementById('renewal-table-head');
+            // 🌟 [수정 1] 아실 스타일 표 뼈대: 모바일에서 자치구, 대표지번 숨김 (hidden md:table-cell)
             thead.innerHTML = `
-                <th class="py-3 px-4 whitespace-nowrap">자치구</th>
-                <th class="py-3 px-4 whitespace-nowrap">사업구분</th>
-                <th class="py-3 px-4 min-w-[150px]">사업명(구역명)</th>
-                <th class="py-3 px-4 whitespace-nowrap">진행단계(인가현황)</th>
-                <th class="py-3 px-4 min-w-[120px]">대표지번</th>
-                <th class="py-3 px-4 text-center whitespace-nowrap">상세</th>
+                <th class="py-3 px-2 md:px-4 whitespace-nowrap hidden md:table-cell">자치구</th>
+                <th class="py-3 px-2 md:px-4 whitespace-nowrap text-center">사업구분</th>
+                <th class="py-3 px-2 md:px-4 min-w-[100px]">사업명(구역명)</th>
+                <th class="py-3 px-2 md:px-4 whitespace-nowrap">진행단계</th>
+                <th class="py-3 px-2 md:px-4 min-w-[120px] hidden md:table-cell">대표지번</th>
+                <th class="py-3 px-2 md:px-4 text-center whitespace-nowrap">상세</th>
             `;
 
             const tbody = document.getElementById('renewal-table-body');
@@ -2174,9 +2174,7 @@
 
             try {
                 let res = await fetch(url);
-                if (!res.ok) {
-                    throw new Error("API 통신 오류");
-                }
+                if (!res.ok) throw new Error("API 통신 오류");
                 
                 let data = await res.json();
                 let rows = [];
@@ -2199,7 +2197,6 @@
                     filteredRows = rows.filter(r => {
                         let guMatch = true;
                         let nameMatch = true;
-
                         if (targetGu) {
                             let district = r.DISTRICT || r.CGG_NM || r.GU_NM || "";
                             guMatch = district.includes(targetGu);
@@ -2208,7 +2205,6 @@
                             let name = String(r.ZONE_NM || r.BIZ_NM || r.BIZ_NAME || "").toLowerCase();
                             nameMatch = name.includes(targetName);
                         }
-                        
                         return guMatch && nameMatch;
                     });
                 }
@@ -2223,6 +2219,10 @@
                 filteredRows.forEach(row => {
                     let gu = row.DISTRICT || "-";
                     let type = row.BIZ_TYPE || "-";
+                    
+                    // 🌟 [수정 2] 글자 압축: "공동주택재건축" -> "재건축" 으로 확 줄이기
+                    let shortType = type.replace('공동주택', '').replace('사업', '').trim();
+                    
                     let name = row.ZONE_NM || "-";
                     let step = row.BIZ_STAGE || "-";
                     let addr = (row.JIBUN_ADDR && row.JIBUN_ADDR !== "-") ? row.JIBUN_ADDR : (row.ROAD_ADDR || "-");
@@ -2241,15 +2241,17 @@
                     const d_const = row.CONSTRUCTION_START_YMD || "-";
 
                     let mainTr = document.createElement('tr');
-                    mainTr.className = "hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0";
+                    mainTr.className = "hover:bg-slate-50 transition-colors border-b border-slate-200 last:border-0";
+                    
+                    // 🌟 [수정 3] 뚱뚱한 뱃지 제거 및 아실 스타일 텍스트 배치
                     mainTr.innerHTML = `
-                        <td class="py-3 px-4 font-bold text-slate-600">${gu}</td>
-                        <td class="py-3 px-4"><span class="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-2 py-0.5 rounded">${type}</span></td>
-                        <td class="py-3 px-4 text-slate-800 font-extrabold max-w-[200px] truncate" title="${name}">${name}</td>
-                        <td class="py-3 px-4 font-bold text-rose-600">${step}</td>
-                        <td class="py-3 px-4 text-slate-500 text-[11px] max-w-[150px] truncate" title="${addr}">${addr}</td>
-                        <td class="py-3 px-4 text-center">
-                            <button onclick="toggleRenewalDates(this)" class="text-[10px] bg-white hover:bg-slate-100 text-slate-600 font-bold py-1 px-2.5 rounded border border-slate-300 transition-colors whitespace-nowrap shadow-sm">상세보기 ▼</button>
+                        <td class="py-3 px-2 md:px-4 font-bold text-slate-600 hidden md:table-cell">${gu}</td>
+                        <td class="py-3 px-2 md:px-4 whitespace-nowrap text-center font-extrabold text-[11px] md:text-xs text-indigo-600">${shortType}</td>
+                        <td class="py-3 px-2 md:px-4 text-slate-800 font-extrabold max-w-[130px] md:max-w-[200px] truncate text-[12px] md:text-[13px]" title="${name}">${name}</td>
+                        <td class="py-3 px-2 md:px-4 font-bold text-rose-600 text-[11px] md:text-xs whitespace-nowrap">${step}</td>
+                        <td class="py-3 px-2 md:px-4 text-slate-500 text-[11px] max-w-[150px] truncate hidden md:table-cell" title="${addr}">${addr}</td>
+                        <td class="py-3 px-1 md:px-4 text-center">
+                            <button onclick="toggleRenewalDates(this)" class="text-[10px] bg-white hover:bg-slate-100 text-slate-600 font-bold py-1 px-1.5 md:px-2.5 rounded border border-slate-300 transition-colors whitespace-nowrap shadow-sm">상세 ▼</button>
                         </td>
                     `;
                     
