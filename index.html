@@ -2220,11 +2220,11 @@
                     let gu = row.DISTRICT || "-";
                     let type = row.BIZ_TYPE || "-";
                     
-                    // 🌟 [수정 2] 글자 압축: "공동주택재건축" -> "재건축" 으로 확 줄이기
-                    let shortType = type.replace('공동주택', '').replace('사업', '').trim();
+                    // 🌟 1. 글자 초강력 압축 (아파트지구, 공동주택, 사업 글자 날림)
+                    let shortType = type.replace(/공동주택|아파트지구|사업/g, '').trim();
                     
                     let name = row.ZONE_NM || "-";
-                    let step = row.BIZ_STAGE || "-";
+                    let step = row.BIZ_STAGE || "-"; // 🌟 진행단계('인가' 등) 원본 완벽 보존!
                     let addr = (row.JIBUN_ADDR && row.JIBUN_ADDR !== "-") ? row.JIBUN_ADDR : (row.ROAD_ADDR || "-");
                     
                     const d_zone_init = row.ZONE_DESIGNATION_INIT_YMD || "-";
@@ -2243,15 +2243,19 @@
                     let mainTr = document.createElement('tr');
                     mainTr.className = "hover:bg-slate-50 transition-colors border-b border-slate-200 last:border-0";
                     
-                    // 🌟 [수정 3] 뚱뚱한 뱃지 제거 및 아실 스타일 텍스트 배치
+                    // 🌟 2. 표 너비 강제 고정 및 레이아웃 붕괴 방지
                     mainTr.innerHTML = `
                         <td class="py-3 px-2 md:px-4 font-bold text-slate-600 hidden md:table-cell">${gu}</td>
-                        <td class="py-3 px-2 md:px-4 whitespace-nowrap text-center font-extrabold text-[11px] md:text-xs text-indigo-600">
-                            <span class="hidden md:inline">${type}</span> <!-- PC 화면(넓을 때) 등장: 원본 텍스트 -->
-                            <span class="md:hidden">${shortType}</span>   <!-- 모바일 화면(좁을 때) 등장: 압축 텍스트 -->
+                        <td class="py-3 px-1 md:px-4 whitespace-nowrap text-center font-extrabold text-[11px] md:text-xs text-indigo-600">
+                            <span class="hidden md:inline">${type}</span> 
+                            <span class="md:hidden">${shortType}</span> 
                         </td>
-                        <td class="py-3 px-2 md:px-4 text-slate-800 font-extrabold max-w-[130px] md:max-w-[200px] truncate text-[12px] md:text-[13px]" title="${name}">${name}</td>
-                        <td class="py-3 px-2 md:px-4 font-bold text-rose-600 text-[11px] md:text-xs whitespace-nowrap">${step}</td>
+                        <!-- 🌟 사업명이 길어지면 우측 버튼을 밀어내지 못하게 '...'으로 자름 -->
+                        <td class="py-3 px-1 md:px-4 text-slate-800 font-extrabold text-[12px] md:text-[13px]">
+                            <div class="max-w-[110px] sm:max-w-[150px] md:max-w-[250px] truncate" title="${name}">${name}</div>
+                        </td>
+                        <!-- 🌟 진행단계는 글자 잘림 없이 원본 그대로 표시 -->
+                        <td class="py-3 px-1 md:px-4 font-bold text-rose-600 text-[11px] md:text-xs text-center whitespace-nowrap">${step}</td>
                         <td class="py-3 px-2 md:px-4 text-slate-500 text-[11px] max-w-[150px] truncate hidden md:table-cell" title="${addr}">${addr}</td>
                         <td class="py-3 px-1 md:px-4 text-center">
                             <button onclick="toggleRenewalDates(this)" class="text-[10px] bg-white hover:bg-slate-100 text-slate-600 font-bold py-1 px-1.5 md:px-2.5 rounded border border-slate-300 transition-colors whitespace-nowrap shadow-sm">상세 ▼</button>
