@@ -862,19 +862,22 @@
                         currentExcelData = uniqueData; currentPropType = propType;
 
                         // ====================================================================
-                        // 🌟 [추가] API가 실제로 물고 온 택배 송장(실제 매칭된 동/호수) 추출 및 경고창 생성
+                        // 🌟 [추가] API가 실제로 물고 온 택배 송장(실제 매칭된 전체 주소) 추출 및 경고창 생성
                         // ====================================================================
-                        let apiMatchedStr = "단일 건물 또는 지번 매칭 (동·호수 없음)";
+                        const baseAddress = document.getElementById('address').value.trim(); // 👈 검색한 기본 주소 가져오기
+                        let apiMatchedStr = `${baseAddress} (단일 건물 또는 지번 매칭)`;
+                        
                         if (propType === "공동주택" && uniqueData.length > 0) {
                             let apiDong = String(uniqueData[0].dong || "").trim();
                             let apiHo = String(uniqueData[0].ho || "").trim();
                             
                             // 동, 호 글자가 없으면 붙여주기
-                            if (apiDong && !apiDong.includes('동')) apiDong += '동';
-                            if (apiHo && !apiHo.includes('호')) apiHo += '호';
+                            if (apiDong && !apiDong.includes('동') && apiDong !== '-') apiDong += '동';
+                            if (apiHo && !apiHo.includes('호') && apiHo !== '-') apiHo += '호';
                             
-                            if (apiDong || apiHo) {
-                                apiMatchedStr = `${apiDong} ${apiHo}`.trim();
+                            // 기본 주소 뒤에 API가 매칭한 동/호수를 이어 붙입니다.
+                            if ((apiDong && apiDong !== '-') || (apiHo && apiHo !== '-')) {
+                                apiMatchedStr = `${baseAddress} ${apiDong} ${apiHo}`.trim();
                             }
                         }
 
@@ -882,7 +885,6 @@
                         if (!matchNoticeBanner) {
                             matchNoticeBanner = document.createElement('div');
                             matchNoticeBanner.id = 'matched-address-notice';
-                            // 공시가격 결과 컨테이너의 맨 첫 번째(차트 위) 요소로 꽂아 넣습니다.
                             document.getElementById('result-container').prepend(matchNoticeBanner);
                         }
 
