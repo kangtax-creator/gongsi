@@ -1409,7 +1409,7 @@
                             complexName: complexName.trim(),
                             jibun: jibun,
                             floor: String(item.floor || item.flr || item.층 || "-"),
-                            ownershipGbn: String(item.shareDealingType || item.pdealingtype || item.ownershipGbn || item.구분 || "")
+                            ownershipGbn: String(item.shareDealingType || item.pdealingtype || item.ownershipGbn || item.구분 || ""),
 
                             dealingGbn: dealingGbn,
                             contractType: contractType,
@@ -1507,7 +1507,7 @@
                     complexName: complexName.trim(),
                     jibun: jibun,
                     floor: getText(item, ["floor", "층"]) || "-",
-                    ownershipGbn: getText(item, ["shareDealingType", "pdealingtype", "ownershipGbn", "구분"]) || ""
+                    ownershipGbn: getText(item, ["shareDealingType", "pdealingtype", "ownershipGbn", "구분"]) || "",
 
                     dealingGbn: dealingGbn,
                     contractType: contractType,
