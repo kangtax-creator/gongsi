@@ -911,6 +911,9 @@
                 alert("공시가 데이터를 불러오는 중 오류가 발생했습니다.");
             } finally { 
                 btn.innerText = "기본 정보 및 공시가격 연혁 조회"; btn.disabled = false; 
+                if (globalCurrentPnu) {
+                    fetchComplexTransactions();
+                }
             }
         }
 
