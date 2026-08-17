@@ -683,6 +683,13 @@
                     if (match && document.getElementById('renewalGu')) {
                         document.getElementById('renewalGu').value = match[1];
                     }
+                    // 🌟 [추가] 카카오(다음) 서버가 알려주는 정확한 아파트(건물) 이름을 4번 탭에 즉시 꽂아버림!
+                    if (data.buildingName && document.getElementById('renewalName')) {
+                        let coreName = data.buildingName.replace(/아파트|주상복합|오피스텔|재건축|재개발/g, '').trim();
+                        if (coreName && isNaN(coreName)) {
+                            document.getElementById('renewalName').value = coreName;
+                        }
+                    }
                 },
                 width: '100%',
                 height: '100%'
@@ -924,23 +931,16 @@
                 console.error(error);
                 alert("공시가 데이터를 불러오는 중 오류가 발생했습니다.");
             } finally { 
-                btn.innerText = "기본 정보 및 공시가격 연혁 조회"; btn.disabled = false; 
-                if (globalCurrentPnu) {
-                    fetchComplexTransactions();
-                    
-                    // 🌟 4번 탭(정비사업) 프리페칭: 주소창 텍스트 대신, API가 찾아낸 진짜 단지명(globalComplexName) 활용!
-                    if (globalComplexName) {
-                        // '은마아파트' -> '은마' 로 핵심 단어만 정제
-                        let coreName = globalComplexName.replace(/아파트|주상복합|오피스텔|재건축|재개발/g, '').trim();
+                btn.innerText = "기본 정보 및 공시가격 연혁 조회"; 
+                btn.disabled = false; 
 
-                        // 정제된 단어가 있고, 단순 숫자가 아닐 때만 4번 탭 스캔 출발!
-                        if (coreName && isNaN(coreName)) {
-                            let renewalInput = document.getElementById('renewalName');
-                            if (renewalInput) {
-                                renewalInput.value = coreName; // 4번 탭 검색창에 '은마' 세팅
-                                fetchSeoulRenewal();           // 백그라운드 스캔 실행
-                            }
-                        }
+                if (globalCurrentPnu) {
+                    fetchComplexTransactions(); // 2번 탭(실거래가) 미리 스캔
+                    
+                    // 🌟 4번 탭(정비사업) 프리페칭: 주소 검색 때 세팅된 이름이 있으면 그대로 백그라운드 스캔 출발!
+                    let renewalInput = document.getElementById('renewalName');
+                    if (renewalInput && renewalInput.value) {
+                        fetchSeoulRenewal();
                     }
                 }
             }
