@@ -927,6 +927,21 @@
                 btn.innerText = "기본 정보 및 공시가격 연혁 조회"; btn.disabled = false; 
                 if (globalCurrentPnu) {
                     fetchComplexTransactions();
+                    // 🌟 [추가] 4번 탭 정비사업 현황도 핵심 키워드만 뽑아서 미리 스캔!
+                    // 1. 메인 주소 검색창의 검색어 가져오기 (메인 검색창 ID가 'keyword'라고 가정. 다르다면 수정 필요!)
+                    let mainKeyword = document.getElementById('keyword') ? document.getElementById('keyword').value : "";
+                    
+                    // 2. '은마아파트' -> '은마' 로 핵심 단어만 추출 (정비사업 구역명에는 '아파트' 글자가 안 들어가는 경우가 많으므로)
+                    let coreName = mainKeyword.replace(/아파트|주상복합|오피스텔|재건축|재개발/g, '').trim();
+
+                    // 3. 추출한 단어가 있다면 4번 탭 검색창에 넣고 백그라운드 스캔 실행
+                    if (coreName) {
+                        let renewalInput = document.getElementById('renewalName');
+                        if (renewalInput) {
+                            renewalInput.value = coreName; // 4번 탭 검색창에 몰래 '은마' 입력
+                            fetchSeoulRenewal();           // 정비사업 스캔 함수 쓱 실행
+                        }
+                    }
                 }
             }
         }
