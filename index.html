@@ -801,6 +801,11 @@
                 let pageNo = 1; let keepFetching = true;
 
                 while (keepFetching) {
+                    if (pageNo === 1) {
+                        btn.innerText = "공시가격 연혁 스캔 중...";
+                    } else {
+                        btn.innerText = `대단지 공시가격 연혁 스캔 중... (${pageNo}000건 탐색 완료)`;
+                    }
                     const params = new URLSearchParams({ key: VWORLD_KEY, pnu: globalCurrentPnu, format: "json", numOfRows: "1000", pageNo: String(pageNo), domain: DOMAIN });
                     const data = await fetchJSONP(`${apiUrl}?${params.toString()}`);
                     let items = [];
