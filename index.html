@@ -1313,37 +1313,67 @@
                         let dongHoStr = (exposItem.dongNm ? exposItem.dongNm + " " : "") + (exposItem.hoNm || "");
                         if (!dongHoStr.trim()) dongHoStr = (rawDongVal ? rawDongVal+"동 " : "") + (rawHoVal ? rawHoVal+"호" : "해당 호수");
 
-                        // 🌟 [추가 로직] 전체 호실 리스트 추출
+                        // 🌟 [최종 완성본] 호실 리스트 추출 및 아코디언 버튼 UI
                         let totalHoBadge = "";
                         try {
-                            let totalHoCnt = titleItem ? (titleItem.hoCnt || 0) : 0;
-                            let hoSet = new Set();
-                            if (typeof validExpos !== 'undefined' && validExpos.length > 0) {
-                                validExpos.forEach(item => {
-                                    if (item.hoNm && !item.hoNm.includes('공용')) {
-                                        hoSet.add(item.hoNm);
+                            let hoArray = [];
+                            // 전체 호실을 확실하게 한 번 더 가져옵니다.
+                            const exposUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrExposPubuseAreaInfo?serviceKey=${DATA_GO_KR_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bun}&ji=${ji}&numOfRows=10000&pageNo=1&_type=json`;
+                            const exposJson = await fetchWithProxy(exposUrl);
+                            
+                            if (exposJson?.response?.body?.items?.item) {
+                                const arr = Array.isArray(exposJson.response.body.items.item) ? exposJson.response.body.items.item : [exposJson.response.body.items.item];
+                                let hoSet = new Map();
+                                arr.forEach(item => {
+                                    if ((item.exposPubuseGbCd === '1' || !(item.exposPubuseGbCdNm || '').includes('공용')) && item.hoNm) {
+                                        hoSet.set(item.hoNm, item);
                                     }
                                 });
+                                // 호수 오름차순 정렬
+                                hoArray = Array.from(hoSet.values()).sort((a, b) => parseInt((a.hoNm||'').replace(/\D/g, '') || 0) - parseInt((b.hoNm||'').replace(/\D/g, '') || 0));
                             }
-                            let hoArray = Array.from(hoSet).sort((a, b) => parseInt(a.replace(/\D/g, '') || 0) - parseInt(b.replace(/\D/g, '') || 0));
                             
+                            let totalHoCnt = titleItem ? (titleItem.hoCnt || 0) : hoArray.length;
+
                             if (hoArray.length > 0) {
+                                window.cachedExposList = hoArray;
+                                window.cachedTitleItem = titleItem;
+
+                                let btnHtml = hoArray.map((item, idx) => {
+                                    return `<button id="expos-btn-${idx}" onclick="updateExposView(${idx})" class="expos-btn px-2.5 py-1.5 bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 rounded-lg text-[11px] font-bold transition-all mb-1.5 mr-1.5 active:scale-95 shadow-sm">${item.hoNm}</button>`;
+                                }).join('');
+
                                 totalHoBadge = `
-                                    <div class="col-span-full mt-2 mb-1 p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
-                                        <p class="text-xs font-bold text-indigo-800 mb-1.5">해당 지번 전체 호실 현황 (총 ${hoArray.length}개 호실 추정)</p>
-                                        <p class="text-[11px] text-indigo-600 font-medium break-words">${hoArray.join(', ')}</p>
+                                    <div class="col-span-full mt-3 p-4 bg-indigo-50 border border-indigo-200 rounded-xl shadow-inner">
+                                        <div class="flex justify-between items-center">
+                                            <p class="text-xs font-black text-indigo-800 flex items-center">
+                                                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                                건축물대장상 총 호실 수: ${totalHoCnt}개 호실
+                                            </p>
+                                            <button onclick="toggleExposList()" id="expos-toggle-btn" class="bg-white text-indigo-600 border border-indigo-200 px-3 py-1.5 rounded-lg text-[11px] font-bold shadow-sm hover:bg-indigo-100 transition-colors">
+                                                호실 선택하기 ▼
+                                            </button>
+                                        </div>
+                                        
+                                        <div id="expos-list-container" class="hidden mt-3 pt-3 border-t border-indigo-200/60">
+                                            <p class="text-[10px] text-indigo-500 mb-2 font-medium">※ 아래 호실을 클릭하면 상단 요약 정보가 즉시 해당 호실 기준으로 변경됩니다.</p>
+                                            <div class="flex flex-wrap max-h-48 overflow-y-auto hide-scrollbar">
+                                                ${btnHtml}
+                                            </div>
+                                        </div>
                                     </div>
                                 `;
                             } else if (totalHoCnt > 0) {
                                 totalHoBadge = `<div class="col-span-full mt-2 mb-1 p-3 bg-indigo-50 border border-indigo-200 rounded-xl"><p class="text-xs font-bold text-indigo-800">건축물대장상 총 호실 수: ${totalHoCnt}개 호실</p></div>`;
                             }
-                        } catch(e) {}
+                        } catch(e) { console.error(e); }
 
+                        // 🌟 박스 안의 텍스트가 바뀔 수 있도록 id 추가
                         bldgHtml = warningHtml + `
-                            <div class="bg-emerald-50 p-3 rounded-lg flex flex-col justify-center"><p class="text-xs text-emerald-800 font-bold mb-1">동·호수</p><p class="text-sm font-extrabold text-slate-800">${dongHoStr.trim()}</p><p class="text-[10px] text-slate-500 mt-0.5 truncate" title="${bldNm}">${bldNm}</p></div>
-                            <div class="bg-emerald-50 p-3 rounded-lg flex flex-col justify-center"><p class="text-xs text-emerald-800 font-bold mb-1">주용도 (전유부)</p><p class="text-sm font-extrabold text-slate-800">${exposItem.mainPurpsCdNm || '-'}</p></div>
-                            <div class="bg-emerald-50 p-3 rounded-lg flex flex-col justify-center"><p class="text-xs text-emerald-800 font-bold mb-1">전용면적</p><p class="text-sm font-extrabold text-slate-800">${exposItem.area ? exposItem.area + ' ㎡' : '-'}</p></div>
-                            <div class="bg-emerald-50 p-3 rounded-lg flex flex-col justify-center"><p class="text-xs text-emerald-800 font-bold mb-1">사용승인일(준공)</p><p class="text-sm font-extrabold text-slate-800">${useAprDay || '-'}</p></div>
+                            <div class="bg-emerald-50 p-3 rounded-lg flex flex-col justify-center"><p class="text-xs text-emerald-800 font-bold mb-1">동·호수</p><p id="expos-dongho" class="text-sm font-extrabold text-slate-800">${dongHoStr.trim()}</p><p class="text-[10px] text-slate-500 mt-0.5 truncate" title="${bldNm}">${bldNm}</p></div>
+                            <div class="bg-emerald-50 p-3 rounded-lg flex flex-col justify-center"><p class="text-xs text-emerald-800 font-bold mb-1">주용도 (전유부)</p><p id="expos-purps" class="text-sm font-extrabold text-slate-800">${exposItem.mainPurpsCdNm || '-'}</p></div>
+                            <div class="bg-emerald-50 p-3 rounded-lg flex flex-col justify-center"><p class="text-xs text-emerald-800 font-bold mb-1">전용면적</p><p id="expos-area" class="text-sm font-extrabold text-slate-800">${exposItem.area ? exposItem.area + ' ㎡' : '-'}</p></div>
+                            <div class="bg-emerald-50 p-3 rounded-lg flex flex-col justify-center"><p class="text-xs text-emerald-800 font-bold mb-1">사용승인일(준공)</p><p id="expos-date" class="text-sm font-extrabold text-slate-800">${useAprDay || '-'}</p></div>
                             ${totalHoBadge}
                         `;
                     } else if (titleItem) {
@@ -2632,6 +2662,49 @@
                 });
             }
         });
+
+        // 🌟 전체 호실 리스트 열기/닫기 (아코디언 기능)
+        window.toggleExposList = function() {
+            const container = document.getElementById('expos-list-container');
+            const btn = document.getElementById('expos-toggle-btn');
+            
+            if (container.classList.contains('hidden')) {
+                container.classList.remove('hidden');
+                btn.innerHTML = '닫기 ▲';
+                btn.classList.add('bg-indigo-100');
+            } else {
+                container.classList.add('hidden');
+                btn.innerHTML = '호실 선택하기 ▼';
+                btn.classList.remove('bg-indigo-100');
+            }
+        };
+
+        // 🌟 호실 버튼 클릭 시 화면 데이터 변경 기능
+        window.updateExposView = function(idx) {
+            if (!window.cachedExposList) return;
+            const item = window.cachedExposList[idx];
+            const useAprDay = window.cachedTitleItem ? formatPubDate(window.cachedTitleItem.useAprDay) : '-';
+            
+            // 텍스트 즉시 변경
+            document.getElementById('expos-dongho').innerText = (item.dongNm ? item.dongNm + " " : "") + (item.hoNm || "");
+            document.getElementById('expos-purps').innerText = item.mainPurpsCdNm || '-';
+            document.getElementById('expos-area').innerText = item.area ? item.area + ' ㎡' : '-';
+            document.getElementById('expos-date').innerText = useAprDay || '-';
+
+            // 글로벌 변수 업데이트 (나중에 PDF/엑셀 다운로드나 모달창 열 때 적용됨)
+            globalExposItem = item;
+
+            // 클릭한 버튼 색상 칠하기
+            document.querySelectorAll('.expos-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white');
+                btn.classList.add('bg-white', 'text-indigo-700');
+            });
+            const activeBtn = document.getElementById('expos-btn-' + idx);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-white', 'text-indigo-700');
+                activeBtn.classList.add('bg-indigo-600', 'text-white');
+            }
+        };
     </script>
 </body>
 </html>
