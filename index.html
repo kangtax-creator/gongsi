@@ -1313,11 +1313,38 @@
                         let dongHoStr = (exposItem.dongNm ? exposItem.dongNm + " " : "") + (exposItem.hoNm || "");
                         if (!dongHoStr.trim()) dongHoStr = (rawDongVal ? rawDongVal+"동 " : "") + (rawHoVal ? rawHoVal+"호" : "해당 호수");
 
+                        // 🌟 [추가 로직] 전체 호실 리스트 추출
+                        let totalHoBadge = "";
+                        try {
+                            let totalHoCnt = titleItem ? (titleItem.hoCnt || 0) : 0;
+                            let hoSet = new Set();
+                            if (typeof validExpos !== 'undefined' && validExpos.length > 0) {
+                                validExpos.forEach(item => {
+                                    if (item.hoNm && !item.hoNm.includes('공용')) {
+                                        hoSet.add(item.hoNm);
+                                    }
+                                });
+                            }
+                            let hoArray = Array.from(hoSet).sort((a, b) => parseInt(a.replace(/\D/g, '') || 0) - parseInt(b.replace(/\D/g, '') || 0));
+                            
+                            if (hoArray.length > 0) {
+                                totalHoBadge = `
+                                    <div class="col-span-full mt-2 mb-1 p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
+                                        <p class="text-xs font-bold text-indigo-800 mb-1.5">해당 지번 전체 호실 현황 (총 ${hoArray.length}개 호실 추정)</p>
+                                        <p class="text-[11px] text-indigo-600 font-medium break-words">${hoArray.join(', ')}</p>
+                                    </div>
+                                `;
+                            } else if (totalHoCnt > 0) {
+                                totalHoBadge = `<div class="col-span-full mt-2 mb-1 p-3 bg-indigo-50 border border-indigo-200 rounded-xl"><p class="text-xs font-bold text-indigo-800">건축물대장상 총 호실 수: ${totalHoCnt}개 호실</p></div>`;
+                            }
+                        } catch(e) {}
+
                         bldgHtml = warningHtml + `
                             <div class="bg-emerald-50 p-3 rounded-lg flex flex-col justify-center"><p class="text-xs text-emerald-800 font-bold mb-1">동·호수</p><p class="text-sm font-extrabold text-slate-800">${dongHoStr.trim()}</p><p class="text-[10px] text-slate-500 mt-0.5 truncate" title="${bldNm}">${bldNm}</p></div>
                             <div class="bg-emerald-50 p-3 rounded-lg flex flex-col justify-center"><p class="text-xs text-emerald-800 font-bold mb-1">주용도 (전유부)</p><p class="text-sm font-extrabold text-slate-800">${exposItem.mainPurpsCdNm || '-'}</p></div>
                             <div class="bg-emerald-50 p-3 rounded-lg flex flex-col justify-center"><p class="text-xs text-emerald-800 font-bold mb-1">전용면적</p><p class="text-sm font-extrabold text-slate-800">${exposItem.area ? exposItem.area + ' ㎡' : '-'}</p></div>
                             <div class="bg-emerald-50 p-3 rounded-lg flex flex-col justify-center"><p class="text-xs text-emerald-800 font-bold mb-1">사용승인일(준공)</p><p class="text-sm font-extrabold text-slate-800">${useAprDay || '-'}</p></div>
+                            ${totalHoBadge}
                         `;
                     } else if (titleItem) {
                         bldgHtml = warningHtml + `
