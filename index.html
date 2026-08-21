@@ -23,7 +23,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <!-- 카카오맵 API 로드 (세무사님 키 적용 및 services 라이브러리 포함) -->
-<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=aad42b1bdcb1fec4862775e7dcda0025&libraries=services"></script>
+    <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=aad42b1bdcb1fec4862775e7dcda0025&libraries=services"></script>
 
     <!-- 구글 애널리틱스 (GA4) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-97YGLD3SJ9"></script>
@@ -589,7 +589,7 @@
 
         let map; // 지도를 전역 변수로 선언
         
-        window.toggleMap = function() {
+       window.toggleMap = function() {
             const container = document.getElementById('map-container');
             const btn = document.getElementById('map-toggle-btn');
             
@@ -598,8 +598,13 @@
                 btn.innerHTML = '지도 닫기 ▲';
                 btn.classList.add('bg-slate-200');
                 
-                // 숨겨져 있던 지도가 나타날 때 깨짐 방지
-                setTimeout(() => { if (map) map.relayout(); }, 100);
+                // 🌟 숨겨져 있던 지도가 나타날 때 깨짐 방지 및 중심점 다시 맞추기
+                setTimeout(() => { 
+                    if (map) {
+                        map.relayout();
+                        map.setCenter(new kakao.maps.LatLng(37.498095, 127.027610)); // 중심점 강제 리셋
+                    }
+                }, 100);
             } else {
                 container.classList.add('hidden');
                 btn.innerHTML = '<svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>지도에서 직접 클릭해서 찾기 ▼';
