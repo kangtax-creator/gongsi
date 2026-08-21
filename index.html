@@ -1001,8 +1001,41 @@
                         }, 100);
 
                     } else {
+                    // 🌟 1. 팝업창(alert) 대신 화면에 예쁜 에러 안내와 '자동 전환 버튼'을 띄워줍니다.
                     document.getElementById('result-container').classList.add('hidden');
-                    alert("공시가 내역이 존재하지 않습니다.\n(단, 지역 코드는 정상적으로 획득했으므로 [2번 탭] 실거래가 분석은 정상 이용 가능합니다.)"); 
+                    
+                    const placeholder = document.getElementById('gongsi-placeholder');
+                    placeholder.classList.remove('hidden');
+                    
+                    // 🌟 현재 선택된 유형을 제외한 '나머지 3개 유형'의 재검색 버튼을 동적으로 생성
+                    const allTypes = [
+                        { val: '공동주택', text: '공동주택으로 재검색', cls: 'bg-indigo-100 hover:bg-indigo-200 text-indigo-800' },
+                        { val: '단독주택', text: '단독주택으로 재검색', cls: 'bg-blue-100 hover:bg-blue-200 text-blue-800' },
+                        { val: '상가/건물', text: '상가/일반건물로 재검색', cls: 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800' },
+                        { val: '토지', text: '토지(지가)로 재검색', cls: 'bg-amber-100 hover:bg-amber-200 text-amber-800' }
+                    ];
+
+                    let buttonsHtml = allTypes
+                        .filter(t => t.val !== propType) // 현재 선택된 라디오버튼은 제외
+                        .map(t => `<button onclick="document.querySelector('input[value=&quot;${t.val}&quot;]').checked=true; document.getElementById('searchBtn').click();" class="px-4 py-2 text-xs md:text-sm ${t.cls} font-bold rounded-xl transition-colors shadow-sm whitespace-nowrap">${t.text}</button>`)
+                        .join('');
+
+                    placeholder.innerHTML = `
+                        <div class="flex flex-col items-center py-6">
+                            <div class="bg-amber-100 text-amber-500 rounded-full p-3 mb-3">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            </div>
+                            <h3 class="text-lg font-extrabold text-slate-800 mb-2">현재 설정된 [${propType}] 공시 내역이 없습니다.</h3>
+                            <p class="text-sm text-slate-500 leading-relaxed text-center">
+                                선택하신 위치가 <b>${propType}</b>이(가) 아닐 확률이 높습니다.<br>
+                                아래 버튼을 눌러 다른 부동산 유형으로 즉시 다시 스캔해보세요.
+                            </p>
+                            <div class="mt-5 flex flex-wrap gap-2 justify-center w-full max-w-2xl">
+                                ${buttonsHtml}
+                            </div>
+                            <p class="text-xs text-slate-400 mt-5">(우측의 건축물/토지대장 및 실거래가 탭은 정상적으로 스캔되었습니다)</p>
+                        </div>
+                    `;
                 }
             } catch (error) { 
                 console.error(error);
