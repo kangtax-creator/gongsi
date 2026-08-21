@@ -1036,6 +1036,11 @@
                             <p class="text-xs text-slate-400 mt-5">(우측의 건축물/토지대장 및 실거래가 탭은 정상적으로 스캔되었습니다)</p>
                         </div>
                     `;
+                    setTimeout(() => {
+                        if (window.innerWidth < 768) {
+                            document.getElementById('tab-gongsi').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    }, 100);
                 }
             } catch (error) { 
                 console.error(error);
