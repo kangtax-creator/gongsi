@@ -82,6 +82,10 @@
                                 <input type="radio" name="propType" value="토지" class="peer sr-only">
                                 <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">토지(지가)</div>
                             </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="propType" value="공장/창고" class="peer sr-only">
+                                <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">공장/창고</div>
+                            </label>
                         </div>
                     </div>
 
@@ -226,6 +230,7 @@
                                 <option value="RH">연립다세대</option>
                                 <option value="OFFI">오피스텔</option>
                                 <option value="NRG">상업/업무용 (상가·빌딩)</option>
+                                <option value="INDU">공장/창고 (법정동 단위 비교)</option>
                             </select>
                         </div>
                     </div>
@@ -233,6 +238,14 @@
                         <label class="block text-xs font-bold text-indigo-800 mb-1">💡 단지명 직접 검색 (선택사항 / 분양·입주권은 필수!)</label>
                         <p class="text-[11px] text-indigo-600 mb-2">지번 불일치로 거래가 안 나오거나, 지번이 아직 없는 <b class="text-indigo-800">분양권/입주권</b>을 조회하시려면 여기에 단지명(예: 올림픽파크포레온)을 입력하세요.</p>
                         <input type="text" id="searchKeyword" placeholder="단지명 키워드 입력..." class="w-full bg-white border border-indigo-200 rounded-lg px-4 py-2 text-sm font-bold focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all">
+                    </div>
+                    <div id="indu-notice-banner" class="hidden mt-3 bg-emerald-50 border border-emerald-200 p-3 rounded-xl shadow-sm">
+                        <p class="text-xs font-black text-emerald-800 flex items-center mb-1">
+                            <span class="w-2 h-2 bg-emerald-500 rounded-full mr-1.5"></span> 감정평가 비교사례용 (동일 법정동 스캔)
+                        </p>
+                        <p class="text-[11px] text-emerald-700 leading-relaxed">
+                            공장 및 창고는 해당 지번(1필지)의 거래가 드물기 때문에, <b>해당 물건이 속한 '법정동' 전체의 거래 내역</b>을 가져옵니다. 자산 가치 평가 및 시가 참고용으로 활용하세요.
+                        </p>
                     </div>
                     <div class="pt-2">
                         <button onclick="fetchComplexTransactions()" id="sigaBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition-all">
@@ -1016,11 +1029,12 @@
                     const placeholder = document.getElementById('gongsi-placeholder');
                     placeholder.classList.remove('hidden');
                     
-                    // 🌟 현재 선택된 유형을 제외한 '나머지 3개 유형'의 재검색 버튼을 동적으로 생성
+                    // 🌟 현재 선택된 유형을 제외한 '나머지 유형'의 재검색 버튼을 동적으로 생성
                     const allTypes = [
                         { val: '공동주택', text: '공동주택으로 재검색', cls: 'bg-indigo-100 hover:bg-indigo-200 text-indigo-800' },
                         { val: '단독주택', text: '단독주택으로 재검색', cls: 'bg-blue-100 hover:bg-blue-200 text-blue-800' },
                         { val: '상가/건물', text: '상가/일반건물로 재검색', cls: 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800' },
+                        { val: '공장/창고', text: '공장/창고로 재검색', cls: 'bg-slate-200 hover:bg-slate-300 text-slate-800 font-extrabold' },
                         { val: '토지', text: '토지(지가)로 재검색', cls: 'bg-amber-100 hover:bg-amber-200 text-amber-800' }
                     ];
 
@@ -1203,7 +1217,9 @@
                 document.getElementById('land-info').innerHTML = landHtml;
                 const sigaSelect = document.getElementById('sigaTargetType');
                 if (sigaSelect && typeof propType !== 'undefined') {
-                    sigaSelect.value = (propType === "상가/건물" || propType === "단독/다가구") ? "NRG" : "APT";
+                    if (propType === "상가/건물" || propType === "단독주택") sigaSelect.value = "NRG";
+                    else if (propType === "공장/창고") sigaSelect.value = "INDU";
+                    else sigaSelect.value = "APT";
                 }
             } catch(e) { console.error("❌ 토지대장 에러:", e); }
             
@@ -1819,6 +1835,7 @@
                 let silvApiPath = "RTMSDataSvcSilvTrade/getRTMSDataSvcSilvTrade"; 
                 
                 let includeSilv = (targetType === "APT");
+                let includeRent = true; // 🌟 전월세 호출 여부 플래그 추가
 
                 if (targetType === "RH") {
                     tradeApiPath = "RTMSDataSvcRHTrade/getRTMSDataSvcRHTrade";
@@ -1828,8 +1845,12 @@
                     rentApiPath = "RTMSDataSvcOffiRent/getRTMSDataSvcOffiRent";
                 } else if (targetType === "NRG") {
                     tradeApiPath = "RTMSDataSvcNrgTrade/getRTMSDataSvcNrgTrade";
-                    includeRent = false; // 공공데이터포털에 상업용 전월세 통합 API는 없음
-                    includeSilv = false; // 상업용은 분양/입주권 조회 제외    
+                    includeRent = false; 
+                    includeSilv = false;    
+                } else if (targetType === "INDU") { // 🌟 공장/창고 라우팅 추가
+                    tradeApiPath = "RTMSDataSvcInduTrade/getRTMSDataSvcInduTrade";
+                    includeRent = false; 
+                    includeSilv = false;
                 }
 
                 for (const ym of targetMonths) {
@@ -1839,13 +1860,16 @@
                             fullUrl: `https://apis.data.go.kr/1613000/${tradeApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
                             vercelUrl: `/api/rtms/${tradeApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
                             type: 'trade' 
-                        },
-                        { 
+                        }
+                    ];
+                    
+                    if (includeRent) { // 🌟 아파트/빌라/오피스텔일 때만 전월세 호출
+                        urlsToFetch.push({ 
                             fullUrl: `https://apis.data.go.kr/1613000/${rentApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
                             vercelUrl: `/api/rent/${rentApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
                             type: 'rent' 
-                        }
-                    ];
+                        });
+                    }
                     if (includeSilv) {
                         urlsToFetch.push({ 
                             fullUrl: `https://apis.data.go.kr/1613000/${silvApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
@@ -1891,13 +1915,25 @@
                                     }
                                 }
 
+                                // 🌟 대상 주소에서 '동/가/로' 이름 자동 추출 (공장/창고 필터링용)
+                                const addrInput = document.getElementById('address').value;
+                                const dongMatch = addrInput.match(/([가-힣]+[0-9]*(?:동|가|로|길))/);
+                                const targetDongNm = dongMatch ? dongMatch[1] : "";
+
                                 if (req.type === 'silv') {
                                     if (!isKeywordMatch && !isNameValid) return; 
                                 } else {
-                                    if (keywordInput) {
-                                        if (!isKeywordMatch) return;
+                                    if (targetType === "INDU") {
+                                        // 🌟 공장/창고: 지번 일치를 무시하고 '같은 법정동' 안의 거래면 모두 통과시킴!
+                                        if (targetDongNm && item.complexName && !item.complexName.includes(targetDongNm)) return;
+                                        if (keywordInput && !isKeywordMatch) return; // 단지명을 직접 검색한 경우엔 해당 키워드 우선
                                     } else {
-                                        if (!isJibunValid && !isNameValid) return;
+                                        // 기존 아파트/상가 지번 매칭 로직
+                                        if (keywordInput) {
+                                            if (!isKeywordMatch) return;
+                                        } else {
+                                            if (!isJibunValid && !isNameValid) return;
+                                        }
                                     }
                                 }
 
@@ -2767,22 +2803,50 @@
             XLSX.writeFile(workbook, `강승완세무사_실거래가_${addressValue}.xlsx`);
         }
        // =================================================================
-        // 🌟 [UI 편의성] 부동산 유형(라디오 버튼) 변경 시 동/호수 입력값 리셋
+        // 🌟 [UI 편의성] 부동산 유형(라디오 버튼) 및 안내 배너 동기화 제어
         // =================================================================
         document.addEventListener('DOMContentLoaded', () => {
             const propRadios = document.querySelectorAll('input[name="propType"]');
             
-            // 동/호수 입력칸을 찾습니다
             const dongInput = document.getElementById('dongInput') || document.querySelector('input[placeholder*="동"]');
             const hoInput = document.getElementById('hoInput') || document.querySelector('input[placeholder*="호"]');
+            const sigaSelect = document.getElementById('sigaTargetType');
+            const banner = document.getElementById('indu-notice-banner');
 
             if (propRadios) {
                 propRadios.forEach(radio => {
                     radio.addEventListener('change', (e) => {
-                        // 🌟 칸을 숨기지 않고, 안에 입력된 숫자(value)만 깔끔하게 비워줍니다!
+                        // 1. 라디오 버튼이 바뀌면 동/호수 입력칸 자동 비우기
                         if (dongInput) dongInput.value = "";
                         if (hoInput) hoInput.value = "";
+                        
+                        const val = e.target.value;
+                        
+                        // 2. 공장/창고일 때만 녹색 안내 배너 띄우기
+                        if (val === '공장/창고') {
+                            if (banner) banner.classList.remove('hidden');
+                        } else {
+                            if (banner) banner.classList.add('hidden');
+                        }
+
+                        // 3. 2번 탭(실거래가) 셀렉트 박스도 똑똑하게 즉시 동기화
+                        if (sigaSelect) {
+                            if (val === '공동주택') sigaSelect.value = 'APT';
+                            else if (val === '상가/건물') sigaSelect.value = 'NRG';
+                            else if (val === '공장/창고') sigaSelect.value = 'INDU';
+                        }
                     });
+                });
+            }
+
+            // 2번 탭(실거래가)에서 셀렉트 박스를 사용자가 직접 '공장/창고'로 바꿀 때도 배너 표시
+            if (sigaSelect) {
+                sigaSelect.addEventListener('change', (e) => {
+                    if (e.target.value === 'INDU') {
+                        if (banner) banner.classList.remove('hidden');
+                    } else {
+                        if (banner) banner.classList.add('hidden');
+                    }
                 });
             }
         });
