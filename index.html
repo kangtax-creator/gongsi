@@ -82,6 +82,7 @@
                                 <input type="radio" name="propType" value="토지" class="peer sr-only">
                                 <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">토지(지가)</div>
                             <label class="cursor-pointer">
+                            </label>    
                             <input type="radio" name="propType" value="공장/창고" class="peer sr-only">
                             <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">공장/창고</div>    
                             </label>
@@ -1214,6 +1215,7 @@
                 } else {
                    sigaSelect.value = "APT";
                 }
+             }
             } catch(e) { console.error("❌ 토지대장 에러:", e); }
             
             // 🌟 [2] 토지이용계획(규제/정비구역) 조회 (VWORLD)
