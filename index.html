@@ -1781,37 +1781,38 @@
                 }
             }
 
-            // 🌟 2. 3중 방탄 통신 함수
+            // 🌟 2. 4중 방탄 통신 함수 (신규 API 우회 강화 및 가짜 응답 차단)
             async function safeFetchText(fullUrl, vercelUrl) {
-                // 1순위: 유저 개인 IP로 직접 통신 (CORS 허용 시 가장 빠름)
+                // 응답 데이터가 실제 국토부 XML 데이터(<items>)가 맞는지 검증하는 필터
+                const isValidXml = (text) => text && text.includes("<items>");
+
+                // 1순위: 유저 개인 IP 직접 통신
                 try {
                     const res = await fetchWithTimeout(fullUrl, 4000);
-                    if (res.ok) {
-                        const text = await res.text();
-                        if (text && !text.includes("HTTP_ERROR") && !text.includes("<errMsg>")) return text;
-                    }
-                } catch (e) { /* CORS 에러 시 조용히 다음으로 패스 */ }
+                    if (res.ok) { const text = await res.text(); if (isValidXml(text)) return text; }
+                } catch (e) {}
 
-                // 2순위: 초고속/안정형 프록시 (corsproxy.io - 무한 대기 없음)
+                // 2순위: AllOrigins 프록시 (가장 강력한 우회망 추가!)
+                try {
+                    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(fullUrl)}`;
+                    const res = await fetchWithTimeout(proxyUrl, 6000);
+                    if (res.ok) { const text = await res.text(); if (isValidXml(text)) return text; }
+                } catch (e) {}
+
+                // 3순위: CorsProxy
                 try {
                     const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(fullUrl)}`;
                     const res = await fetchWithTimeout(proxyUrl, 6000);
-                    if (res.ok) {
-                        const text = await res.text();
-                        if (text && !text.includes("HTTP_ERROR") && !text.includes("<errMsg>")) return text;
-                    }
+                    if (res.ok) { const text = await res.text(); if (isValidXml(text)) return text; }
                 } catch (e) {}
 
-                // 3순위: 기존 Vercel 서버 (IP 차단이 풀렸을 때 작동)
+                // 4순위: 기존 Vercel 서버
                 try {
                     const res = await fetchWithTimeout(vercelUrl, 6000);
-                    if (res.ok) {
-                        const text = await res.text();
-                        if (text && !text.includes("HTTP_ERROR") && !text.includes("<errMsg>")) return text;
-                    }
+                    if (res.ok) { const text = await res.text(); if (isValidXml(text)) return text; }
                 } catch (e) {}
 
-                return null; // 3개 다 실패하면 null
+                return null; // 4개 다 실패하면 null 반환하여 에러 띄움
             }
 
             try {
@@ -1857,23 +1858,23 @@
                     
                     const urlsToFetch = [
                         { 
-                            fullUrl: `https://apis.data.go.kr/1613000/${tradeApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
-                            vercelUrl: `/api/rtms/${tradeApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
+                            fullUrl: `https://apis.data.go.kr/1613000/${tradeApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&pageNo=1&numOfRows=1500`,
+                            vercelUrl: `/api/rtms/${tradeApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&pageNo=1&numOfRows=1500`,
                             type: 'trade' 
                         }
                     ];
                     
-                    if (includeRent) { // 🌟 아파트/빌라/오피스텔일 때만 전월세 호출
+                    if (includeRent) {
                         urlsToFetch.push({ 
-                            fullUrl: `https://apis.data.go.kr/1613000/${rentApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
-                            vercelUrl: `/api/rent/${rentApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
+                            fullUrl: `https://apis.data.go.kr/1613000/${rentApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&pageNo=1&numOfRows=1500`,
+                            vercelUrl: `/api/rent/${rentApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&pageNo=1&numOfRows=1500`,
                             type: 'rent' 
                         });
                     }
                     if (includeSilv) {
                         urlsToFetch.push({ 
-                            fullUrl: `https://apis.data.go.kr/1613000/${silvApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
-                            vercelUrl: `/api/rtms/${silvApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
+                            fullUrl: `https://apis.data.go.kr/1613000/${silvApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&pageNo=1&numOfRows=1500`,
+                            vercelUrl: `/api/rtms/${silvApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&pageNo=1&numOfRows=1500`,
                             type: 'silv' 
                         });
                     }
