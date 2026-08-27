@@ -81,6 +81,9 @@
                             <label class="cursor-pointer">
                                 <input type="radio" name="propType" value="토지" class="peer sr-only">
                                 <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">토지(지가)</div>
+                            <label class="cursor-pointer">
+                            <input type="radio" name="propType" value="공장/창고" class="peer sr-only">
+                            <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">공장/창고</div>    
                             </label>
                         </div>
                     </div>
@@ -226,6 +229,7 @@
                                 <option value="RH">연립다세대</option>
                                 <option value="OFFI">오피스텔</option>
                                 <option value="NRG">상업/업무용 (상가·빌딩)</option>
+                                <option value="INDU">공장/창고</option>
                             </select>
                         </div>
                     </div>
@@ -872,20 +876,20 @@
                     document.getElementById('content-gongsi').insertBefore(noticeBanner, document.getElementById('result-container'));
                 }
 
-                if (propType === "상가/건물") {
+                if (propType === "상가/건물" || propType === "공장/창고") {
                     noticeBanner.innerHTML = `
-                        <div class="bg-amber-50 border border-amber-200 p-4 rounded-2xl shadow-sm mb-6">
-                            <p class="text-sm font-bold text-amber-800 mb-1">📢 상업용 건물 조회 안내</p>
-                            <p class="text-xs text-amber-700 leading-relaxed">
-                                상가, 오피스 등 상업용 건물의 <b>건물분 기준시가는 국세청 홈택스에서 별도로 조회</b>하셔야 합니다.<br>
-                                아래는 해당 지번의 <b>개별공시지가(토지분) 변동 내역</b>이며, 우측 탭에서 <b>건축물·토지대장 상세 원본</b> 확인이 가능합니다.
+                       <div class="bg-amber-50 border border-amber-200 p-4 rounded-2xl shadow-sm mb-6">
+                           <p class="text-sm font-bold text-amber-800 mb-1">📢 비주거용 건물 조회 안내</p>
+                           <p class="text-xs text-amber-700 leading-relaxed">
+                               상가, 공장, 창고 등 비주거용 건물의 <b>건물분 기준시가는 국세청 홈택스에서 별도로 조회</b>하셔야 합니다.<br>
+                               아래는 해당 지번의 <b>개별공시지가(토지분) 변동 내역</b>이며, 우측 탭에서 <b>건축물·토지대장 상세 원본</b> 확인이 가능합니다.
                             </p>
-                        </div>
-                    `;
-                    noticeBanner.classList.remove('hidden');
-                } else {
-                    noticeBanner.classList.add('hidden');
-                }
+                       </div>
+                  `;
+                  noticeBanner.classList.remove('hidden');
+                 } else {
+                     noticeBanner.classList.add('hidden');
+                 }
 
                 let apiUrl = ""; let priceField = "";
                 if (propType === "공동주택") { apiUrl = "https://api.vworld.kr/ned/data/getApartHousingPriceAttr"; priceField = "pblntfPc"; }
@@ -1203,7 +1207,12 @@
                 document.getElementById('land-info').innerHTML = landHtml;
                 const sigaSelect = document.getElementById('sigaTargetType');
                 if (sigaSelect && typeof propType !== 'undefined') {
-                    sigaSelect.value = (propType === "상가/건물" || propType === "단독/다가구") ? "NRG" : "APT";
+                if (propType === "공장/창고") {
+                    sigaSelect.value = "INDU";
+                } else if (propType === "상가/건물" || propType === "단독/다가구" || propType === "단독주택") {
+                   sigaSelect.value = "NRG";
+                } else {
+                   sigaSelect.value = "APT";
                 }
             } catch(e) { console.error("❌ 토지대장 에러:", e); }
             
@@ -1819,6 +1828,7 @@
                 let silvApiPath = "RTMSDataSvcSilvTrade/getRTMSDataSvcSilvTrade"; 
                 
                 let includeSilv = (targetType === "APT");
+                let includeRent = true; // 👈 전월세 호출 여부를 제어하는 변수 추가
 
                 if (targetType === "RH") {
                     tradeApiPath = "RTMSDataSvcRHTrade/getRTMSDataSvcRHTrade";
@@ -1829,23 +1839,32 @@
                 } else if (targetType === "NRG") {
                     tradeApiPath = "RTMSDataSvcNrgTrade/getRTMSDataSvcNrgTrade";
                     includeRent = false; // 공공데이터포털에 상업용 전월세 통합 API는 없음
-                    includeSilv = false; // 상업용은 분양/입주권 조회 제외    
+                    includeSilv = false; // 상업용은 분양/입주권 조회 제외   
+                } else if (targetType === "INDU") {
+                   // 👇 공장 및 창고 API 엔드포인트 적용
+                   tradeApiPath = "RTMSDataSvcInduTrade/getRTMSDataSvcInduTrade";
+                   includeRent = false; // 공장/창고는 전월세 통합 API가 없으므로 제외
+                   includeSilv = false;    
                 }
 
                 for (const ym of targetMonths) {
                     
                     const urlsToFetch = [
-                        { 
-                            fullUrl: `https://apis.data.go.kr/1613000/${tradeApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
-                            vercelUrl: `/api/rtms/${tradeApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
-                            type: 'trade' 
-                        },
-                        { 
-                            fullUrl: `https://apis.data.go.kr/1613000/${rentApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
-                            vercelUrl: `/api/rent/${rentApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
-                            type: 'rent' 
-                        }
-                    ];
+        { 
+            fullUrl: `https://apis.data.go.kr/1613000/${tradeApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
+            vercelUrl: `/api/rtms/${tradeApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
+            type: 'trade' 
+        }
+    ];
+
+    // includeRent가 true일 때만 전월세 API 배열에 추가
+    if (includeRent) {
+        urlsToFetch.push({ 
+            fullUrl: `https://apis.data.go.kr/1613000/${rentApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
+            vercelUrl: `/api/rent/${rentApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
+            type: 'rent' 
+        });
+    }
                     if (includeSilv) {
                         urlsToFetch.push({ 
                             fullUrl: `https://apis.data.go.kr/1613000/${silvApiPath}?serviceKey=${DATA_GO_KR_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}&numOfRows=1500`,
