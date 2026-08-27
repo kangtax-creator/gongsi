@@ -65,26 +65,26 @@
                 
                 <div class="space-y-4">
                     <div>
-                        <div class="flex flex-wrap gap-2">
-                            <label class="cursor-pointer">
+                        <div class="grid grid-cols-3 gap-2">
+                            <label class="cursor-pointer text-center">
                                 <input type="radio" name="propType" value="공동주택" checked class="peer sr-only">
-                                <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">공동주택</div>
+                                <div class="px-2 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">공동주택</div>
                             </label>
-                            <label class="cursor-pointer">
+                            <label class="cursor-pointer text-center">
                                 <input type="radio" name="propType" value="단독주택" class="peer sr-only">
-                                <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">단독주택</div>
+                                <div class="px-2 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">단독주택</div>
                             </label>
-                            <label class="cursor-pointer">
+                            <label class="cursor-pointer text-center">
                                 <input type="radio" name="propType" value="상가/건물" class="peer sr-only">
-                                <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">상가/일반건물</div>
+                                <div class="px-2 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">상가/일반건물</div>
                             </label>
-                            <label class="cursor-pointer">
+                            <label class="cursor-pointer text-center">
                                 <input type="radio" name="propType" value="토지" class="peer sr-only">
-                                <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">토지(지가)</div>
-                            <label class="cursor-pointer">
-                            </label>    
-                            <input type="radio" name="propType" value="공장/창고" class="peer sr-only">
-                            <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">공장/창고</div>    
+                                <div class="px-2 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">토지(지가)</div>
+                            </label>
+                            <label class="cursor-pointer text-center col-span-2">
+                                <input type="radio" name="propType" value="공장/창고" class="peer sr-only">
+                                <div class="px-2 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">공장/창고</div>
                             </label>
                         </div>
                     </div>
@@ -1021,11 +1021,12 @@
                     const placeholder = document.getElementById('gongsi-placeholder');
                     placeholder.classList.remove('hidden');
                     
-                    // 🌟 현재 선택된 유형을 제외한 '나머지 3개 유형'의 재검색 버튼을 동적으로 생성
+                    // 🌟 현재 선택된 유형을 제외한 '나머지 유형'의 재검색 버튼을 동적으로 생성
                     const allTypes = [
                         { val: '공동주택', text: '공동주택으로 재검색', cls: 'bg-indigo-100 hover:bg-indigo-200 text-indigo-800' },
                         { val: '단독주택', text: '단독주택으로 재검색', cls: 'bg-blue-100 hover:bg-blue-200 text-blue-800' },
                         { val: '상가/건물', text: '상가/일반건물로 재검색', cls: 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800' },
+                        { val: '공장/창고', text: '공장/창고로 재검색', cls: 'bg-slate-200 hover:bg-slate-300 text-slate-800 font-extrabold' },
                         { val: '토지', text: '토지(지가)로 재검색', cls: 'bg-amber-100 hover:bg-amber-200 text-amber-800' }
                     ];
 
@@ -2792,18 +2793,44 @@
         // =================================================================
         document.addEventListener('DOMContentLoaded', () => {
             const propRadios = document.querySelectorAll('input[name="propType"]');
-            
-            // 동/호수 입력칸을 찾습니다
-            const dongInput = document.getElementById('dongInput') || document.querySelector('input[placeholder*="동"]');
-            const hoInput = document.getElementById('hoInput') || document.querySelector('input[placeholder*="호"]');
+            const dongInput = document.getElementById('dong');
+            const hoInput = document.getElementById('ho');
+            const sigaSelect = document.getElementById('sigaTargetType');
+            const banner = document.getElementById('indu-notice-banner');
 
             if (propRadios) {
                 propRadios.forEach(radio => {
                     radio.addEventListener('change', (e) => {
-                        // 🌟 칸을 숨기지 않고, 안에 입력된 숫자(value)만 깔끔하게 비워줍니다!
                         if (dongInput) dongInput.value = "";
                         if (hoInput) hoInput.value = "";
+                        
+                        const val = e.target.value;
+                        
+                        // 1. 공장/창고일 때만 녹색 안내 배너 표시
+                        if (banner) {
+                            if (val === '공장/창고') banner.classList.remove('hidden');
+                            else banner.classList.add('hidden');
+                        }
+
+                        // 2. 2번 탭 실거래가 기본 물건 유형 자동 연동
+                        if (sigaSelect) {
+                            if (val === '공동주택') sigaSelect.value = 'APT';
+                            else if (val === '단독주택') sigaSelect.value = 'RH';
+                            else if (val === '상가/건물') sigaSelect.value = 'NRG';
+                            else if (val === '공장/창고') sigaSelect.value = 'INDU';
+                            else if (val === '토지') sigaSelect.value = 'NRG';
+                        }
                     });
+                });
+            }
+
+            // 2번 탭 셀렉트박스를 직접 바꿀 때도 배너 연동
+            if (sigaSelect) {
+                sigaSelect.addEventListener('change', (e) => {
+                    if (banner) {
+                        if (e.target.value === 'INDU') banner.classList.remove('hidden');
+                        else banner.classList.add('hidden');
+                    }
                 });
             }
         });
