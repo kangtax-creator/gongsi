@@ -2172,6 +2172,22 @@
             const chartData = [...filteredData].reverse();
             sigaChartInstance.data.labels = chartData.map(d => d.date);
 
+            // 🌟 현재 선택된 물건 유형 확인
+    const targetType = document.getElementById('sigaTargetType').value;
+    const isIndu = (targetType === 'INDU'); 
+    
+    // 공장/창고일 경우 라벨을 단가로 변경
+    const tradeLabel = isIndu ? '㎡당 단가 (만원)' : '매매가 (만원)';
+
+    // 🌟 단가 계산 헬퍼 함수
+    const getTradeValue = (d) => {
+        if (isIndu && d.area > 0) {
+            // (총액 / 10000)을 면적으로 나누어 ㎡당 만원 단가 산출 (소수점 1자리)
+            return Number(((d.amount / 10000) / d.area).toFixed(1)); 
+        }
+        return d.amount / 10000;
+    };
+
             let datasets = [];
             if (viewType === 'all') {
                 const tradeValues = chartData.map(d => (d.type === '매매') ? d.amount / 10000 : null);
