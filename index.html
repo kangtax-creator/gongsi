@@ -65,30 +65,29 @@
                 
                 <div class="space-y-4">
                     <div>
-                        <div class="grid grid-cols-3 gap-2">
-                            <label class="cursor-pointer text-center">
+                        <div class="flex flex-wrap gap-2">
+                            <label class="cursor-pointer">
                                 <input type="radio" name="propType" value="공동주택" checked class="peer sr-only">
-                                <div class="px-2 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">공동주택</div>
+                                <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">공동주택</div>
                             </label>
-                            <label class="cursor-pointer text-center">
+                            <label class="cursor-pointer">
                                 <input type="radio" name="propType" value="단독주택" class="peer sr-only">
-                                <div class="px-2 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">단독주택</div>
+                                <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">단독주택</div>
                             </label>
-                            <label class="cursor-pointer text-center">
+                            <label class="cursor-pointer">
                                 <input type="radio" name="propType" value="상가/건물" class="peer sr-only">
-                                <div class="px-2 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">상가/일반건물</div>
+                                <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">상가/일반건물</div>
                             </label>
-                            <label class="cursor-pointer text-center">
+                            <label class="cursor-pointer">
                                 <input type="radio" name="propType" value="토지" class="peer sr-only">
-                                <div class="px-2 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">토지(지가)</div>
+                                <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">토지(지가)</div>
                             </label>
-                            <label class="cursor-pointer text-center col-span-2">
+                            <label class="cursor-pointer">
                                 <input type="radio" name="propType" value="공장/창고" class="peer sr-only">
-                                <div class="px-2 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">공장/창고</div>
+                                <div class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium peer-checked:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:text-indigo-700 transition-all text-xs">공장/창고</div>
                             </label>
                         </div>
                     </div>
-
                     <div class="flex space-x-2">
                         <input type="text" id="address" readonly onclick="execDaumPostcode()" placeholder="여기를 터치하여 주소 검색" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none cursor-pointer">
                         <button type="button" onclick="execDaumPostcode()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-transform active:scale-95 whitespace-nowrap">주소 검색</button>
@@ -238,6 +237,14 @@
                         <label class="block text-xs font-bold text-indigo-800 mb-1">💡 단지명 직접 검색 (선택사항 / 분양·입주권은 필수!)</label>
                         <p class="text-[11px] text-indigo-600 mb-2">지번 불일치로 거래가 안 나오거나, 지번이 아직 없는 <b class="text-indigo-800">분양권/입주권</b>을 조회하시려면 여기에 단지명(예: 올림픽파크포레온)을 입력하세요.</p>
                         <input type="text" id="searchKeyword" placeholder="단지명 키워드 입력..." class="w-full bg-white border border-indigo-200 rounded-lg px-4 py-2 text-sm font-bold focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all">
+                    </div>
+                    <div id="indu-notice-banner" class="hidden mt-3 bg-emerald-50 border border-emerald-200 p-3 rounded-xl shadow-sm">
+                        <p class="text-xs font-black text-emerald-800 flex items-center mb-1">
+                            <span class="w-2 h-2 bg-emerald-500 rounded-full mr-1.5"></span> 감정평가 비교사례용 (동일 법정동 스캔)
+                        </p>
+                        <p class="text-[11px] text-emerald-700 leading-relaxed">
+                            공장 및 창고는 해당 지번(1필지)의 거래가 드물기 때문에, <b>해당 물건이 속한 '법정동' 전체의 거래 내역</b>을 가져옵니다. 자산 가치 평가 및 시가 참고용으로 활용하세요.
+                        </p>
                     </div>
                     <div class="pt-2">
                         <button onclick="fetchComplexTransactions()" id="sigaBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition-all">
