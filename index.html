@@ -690,34 +690,25 @@
             });
         }
 
-        // 건축물대장 등 외부호출용 자체 라우터 적용
+        // 건축물대장 등 외부호출용 프록시
         async function fetchWithProxy(url) {
-            // 🌟 1순위: 방금 만든 세무사님의 Vercel 전용 라우터 사용 (가장 빠르고 안정적)
             try {
-                // 원본 국토부 URL을 인코딩하여 자체 API로 전달
-                const vercelApiUrl = `/api/bld?url=${encodeURIComponent(url)}`;
-                const res = await fetch(vercelApiUrl);
-                
-                if (!res.ok) throw new Error("자체 라우터 통신 실패");
+                const res = await fetch(url);
+                if (!res.ok) throw new Error();
                 return await res.json();
-            } 
-            catch(e) {
-                console.warn("자체 라우터 지연, 예비망(Fallback) 가동");
-                
-                // 🌟 2순위: 만에 하나 Vercel 서버가 지연될 경우를 대비한 기존 우회망 (안전장치)
+            } catch(e) {
                 try {
-                    const proxyUrl2 = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-                    const res3 = await fetch(proxyUrl2);
-                    if (!res3.ok) throw new Error();
-                    return await res3.json();
-                } catch(e3) {
+                    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+                    const res2 = await fetch(proxyUrl);
+                    if (!res2.ok) throw new Error();
+                    const data = await res2.json();
+                    return JSON.parse(data.contents);
+                } catch(e2) {
                     try {
-                        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-                        const res2 = await fetch(proxyUrl);
-                        if (!res2.ok) throw new Error();
-                        const data = await res2.json();
-                        return JSON.parse(data.contents);
-                    } catch(e2) {
+                        const proxyUrl2 = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+                        const res3 = await fetch(proxyUrl2);
+                        return await res3.json();
+                    } catch(e3) {
                         return null; 
                     }
                 }
