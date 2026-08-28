@@ -1931,8 +1931,8 @@
                                 // 👇 [추가] 공장/창고(INDU)일 경우 지번 대신 '법정동' 일치 여부로 합격 판정 처리!
                                 if (targetType === "INDU") {
                                     if (targetUmdNm) {
-                                        // 아이템의 법정동 이름에 검색한 법정동이 포함되어 있으면 무조건 통과
-                                        if ((item.umdNm && item.umdNm.includes(targetUmdNm)) || item.complexName.includes(targetUmdNm)) {
+                                        // includes 대신 === (완전 일치)를 사용하여 옆동네 데이터 차단
+                                        if (item.umdNm && item.umdNm.trim() === targetUmdNm.trim()) {
                                             isJibunValid = true; 
                                         } else {
                                             isJibunValid = false; 
@@ -2173,32 +2173,35 @@
             sigaChartInstance.data.labels = chartData.map(d => d.date);
 
             // 🌟 현재 선택된 물건 유형 확인
-    const targetType = document.getElementById('sigaTargetType').value;
-    const isIndu = (targetType === 'INDU'); 
-    
-    // 공장/창고일 경우 라벨을 단가로 변경
-    const tradeLabel = isIndu ? '㎡당 단가 (만원)' : '매매가 (만원)';
+            const targetType = document.getElementById('sigaTargetType').value;
+            const isIndu = (targetType === 'INDU'); 
+            
+            // 공장/창고일 경우 라벨을 단가로 변경
+            const tradeLabel = isIndu ? '㎡당 단가 (만원)' : '매매가 (만원)';
 
-    // 🌟 단가 계산 헬퍼 함수
-    const getTradeValue = (d) => {
-        if (isIndu && d.area > 0) {
-            // (총액 / 10000)을 면적으로 나누어 ㎡당 만원 단가 산출 (소수점 1자리)
-            return Number(((d.amount / 10000) / d.area).toFixed(1)); 
-        }
-        return d.amount / 10000;
-    };
+            // 🌟 단가 계산 헬퍼 함수
+            const getTradeValue = (d) => {
+                if (isIndu && d.area > 0) {
+                    // (총액 / 10000)을 면적으로 나누어 ㎡당 만원 단가 산출 (소수점 1자리)
+                    return Number(((d.amount / 10000) / d.area).toFixed(1)); 
+                }
+                return d.amount / 10000;
+            };
 
             let datasets = [];
             if (viewType === 'all') {
-                const tradeValues = chartData.map(d => (d.type === '매매') ? d.amount / 10000 : null);
+                // 👇 여기서 d.amount / 10000 대신 getTradeValue(d)를 사용하도록 수정!
+                const tradeValues = chartData.map(d => (d.type === '매매') ? getTradeValue(d) : null);
                 const rentOnlyValues = chartData.map(d => (d.type === '전세' && d.monthlyRent === 0) ? d.amount / 10000 : null);
                 const silvValues = chartData.map(d => (d.type === '분양권' || d.type === '입주권') ? d.amount / 10000 : null);
 
-                if (tradeValues.some(v => v !== null)) datasets.push({ label: '매매가 (만원)', data: tradeValues, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', tension: 0.2, fill: false, pointRadius: 4, spanGaps: true });
+                if (tradeValues.some(v => v !== null)) datasets.push({ label: tradeLabel, data: tradeValues, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', tension: 0.2, fill: false, pointRadius: 4, spanGaps: true });
                 if (rentOnlyValues.some(v => v !== null)) datasets.push({ label: '순수 전세 보증금 (만원)', data: rentOnlyValues, borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', tension: 0.2, fill: false, pointRadius: 4, spanGaps: true });
                 if (silvValues.some(v => v !== null)) datasets.push({ label: '분양·입주권 (만원)', data: silvValues, borderColor: '#9333ea', backgroundColor: 'rgba(147, 51, 234, 0.1)', tension: 0.2, fill: false, pointRadius: 4, spanGaps: true });
             } else if (viewType === 'trade') {
-                datasets.push({ label: '매매가 (만원)', data: chartData.map(d => d.amount / 10000), borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', tension: 0.2, fill: true, pointRadius: 4 });
+                // 👇 여기도 getTradeValue(d)를 적용!
+                const tradeValues = chartData.map(d => getTradeValue(d));
+                datasets.push({ label: tradeLabel, data: tradeValues, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', tension: 0.2, fill: true, pointRadius: 4 });
             } else if (viewType === 'rent') {
                 datasets.push({ label: '순수 전세 보증금 (만원)', data: chartData.map(d => (d.type === '전세' && d.monthlyRent === 0) ? d.amount / 10000 : null), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', tension: 0.2, fill: true, pointRadius: 4, spanGaps: true });
             } else if (viewType === 'silv') {
