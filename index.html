@@ -1639,6 +1639,7 @@
                             day: String(item.dealDay || item.dealday || item.일 || "1").split('~')[0].trim(),
                             complexName: complexName.trim(),
                             jibun: jibun,
+                            umdNm: umdNm,
                             floor: String(item.floor || item.flr || item.층 || "-"),
                             ownershipGbn: String(item.shareDealingType || item.pdealingtype || item.ownershipGbn || item.구분 || ""),
 
@@ -1737,6 +1738,7 @@
                     day: (getText(item, ["dealDay", "dealday", "일"]) || "1").split('~')[0].trim(),
                     complexName: complexName.trim(),
                     jibun: jibun,
+                    umdNm: umdNm,
                     floor: getText(item, ["floor", "층"]) || "-",
                     ownershipGbn: getText(item, ["shareDealingType", "pdealingtype", "ownershipGbn", "구분"]) || "",
 
@@ -1769,6 +1771,21 @@
             btn.disabled = true;
             globalTransactions = [];
             let hasApiServerIssue = false; 
+            // 🌟 [추가 1] 대상 부동산의 '법정동' 이름만 똑 떼어내기 (예: "강남구 역삼동" -> "역삼동")
+            let targetUmdNm = "";
+            if (globalLandItem && globalLandItem.ldCodeNm) {
+                let parts = globalLandItem.ldCodeNm.trim().split(' ');
+                targetUmdNm = parts[parts.length - 1];
+            } else if (globalTitleItem && globalTitleItem.bjdongNm) {
+                let parts = globalTitleItem.bjdongNm.trim().split(' ');
+                targetUmdNm = parts[parts.length - 1];
+            }
+            // 만약 대장에서 못 찾았다면 검색창 텍스트에서 추출
+            if (!targetUmdNm) {
+                const addrVal = document.getElementById('address').value;
+                const dongMatch = addrVal.match(/([가-힣0-9]+(동|가|읍|면))/);
+                if (dongMatch) targetUmdNm = dongMatch[1];
+            }
 
             // 🌟 1. 무한 대기 원천 차단용 타임아웃 함수
             async function fetchWithTimeout(url, timeout = 8000) {
@@ -1911,6 +1928,20 @@
 
                                 let isJibunValid = matchJibun(item.jibun, isSan, bon, bu);
                                 let isNameValid = false;
+                                // 👇 [추가] 공장/창고(INDU)일 경우 지번 대신 '법정동' 일치 여부로 합격 판정 처리!
+                                if (targetType === "INDU") {
+                                    if (targetUmdNm) {
+                                        // 아이템의 법정동 이름에 검색한 법정동이 포함되어 있으면 무조건 통과
+                                        if ((item.umdNm && item.umdNm.includes(targetUmdNm)) || item.complexName.includes(targetUmdNm)) {
+                                            isJibunValid = true; 
+                                        } else {
+                                            isJibunValid = false; 
+                                        }
+                                    } else {
+                                        // 예외 상황으로 법정동을 도저히 못 찾았다면 해당 구(시군구) 전체 스캔
+                                        isJibunValid = true; 
+                                    }
+                                }
                                 
                                 if (globalComplexName && item.complexName) {
                                     let cleanGlobal = globalComplexName.replace(/\s/g, '').toLowerCase();
