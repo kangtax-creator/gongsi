@@ -568,6 +568,8 @@
         let globalLandUseTags = [];
         let globalViolationItems = [];
         let globalIsVioltBld = false;
+        let isGongsiSearching = false;
+        let cancelGongsiSearch = false;
 
         const DAEJANG_DICT = {
             "pnu": "고유번호(PNU)", "lndcgrCodeNm": "지목", "lndcgrCode": "지목코드", "lndpclAr": "대지면적(㎡)",
@@ -876,10 +878,20 @@
             const rawHo = document.getElementById('ho').value.trim();
             const btn = document.getElementById('searchBtn');
 
+            if (isGongsiSearching) {
+                cancelGongsiSearch = true;
+                btn.innerText = "🛑 스캔 중단 중... 잠시만 대기해주세요";
+                return;
+            }
+
             if (!address) { alert("주소를 먼저 입력해 주세요."); return; }
 
-            btn.innerText = "부동산 데이터 조회 중...";
-            btn.disabled = true;
+            isGongsiSearching = true;
+            cancelGongsiSearch = false;
+            btn.innerText = "🛑 조회 중... (여기를 누르면 즉시 중단됩니다)";
+            btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+            btn.classList.add('bg-rose-600', 'hover:bg-rose-700');
+            btn.disabled = false;
             document.getElementById('gongsi-placeholder').classList.add('hidden');
 
             try {
@@ -925,10 +937,11 @@
                 let pageNo = 1; let keepFetching = true;
 
                 while (keepFetching) {
+                    if (cancelGongsiSearch) break;
                     if (pageNo === 1) {
-                        btn.innerText = "공시가격 연혁 스캔 중...";
+                        btn.innerText = "🛑 공시가격 연혁 스캔 중... (클릭 시 취소)";
                     } else {
-                        btn.innerText = `대단지 공시가격 연혁 스캔 중... (${pageNo}000건 탐색 완료)`;
+                        btn.innerText = `🛑 대단지 스캔 중... (${pageNo}000건 탐색) - 클릭 시 즉시 중단`;
                     }
                     const params = new URLSearchParams({ key: VWORLD_KEY, pnu: globalCurrentPnu, format: "json", numOfRows: "1000", pageNo: String(pageNo), domain: DOMAIN });
                     const data = await fetchJSONP(`${apiUrl}?${params.toString()}`);
@@ -1084,7 +1097,11 @@
                 console.error(error);
                 alert("공시가 데이터를 불러오는 중 오류가 발생했습니다.");
             } finally { 
+                isGongsiSearching = false;
+                cancelGongsiSearch = false;
                 btn.innerText = "기본 정보 및 공시가격 연혁 조회"; 
+                btn.classList.remove('bg-rose-600', 'hover:bg-rose-700');
+                btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
                 btn.disabled = false; 
 
                 if (globalCurrentPnu) {
