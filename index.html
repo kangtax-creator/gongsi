@@ -106,7 +106,7 @@
                     </div>
 
                     <button onclick="searchPriceHistory()" id="searchBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition-all">
-                        검색시작
+                        검색 시작하기
                     </button>
 
                     <p class="text-xs text-slate-500 mt-3 bg-slate-50 p-2.5 rounded-lg border border-slate-100 leading-relaxed">
@@ -210,7 +210,7 @@
                     </div>
                 </div>
                 <div id="gongsi-placeholder" class="bg-white p-12 rounded-2xl text-center text-slate-400 border border-slate-200">
-                    좌측 주소를 검색한 후 [기본 정보 및 공시가격 연혁 조회] 버튼을 눌러주세요.
+                    좌측 주소를 검색한 후 [검색 시작하기] 버튼을 눌러주세요.
                 </div>
             </div>
 
@@ -1121,7 +1121,7 @@
             } finally { 
                 isGongsiSearching = false;
                 cancelGongsiSearch = false;
-                btn.innerText = "기본 정보 및 공시가격 연혁 조회"; 
+                btn.innerText = "검색 시작하기"; 
                 btn.classList.remove('bg-rose-600', 'hover:bg-rose-700');
                 btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
                 btn.disabled = false; 
@@ -1814,7 +1814,7 @@
             const btn = document.getElementById('sigaBtn');
 
             if (!globalCurrentPnu) {
-                alert("먼저 좌측 주소창에서 주소를 검색하고 '기본 정보 및 공시가격 연혁 조회'를 눌러 지역 연동을 완료해 주세요.");
+                alert("먼저 좌측 주소창에서 주소를 검색하고 '검색 시작하기'를 눌러 지역 연동을 완료해 주세요.");
                 return;
             }
             if (!startMonthInput || !endMonthInput) {
