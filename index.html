@@ -1030,12 +1030,17 @@
                         }
 
                         matchNoticeBanner.innerHTML = `
-                            <div class="p-4 bg-indigo-50 border border-indigo-200 rounded-2xl shadow-sm">
-                                <p class="text-xs text-indigo-800 font-bold mb-1">🚨 API 실제 매칭 주소 교차 검증</p>
-                                <p class="text-xs text-indigo-700 leading-relaxed">
-                                    📌 국토부 데이터 매칭 기준: <span class="font-extrabold text-rose-600 text-sm">[ ${apiMatchedStr} ]</span><br>
-                                    위 주소가 평가하고자 하는 대상 물건의 공부상 동·호수와 정확히 일치하는지 확인 후 활용해 주세요.
-                                </p>
+                            <div class="p-4 bg-indigo-50 border border-indigo-200 rounded-2xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+                                <div>
+                                    <p class="text-xs text-indigo-800 font-bold mb-1">🚨 API 실제 매칭 주소 교차 검증</p>
+                                    <p class="text-xs text-indigo-700 leading-relaxed">
+                                        📌 국토부 데이터 매칭 기준: <span class="font-extrabold text-rose-600 text-sm">[ ${apiMatchedStr} ]</span><br>
+                                        매칭 주소가 대상 물건과 다르거나 <b>원하는 동·호수가 조회되지 않을 경우, 우측 버튼을 통해 공식 홈페이지에서 직접 확인</b>해 주세요.
+                                    </p>
+                                </div>
+                                <a href="https://www.realtyprice.kr/notice/main/main.do#" target="_blank" class="shrink-0 bg-white hover:bg-indigo-100 border border-indigo-300 text-indigo-800 text-xs font-extrabold py-2 px-4 rounded-lg shadow-sm transition-colors text-center flex items-center justify-center cursor-pointer no-underline">
+                                    부동산공시가격알리미 ↗
+                                </a>
                             </div>
                         `;
                         // ====================================================================
