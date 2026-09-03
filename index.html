@@ -3053,8 +3053,9 @@
                                         
                                         // 2. 우측 2번 탭 '단지명 직접 검색' 칸에 건물명 세팅
                                         if (targetKeywordInput) {
-                                            // '아파트'라는 글자를 빼주면 API 매칭 확률이 더 높아집니다.
-                                            targetKeywordInput.value = doc.place_name.replace('아파트', '').trim();
+                                            // 🌟 정규식을 사용해 괄호 '( )' 안의 내용과 '아파트'라는 단어를 모두 깔끔하게 날려버립니다.
+                                            let cleanName = doc.place_name.replace(/\([^)]*\)/g, '').replace(/아파트/g, '').trim();
+                                            targetKeywordInput.value = cleanName;
                                         }
 
                                         // 3. 현재 입력창을 선택한 이름으로 바꾸고 드롭다운 닫기
