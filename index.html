@@ -1971,7 +1971,7 @@
                             return;
                         }
 
-                        // 3차: 가져온 분양가 데이터로 단일 표 만들기
+                        // 3차: 가져온 분양가 데이터로 단일 표 만들기 (전용면적 추가)
                         let html = `<div class="mt-2 bg-white rounded border border-blue-100 overflow-hidden">
                                         <div class="bg-blue-100 px-3 py-1.5 font-bold text-blue-900 text-xs text-center">평형별 최고 분양가액 (만원)</div>
                                         <div class="max-h-48 overflow-y-auto">
@@ -1979,6 +1979,7 @@
                                                 <thead class="bg-slate-50 sticky top-0">
                                                     <tr>
                                                         <th class="py-1.5 border-b text-slate-600">주택형</th>
+                                                        <th class="py-1.5 border-b text-blue-600 font-bold">전용면적(㎡)</th> <!-- 🌟 추가됨 -->
                                                         <th class="py-1.5 border-b text-slate-600">공급면적(㎡)</th>
                                                         <th class="py-1.5 border-b text-slate-600">최고분양가</th>
                                                     </tr>
@@ -1986,8 +1987,13 @@
                                                 <tbody>`;
                         priceData.forEach(p => {
                             let priceStr = p.LTTOT_TOP_AMOUNT ? Number(p.LTTOT_TOP_AMOUNT.replace(/,/g, '')).toLocaleString() : '-';
+                            
+                            // 🌟 주택형(예: 084.9800A)에서 알파벳 등을 떼고 숫자(전용면적)만 추출
+                            let exclusiveArea = p.HOUSE_TY ? parseFloat(p.HOUSE_TY.replace(/[^0-9.]/g, '')) : '-';
+                            
                             html += `<tr class="border-b border-slate-100 hover:bg-slate-50">
                                         <td class="py-1.5 font-semibold">${p.MODEL_NO || '-'}</td>
+                                        <td class="text-blue-600 font-bold">${exclusiveArea}</td> <!-- 🌟 추가됨 -->
                                         <td>${p.SUPLY_AR || '-'}</td>
                                         <td class="text-red-500 font-bold">${priceStr}</td>
                                      </tr>`;
@@ -1996,7 +2002,6 @@
                                             </table>
                                         </div>
                                     </div>`;
-
                         extraArea.innerHTML = html;
                         extraArea.classList.remove('text-center', 'text-indigo-600', 'py-2');
                     }
@@ -2345,10 +2350,9 @@
                         if (row.useRRRight === '사용') extraBadge += '<span class="text-indigo-500 text-[10px] font-bold block leading-none mt-1">청구권</span>';
                     }
 
-                    // 🌟 날짜, 면적, 층수 축약 (2026-08-11 -> 26.08.11 / 소수점 제거)
+                    // 🌟 날짜, 면적, 층수 축약 (2026-08-11 -> 26.08.11 / 소수점 둘째자리까지 유지)
                     let shortDate = row.date.substring(2).replace(/-/g, '.'); 
-                    let shortArea = Math.round(row.area);
-
+                    let shortArea = Number(row.area).toFixed(2); // 🌟 Math.round 제거하고 .toFixed(2) 적용
                     // 🌟 금액 포맷팅 (월세 합치기 포함)
                     let amountText = formatMoney(row.amount);
                     let monthlyText = row.monthlyRent > 0 ? `<span class="text-emerald-600"> / ${formatMoney(row.monthlyRent)}</span>` : '';
