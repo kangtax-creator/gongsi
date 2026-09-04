@@ -1876,7 +1876,7 @@
         // 🌟 [추가 2] 청약 경쟁률 조회 API (일반공급 기준)
         async function fetchCompetitionRates(houseManageNo, pblancNo) {
             if (!houseManageNo || !pblancNo) return [];
-            let url = `https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTGenrlCSptye?page=1&perPage=50&cond[HOUSE_MANAGE_NO::EQ]=${houseManageNo}&cond[PBLANC_NO::EQ]=${pblancNo}&serviceKey=${DATA_GO_KR_KEY}`;
+            let url = `https://api.odcloud.kr/api/ApplyhomeInfoCmpetinfoSvc/v1/getAPTGenrlCSpty?page=1&perPage=50&cond[HOUSE_MANAGE_NO::EQ]=${houseManageNo}&cond[PBLANC_NO::EQ]=${pblancNo}&serviceKey=${DATA_GO_KR_KEY}`;
             try {
                 let res = await fetch(url);
                 if (res.ok) {
