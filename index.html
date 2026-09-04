@@ -1870,23 +1870,30 @@
             }
 
             // =====================================================================
-            // 🌟 [여기서부터 새로 추가하는 부분] 화면 뼈대 그리기 & 청약홈 백그라운드 호출
+            // 🌟 [수정된 부분] 화면 뼈대 건드리지 않고 청약홈 카드만 맨 위에 추가하기
             // =====================================================================
             
-            // 1. 화면의 뼈대를 먼저 즉시 그립니다. (청약홈 카드 영역 + 실거래가 표 영역)
-            resultDiv.innerHTML = `
-                <div id="chungyangCardArea"></div>
-                <div id="sigaTableContainer">
-                    <div class="text-center p-4 text-indigo-600 font-bold">국토부 실거래가 데이터를 불러오는 중입니다...</div>
-                </div>
-            `;
+            // 1. 기존 테이블을 날리지 않고, 청약홈 카드가 들어갈 자리만 맨 위에 조용히 만듭니다.
+            let cardArea = document.getElementById('chungyangCardArea');
+            if (!cardArea) {
+                // 카드가 들어갈 공간이 없으면 새로 만들어서 resultDiv 맨 위에 끼워 넣습니다.
+                resultDiv.insertAdjacentHTML('afterbegin', '<div id="chungyangCardArea"></div>');
+                cardArea = document.getElementById('chungyangCardArea');
+            }
+            // 검색할 때마다 이전 청약홈 카드가 남아있을 수 있으니 일단 비워줍니다.
+            cardArea.innerHTML = ""; 
+
+            // 기존 실거래가 표 내부(siga-table-body)에는 로딩 메시지를 띄워줍니다.
+            const tableBody = document.getElementById('siga-table-body');
+            if (tableBody) {
+                tableBody.innerHTML = `<tr><td colspan="10" class="text-center p-4 text-indigo-600 font-bold">국토부 실거래가 데이터를 불러오는 중입니다...</td></tr>`;
+            }
 
             // 2. 검색어가 있고, 스위치(isPresaleSwitchOn)가 켜져 있을 때만 청약홈 조회!
             if (searchKeyword && isPresaleSwitchOn) {
                 fetchChungyangInfo(searchKeyword).then(cyData => {
                     if (cyData) {
-                        // 백그라운드에서 데이터를 찾아오면 빈 공간에 카드를 쏙 넣습니다.
-                        document.getElementById('chungyangCardArea').innerHTML = `
+                        cardArea.innerHTML = `
                             <div class="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl shadow-sm">
                                 <div class="flex items-center justify-between mb-2">
                                     <h3 class="font-extrabold text-blue-900 text-lg">💡 [청약홈] ${cyData.HOUSE_NM || searchKeyword} 분양정보</h3>
