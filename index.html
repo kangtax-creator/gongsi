@@ -1809,21 +1809,38 @@
         }
 
         // 🌟 청약홈 분양정보 조회 함수
+        // 🌟 [업그레이드된 2단 그물망] 청약홈 분양정보 조회 함수
         async function fetchChungyangInfo(keyword) {
             if (!keyword) return null;
             
-            // 💡 여기서 CHUNGYANG_API_KEY 대신 기존 DATA_GO_KR_KEY를 쏙 집어넣습니다!
-            const url = `${CHUNGYANG_BASE_URL}?page=1&perPage=10&cond[HOUSE_NM::LIKE]=${encodeURIComponent(keyword)}&serviceKey=${DATA_GO_KR_KEY}`;
+            // 1차 시도: 사용자가 입력한 전체 검색어로 조회 (예: "한강수자인오브센트")
+            let url = `${CHUNGYANG_BASE_URL}?page=1&perPage=10&cond[HOUSE_NM::LIKE]=${encodeURIComponent(keyword)}&serviceKey=${DATA_GO_KR_KEY}`;
             
             try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error("청약홈 API 응답 오류");
-                
-                const data = await response.json();
-                
-                if (data && data.data && data.data.length > 0) {
-                    return data.data[0]; 
+                let response = await fetch(url);
+                if (response.ok) {
+                    let data = await response.json();
+                    if (data && data.data && data.data.length > 0) {
+                        return data.data[0]; // 찾으면 바로 반환!
+                    }
                 }
+
+                // 2차 시도: 1차에서 못 찾았고, 검색어가 6글자 이상으로 길다면? 
+                // 뒤에서 4글자(핵심 펫네임)만 잘라서 한 번 더 찔러봅니다.
+                if (keyword.length >= 6) {
+                    let shortKeyword = keyword.slice(-4);
+                    console.log(`1차 검색 실패로 핵심 키워드("${shortKeyword}")로 2차 재시도 중...`);
+                    
+                    let retryUrl = `${CHUNGYANG_BASE_URL}?page=1&perPage=10&cond[HOUSE_NM::LIKE]=${encodeURIComponent(shortKeyword)}&serviceKey=${DATA_GO_KR_KEY}`;
+                    let retryRes = await fetch(retryUrl);
+                    if (retryRes.ok) {
+                        let retryData = await retryRes.json();
+                        if (retryData && retryData.data && retryData.data.length > 0) {
+                            return retryData.data[0];
+                        }
+                    }
+                }
+                
                 return null;
             } catch (error) {
                 console.error("청약홈 데이터 호출 실패:", error);
@@ -3144,6 +3161,11 @@
                                             // 🌟 정규식을 사용해 괄호 '( )' 안의 내용과 '아파트'라는 단어를 모두 깔끔하게 날려버립니다.
                                             let cleanName = doc.place_name.replace(/\([^)]*\)/g, '').replace(/아파트/g, '').trim();
                                             targetKeywordInput.value = cleanName;
+                                            // 🌟 [추가] 청약홈 API 전용 검색어 만들기 (끝에서 4글자만 추출)
+                                            // 예: "한강수자인오브센트" -> "오브센트", "올림픽파크포레온" -> "파크포레온"
+                                        let cyKeyword = cleanName;
+                                        if (cleanName.length > 5) {
+                                        cyKeyword = cleanName.slice(-4); // 끝 4글자만 싹둑 자르기
                                         }
 
                                         // 3. 현재 입력창을 선택한 이름으로 바꾸고 드롭다운 닫기
