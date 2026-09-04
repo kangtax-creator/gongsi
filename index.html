@@ -1825,18 +1825,27 @@
                     }
                 }
 
-                // 2차 시도: 1차에서 못 찾았고, 검색어가 6글자 이상으로 길다면? 
-                // 뒤에서 4글자(핵심 펫네임)만 잘라서 한 번 더 찔러봅니다.
+                // 2차 시도: 핵심 키워드(4글자) 검색 + 지역명(앞 2글자) 크로스체크!
                 if (keyword.length >= 6) {
-                    let shortKeyword = keyword.slice(-4);
-                    console.log(`1차 검색 실패로 핵심 키워드("${shortKeyword}")로 2차 재시도 중...`);
+                    let shortKeyword = keyword.slice(-4); // 예: "시그니처"
+                    let regionFilter = keyword.substring(0, 2); // 예: "광명"
+                    
+                    console.log(`1차 실패. [${shortKeyword}] 검색 후 [${regionFilter}] 지역명으로 크로스체크 중...`);
                     
                     let retryUrl = `${CHUNGYANG_BASE_URL}?page=1&perPage=10&cond[HOUSE_NM::LIKE]=${encodeURIComponent(shortKeyword)}&serviceKey=${DATA_GO_KR_KEY}`;
                     let retryRes = await fetch(retryUrl);
                     if (retryRes.ok) {
                         let retryData = await retryRes.json();
                         if (retryData && retryData.data && retryData.data.length > 0) {
-                            return retryData.data[0];
+                            
+                            // 🌟 [핵심] 검색된 여러 결과 중 주소(또는 단지명)에 '광명'이 들어간 진짜만 찾기!
+                            let matchedItem = retryData.data.find(item => 
+                                (item.HSSPLY_ADRES && item.HSSPLY_ADRES.includes(regionFilter)) || 
+                                (item.HOUSE_NM && item.HOUSE_NM.includes(regionFilter))
+                            );
+                            
+                            // 크로스체크 통과한 진짜가 있으면 반환, 없으면 엉뚱한 거 안 띄우고 조용히 포기(null)
+                            return matchedItem || null; 
                         }
                     }
                 }
