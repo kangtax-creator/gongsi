@@ -565,6 +565,7 @@
         const DOMAIN = window.location.origin; 
         const OFFICE_PHONE = "02-2679-0679"; 
         const SEOUL_KEY = "456353517878676138305274595667";
+        const CHUNGYANG_BASE_URL = "https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancDetail";
 
         let priceChartInstance = null;
         let sigaChartInstance = null; 
@@ -587,6 +588,7 @@
         let globalIsVioltBld = false;
         let isGongsiSearching = false;
         let cancelGongsiSearch = false;
+        let isPresaleSwitchOn = false;
 
         const DAEJANG_DICT = {
             "pnu": "고유번호(PNU)", "lndcgrCodeNm": "지목", "lndcgrCode": "지목코드", "lndpclAr": "대지면적(㎡)",
@@ -1806,12 +1808,37 @@
             return extractedItems;
         }
 
+        // 🌟 청약홈 분양정보 조회 함수
+        async function fetchChungyangInfo(keyword) {
+            if (!keyword) return null;
+            
+            // 💡 여기서 CHUNGYANG_API_KEY 대신 기존 DATA_GO_KR_KEY를 쏙 집어넣습니다!
+            const url = `${CHUNGYANG_BASE_URL}?page=1&perPage=10&cond[HOUSE_NM::LIKE]=${encodeURIComponent(keyword)}&serviceKey=${DATA_GO_KR_KEY}`;
+            
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("청약홈 API 응답 오류");
+                
+                const data = await response.json();
+                
+                if (data && data.data && data.data.length > 0) {
+                    return data.data[0]; 
+                }
+                return null;
+            } catch (error) {
+                console.error("청약홈 데이터 호출 실패:", error);
+                return null; 
+            }
+        }
+
         async function fetchComplexTransactions() {
             const startMonthInput = document.getElementById('searchStartMonth').value;
             const endMonthInput = document.getElementById('searchEndMonth').value;
             const targetType = document.getElementById('sigaTargetType').value;
             const keywordInput = document.getElementById('searchKeyword').value.replace(/\s/g, '').toLowerCase(); 
             const btn = document.getElementById('sigaBtn');
+            const searchKeyword = document.getElementById('searchKeyword').value.trim();
+            const resultDiv = document.getElementById('resultSiga'); // 결과를 뿌려줄 영역
 
             if (!globalCurrentPnu) {
                 alert("먼저 좌측 주소창에서 주소를 검색하고 '검색 시작하기'를 눌러 지역 연동을 완료해 주세요.");
@@ -1841,6 +1868,48 @@
                 const dongMatch = addrVal.match(/([가-힣0-9]+(동|가|읍|면))/);
                 if (dongMatch) targetUmdNm = dongMatch[1];
             }
+
+            // =====================================================================
+            // 🌟 [여기서부터 새로 추가하는 부분] 화면 뼈대 그리기 & 청약홈 백그라운드 호출
+            // =====================================================================
+            
+            // 1. 화면의 뼈대를 먼저 즉시 그립니다. (청약홈 카드 영역 + 실거래가 표 영역)
+            resultDiv.innerHTML = `
+                <div id="chungyangCardArea"></div>
+                <div id="sigaTableContainer">
+                    <div class="text-center p-4 text-indigo-600 font-bold">국토부 실거래가 데이터를 불러오는 중입니다...</div>
+                </div>
+            `;
+
+            // 2. 검색어가 있고, 스위치(isPresaleSwitchOn)가 켜져 있을 때만 청약홈 조회!
+            if (searchKeyword && isPresaleSwitchOn) {
+                fetchChungyangInfo(searchKeyword).then(cyData => {
+                    if (cyData) {
+                        // 백그라운드에서 데이터를 찾아오면 빈 공간에 카드를 쏙 넣습니다.
+                        document.getElementById('chungyangCardArea').innerHTML = `
+                            <div class="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl shadow-sm">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h3 class="font-extrabold text-blue-900 text-lg">💡 [청약홈] ${cyData.HOUSE_NM || searchKeyword} 분양정보</h3>
+                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold">공급규모: ${cyData.TOT_SUPLY_HSHLDCO || '-'}세대</span>
+                                </div>
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                                    <div class="bg-white p-2 rounded border border-blue-100"><span class="text-slate-500 block text-xs">시행사</span><span class="font-bold">${cyData.BSNS_MBY_NM || '-'}</span></div>
+                                    <div class="bg-white p-2 rounded border border-blue-100"><span class="text-slate-500 block text-xs">모집공고일</span><span class="font-bold">${cyData.RCRIT_PBLANC_DE || '-'}</span></div>
+                                    <div class="bg-white p-2 rounded border border-blue-100"><span class="text-slate-500 block text-xs">당첨자발표</span><span class="font-bold">${cyData.PRZWNER_PRESNATN_DE || '-'}</span></div>
+                                    <div class="bg-white p-2 rounded border border-blue-100"><span class="text-slate-500 block text-xs">입주예정월</span><span class="font-bold">${cyData.MVIN_XPCT_YM || '-'}</span></div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }).catch(err => {
+                    console.log("청약홈 조회 실패 또는 데이터 없음");
+                });
+            }
+
+            // 수동으로 단지명을 타이핑할 경우, 일단 스위치를 켜서 청약홈을 찔러보도록 허용
+        document.getElementById('searchKeyword').addEventListener('input', () => {
+            isPresaleSwitchOn = true; 
+        });
 
             // 🌟 1. 무한 대기 원천 차단용 타임아웃 함수
             async function fetchWithTimeout(url, timeout = 8000) {
@@ -3049,6 +3118,13 @@
                                         // 1. 좌측 주소창에 지번 세팅 (자동으로 지역 연동 준비 완료)
                                         if (targetAddressInput) {
                                             targetAddressInput.value = doc.address_name;
+                                        }
+
+                                        // 🌟 [스마트 스위치 작동] 원본 이름에 '예정'이나 '분양'이 있으면 스위치 ON!
+                                        if (doc.place_name.includes('예정') || doc.place_name.includes('분양')) {
+                                            isPresaleSwitchOn = true;
+                                        } else {
+                                            isPresaleSwitchOn = false;
                                         }
                                         
                                         // 2. 우측 2번 탭 '단지명 직접 검색' 칸에 건물명 세팅
