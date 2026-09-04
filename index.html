@@ -1912,7 +1912,14 @@
 
                 // 2. 검색어가 있고, 스위치(isPresaleSwitchOn)가 켜져 있을 때만 청약홈 조회!
                 if (searchKeyword && isPresaleSwitchOn) {
-                    fetchChungyangInfo(searchKeyword).then(cyData => {
+                    fetchChungyangInfo(searchKeyword).then(async cyData => {
+                        // [2차 검색] 만약 못 찾았고, 검색어가 6글자 이상으로 길다면?
+                    if (!cyData && searchKeyword.length >= 6) {
+                        console.log("1차 검색 실패, 핵심 키워드로 2차 검색 시도!");
+                        // 맨 뒤 4글자(핵심 펫네임일 확률이 높음)만 잘라서 다시 찔러봅니다.
+                        const shortKeyword = searchKeyword.slice(-4); 
+                        cyData = await fetchChungyangInfo(shortKeyword);
+                    }
                         if (cyData) {
                             cardArea.innerHTML = `
                                 <div class="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl shadow-sm">
