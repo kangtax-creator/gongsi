@@ -1870,49 +1870,54 @@
             }
 
             // =====================================================================
-            // 🌟 [수정된 부분] 화면 뼈대 건드리지 않고 청약홈 카드만 맨 위에 추가하기
+            // 🌟 [최종 수정본] 확실하게 존재하는 표(Table) 바로 위에 카드 얹기
             // =====================================================================
             
-            // 1. 기존 테이블을 날리지 않고, 청약홈 카드가 들어갈 자리만 맨 위에 조용히 만듭니다.
-            let cardArea = document.getElementById('chungyangCardArea');
-            if (!cardArea) {
-                // 카드가 들어갈 공간이 없으면 새로 만들어서 resultDiv 맨 위에 끼워 넣습니다.
-                resultDiv.insertAdjacentHTML('afterbegin', '<div id="chungyangCardArea"></div>');
-                cardArea = document.getElementById('chungyangCardArea');
-            }
-            // 검색할 때마다 이전 청약홈 카드가 남아있을 수 있으니 일단 비워줍니다.
-            cardArea.innerHTML = ""; 
-
-            // 기존 실거래가 표 내부(siga-table-body)에는 로딩 메시지를 띄워줍니다.
+            // 1. 세무사님이 찾으신 확실한 목표물을 타겟으로 잡습니다.
             const tableBody = document.getElementById('siga-table-body');
+            
             if (tableBody) {
+                // tbody를 감싸고 있는 껍데기(table 태그)를 찾아냅니다.
+                const tableElement = tableBody.closest('table');
+                
+                // 표 바로 위에 카드가 들어갈 영역을 만듭니다.
+                let cardArea = document.getElementById('chungyangCardArea');
+                if (!cardArea) {
+                    tableElement.insertAdjacentHTML('beforebegin', '<div id="chungyangCardArea"></div>');
+                    cardArea = document.getElementById('chungyangCardArea');
+                }
+                
+                // 검색할 때마다 이전 청약홈 카드가 남아있을 수 있으니 비워줍니다.
+                cardArea.innerHTML = ""; 
+
+                // 기존 실거래가 표 안쪽에는 로딩 메시지를 띄워줍니다.
                 tableBody.innerHTML = `<tr><td colspan="10" class="text-center p-4 text-indigo-600 font-bold">국토부 실거래가 데이터를 불러오는 중입니다...</td></tr>`;
-            }
 
-            // 2. 검색어가 있고, 스위치(isPresaleSwitchOn)가 켜져 있을 때만 청약홈 조회!
-            if (searchKeyword && isPresaleSwitchOn) {
-                fetchChungyangInfo(searchKeyword).then(cyData => {
-                    if (cyData) {
-                        cardArea.innerHTML = `
-                            <div class="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl shadow-sm">
-                                <div class="flex items-center justify-between mb-2">
-                                    <h3 class="font-extrabold text-blue-900 text-lg">💡 [청약홈] ${cyData.HOUSE_NM || searchKeyword} 분양정보</h3>
-                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold">공급규모: ${cyData.TOT_SUPLY_HSHLDCO || '-'}세대</span>
+                // 2. 검색어가 있고, 스위치(isPresaleSwitchOn)가 켜져 있을 때만 청약홈 조회!
+                if (searchKeyword && isPresaleSwitchOn) {
+                    fetchChungyangInfo(searchKeyword).then(cyData => {
+                        if (cyData) {
+                            cardArea.innerHTML = `
+                                <div class="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl shadow-sm">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <h3 class="font-extrabold text-blue-900 text-lg">💡 [청약홈] ${cyData.HOUSE_NM || searchKeyword} 분양정보</h3>
+                                        <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold">공급규모: ${cyData.TOT_SUPLY_HSHLDCO || '-'}세대</span>
+                                    </div>
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                                        <div class="bg-white p-2 rounded border border-blue-100"><span class="text-slate-500 block text-xs">시행사</span><span class="font-bold">${cyData.BSNS_MBY_NM || '-'}</span></div>
+                                        <div class="bg-white p-2 rounded border border-blue-100"><span class="text-slate-500 block text-xs">모집공고일</span><span class="font-bold">${cyData.RCRIT_PBLANC_DE || '-'}</span></div>
+                                        <div class="bg-white p-2 rounded border border-blue-100"><span class="text-slate-500 block text-xs">당첨자발표</span><span class="font-bold">${cyData.PRZWNER_PRESNATN_DE || '-'}</span></div>
+                                        <div class="bg-white p-2 rounded border border-blue-100"><span class="text-slate-500 block text-xs">입주예정월</span><span class="font-bold">${cyData.MVIN_XPCT_YM || '-'}</span></div>
+                                    </div>
                                 </div>
-                                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                                    <div class="bg-white p-2 rounded border border-blue-100"><span class="text-slate-500 block text-xs">시행사</span><span class="font-bold">${cyData.BSNS_MBY_NM || '-'}</span></div>
-                                    <div class="bg-white p-2 rounded border border-blue-100"><span class="text-slate-500 block text-xs">모집공고일</span><span class="font-bold">${cyData.RCRIT_PBLANC_DE || '-'}</span></div>
-                                    <div class="bg-white p-2 rounded border border-blue-100"><span class="text-slate-500 block text-xs">당첨자발표</span><span class="font-bold">${cyData.PRZWNER_PRESNATN_DE || '-'}</span></div>
-                                    <div class="bg-white p-2 rounded border border-blue-100"><span class="text-slate-500 block text-xs">입주예정월</span><span class="font-bold">${cyData.MVIN_XPCT_YM || '-'}</span></div>
-                                </div>
-                            </div>
-                        `;
-                    }
-                }).catch(err => {
-                    console.log("청약홈 조회 실패 또는 데이터 없음");
-                });
+                            `;
+                        }
+                    }).catch(err => {
+                        console.log("청약홈 조회 실패 또는 데이터 없음");
+                    });
+                }
             }
-
+            // =====================================================================
             // 수동으로 단지명을 타이핑할 경우, 일단 스위치를 켜서 청약홈을 찔러보도록 허용
         document.getElementById('searchKeyword').addEventListener('input', () => {
             isPresaleSwitchOn = true; 
