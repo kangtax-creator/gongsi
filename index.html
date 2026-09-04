@@ -1856,6 +1856,38 @@
                 return null; 
             }
         }
+
+        // 🌟 [추가 1] 평형별 분양가액 조회 API (주택형별 상세조회)
+        async function fetchSalePrices(houseManageNo, pblancNo) {
+            if (!houseManageNo || !pblancNo) return [];
+            let url = `https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancMdl?page=1&perPage=50&cond[HOUSE_MANAGE_NO::EQ]=${houseManageNo}&cond[PBLANC_NO::EQ]=${pblancNo}&serviceKey=${DATA_GO_KR_KEY}`;
+            try {
+                let res = await fetch(url);
+                if (res.ok) {
+                    let json = await res.json();
+                    return (json && json.data) ? json.data : [];
+                }
+            } catch (e) {
+                console.error("분양가 조회 실패:", e);
+            }
+            return [];
+        }
+
+        // 🌟 [추가 2] 청약 경쟁률 조회 API (일반공급 기준)
+        async function fetchCompetitionRates(houseManageNo, pblancNo) {
+            if (!houseManageNo || !pblancNo) return [];
+            let url = `https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTGenrlCSptye?page=1&perPage=50&cond[HOUSE_MANAGE_NO::EQ]=${houseManageNo}&cond[PBLANC_NO::EQ]=${pblancNo}&serviceKey=${DATA_GO_KR_KEY}`;
+            try {
+                let res = await fetch(url);
+                if (res.ok) {
+                    let json = await res.json();
+                    return (json && json.data) ? json.data : [];
+                }
+            } catch (e) {
+                console.error("경쟁률 조회 실패:", e);
+            }
+            return [];
+        }
         
         async function fetchComplexTransactions() {
             const startMonthInput = document.getElementById('searchStartMonth').value;
@@ -1919,38 +1951,85 @@
                 // 기존 실거래가 표 안쪽에는 로딩 메시지를 띄워줍니다.
                 tableBody.innerHTML = `<tr><td colspan="10" class="text-center p-4 text-indigo-600 font-bold">국토부 실거래가 데이터를 불러오는 중입니다...</td></tr>`;
 
-                // 2. 검색어가 있고, 스위치(isPresaleSwitchOn)가 켜져 있을 때만 청약홈 조회!
-                if (searchKeyword && isPresaleSwitchOn) {
-                    fetchChungyangInfo(searchKeyword).then(async cyData => {
-                        // [2차 검색] 만약 못 찾았고, 검색어가 6글자 이상으로 길다면?
-                    if (!cyData && searchKeyword.length >= 6) {
-                        console.log("1차 검색 실패, 핵심 키워드로 2차 검색 시도!");
-                        // 맨 뒤 4글자(핵심 펫네임일 확률이 높음)만 잘라서 다시 찔러봅니다.
-                        const shortKeyword = searchKeyword.slice(-4); 
-                        cyData = await fetchChungyangInfo(shortKeyword);
-                    }
-                        if (cyData) {
-                            cardArea.innerHTML = `
-                                <div class="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl shadow-sm">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <h3 class="font-extrabold text-blue-900 text-lg">💡 [청약홈] ${cyData.HOUSE_NM || searchKeyword} 분양정보</h3>
-                                        <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold">공급규모: ${cyData.TOT_SUPLY_HSHLDCO || '-'}세대</span>
-                                    </div>
-                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                                        <div class="bg-white p-2 rounded border border-blue-100"><span class="text-slate-500 block text-xs">시행사</span><span class="font-bold">${cyData.BSNS_MBY_NM || '-'}</span></div>
-                                        <div class="bg-white p-2 rounded border border-blue-100"><span class="text-slate-500 block text-xs">모집공고일</span><span class="font-bold">${cyData.RCRIT_PBLANC_DE || '-'}</span></div>
-                                        <div class="bg-white p-2 rounded border border-blue-100"><span class="text-slate-500 block text-xs">당첨자발표</span><span class="font-bold">${cyData.PRZWNER_PRESNATN_DE || '-'}</span></div>
-                                        <div class="bg-white p-2 rounded border border-blue-100"><span class="text-slate-500 block text-xs">입주예정월</span><span class="font-bold">${cyData.MVIN_XPCT_YM || '-'}</span></div>
-                                    </div>
+                // 2. 검색어가 있고, 스위치(isPresaleSwitchOn)가 켜져 있을 때 청약홈 3단 콤보 조회!
+            if (searchKeyword && isPresaleSwitchOn) {
+                fetchChungyangInfo(searchKeyword).then(async cyData => {
+                    if (cyData) {
+                        // 1차: 기본 요약 카드 먼저 띄우기 (하단에 로딩 영역 추가)
+                        cardArea.innerHTML = `
+                            <div class="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl shadow-sm">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h3 class="font-extrabold text-blue-900 text-lg">💡 [청약홈] ${cyData.HOUSE_NM || searchKeyword} 분양정보</h3>
+                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold">공급규모: ${cyData.TOT_SUPLY_HSHLDCO || '-'}세대</span>
                                 </div>
-                            `;
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm mb-4">
+                                    <div class="bg-white p-2 rounded border border-blue-100"><span class="text-slate-500 block text-xs">시행사</span><span class="font-bold truncate block">${cyData.BSNS_MBY_NM || '-'}</span></div>
+                                    <div class="bg-white p-2 rounded border border-blue-100"><span class="text-slate-500 block text-xs">모집공고일</span><span class="font-bold">${cyData.RCRIT_PBLANC_DE || '-'}</span></div>
+                                    <div class="bg-white p-2 rounded border border-blue-100"><span class="text-slate-500 block text-xs">당첨자발표</span><span class="font-bold">${cyData.PRZWNER_PRESNATN_DE || '-'}</span></div>
+                                    <div class="bg-white p-2 rounded border border-blue-100"><span class="text-slate-500 block text-xs">입주예정월</span><span class="font-bold">${cyData.MVIN_XPCT_YM || '-'}</span></div>
+                                </div>
+                                <!-- 추가 데이터가 들어갈 빈 공간 -->
+                                <div id="cyExtraDataArea" class="text-center text-sm text-indigo-600 font-bold py-2">
+                                    ⏳ 평형별 분양가액 및 경쟁률 데이터를 불러오는 중입니다...
+                                </div>
+                            </div>
+                        `;
+
+                        // 2차: 주택관리번호와 공고번호로 분양가 & 경쟁률 동시 호출
+                        const houseNo = cyData.HOUSE_MANAGE_NO;
+                        const pblancNo = cyData.PBLANC_NO;
+                        
+                        const [priceData, compData] = await Promise.all([
+                            fetchSalePrices(houseNo, pblancNo),
+                            fetchCompetitionRates(houseNo, pblancNo)
+                        ]);
+
+                        const extraArea = document.getElementById('cyExtraDataArea');
+                        
+                        if (priceData.length === 0 && compData.length === 0) {
+                            extraArea.innerHTML = `<span class="text-slate-500 font-normal">추가 상세 데이터(분양가/경쟁률)가 제공되지 않는 단지입니다.</span>`;
+                            return;
                         }
-                    }).catch(err => {
-                        console.log("청약홈 조회 실패 또는 데이터 없음");
-                    });
-                }
+
+                        // 3차: 가져온 데이터로 HTML 표 만들기
+                        let html = `<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-2">`;
+                        
+                        // [왼쪽 표] 평형별 최고 분양가액
+                        html += `<div class="bg-white rounded border border-blue-100 overflow-hidden">
+                                    <div class="bg-blue-100 px-3 py-1.5 font-bold text-blue-900 text-xs text-center">평형별 최고 분양가액 (만원)</div>
+                                    <div class="max-h-40 overflow-y-auto">
+                                        <table class="w-full text-xs text-center">
+                                            <thead class="bg-slate-50 sticky top-0"><tr><th class="py-1 border-b">주택형</th><th class="py-1 border-b">전용면적(㎡)</th><th class="py-1 border-b">최고분양가</th></tr></thead>
+                                            <tbody>`;
+                        priceData.forEach(p => {
+                            // 분양가(LTTOT_TOP_AMOUNT)가 문자열로 오므로 보기 좋게 콤마 처리
+                            let priceStr = p.LTTOT_TOP_AMOUNT ? Number(p.LTTOT_TOP_AMOUNT.replace(/,/g, '')).toLocaleString() : '-';
+                            html += `<tr class="border-b border-slate-100 hover:bg-slate-50"><td class="py-1 font-semibold">${p.MODEL_NO || '-'}</td><td>${p.SUPLY_AR || '-'}</td><td class="text-red-500 font-bold">${priceStr}</td></tr>`;
+                        });
+                        html += `       </tbody></table></div></div>`;
+
+                        // [오른쪽 표] 주택형별 청약 경쟁률 (1순위 해당지역 기준)
+                        html += `<div class="bg-white rounded border border-blue-100 overflow-hidden">
+                                    <div class="bg-blue-100 px-3 py-1.5 font-bold text-blue-900 text-xs text-center">주택형별 청약 경쟁률 (1순위)</div>
+                                    <div class="max-h-40 overflow-y-auto">
+                                        <table class="w-full text-xs text-center">
+                                            <thead class="bg-slate-50 sticky top-0"><tr><th class="py-1 border-b">주택형</th><th class="py-1 border-b">공급세대수</th><th class="py-1 border-b">경쟁률</th></tr></thead>
+                                            <tbody>`;
+                        
+                        // 경쟁률 데이터는 여러 순위가 섞여 있으므로 보통 '1순위 해당지역'을 가장 많이 봅니다.
+                        compData.filter(c => c.RESIDNT_SE === '해당지역').forEach(c => {
+                            html += `<tr class="border-b border-slate-100 hover:bg-slate-50"><td class="py-1 font-semibold">${c.MODEL_NO || '-'}</td><td>${c.SUPLY_HSHLDCO || '-'}</td><td class="text-blue-600 font-bold">${c.CMPET_RATE || '-'} : 1</td></tr>`;
+                        });
+                        html += `       </tbody></table></div></div></div>`;
+
+                        extraArea.innerHTML = html;
+                        extraArea.classList.remove('text-center', 'text-indigo-600', 'py-2');
+                    }
+                }).catch(err => {
+                    console.log("청약홈 조회 실패 또는 데이터 없음", err);
+                });
             }
-            // =====================================================================
+                
             // 수동으로 단지명을 타이핑할 경우, 일단 스위치를 켜서 청약홈을 찔러보도록 허용
         document.getElementById('searchKeyword').addEventListener('input', () => {
             isPresaleSwitchOn = true; 
