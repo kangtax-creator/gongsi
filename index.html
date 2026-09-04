@@ -1808,43 +1808,43 @@
             return extractedItems;
         }
 
-        // 🌟 청약홈 분양정보 조회 함수
-        // 🌟 [업그레이드된 2단 그물망] 청약홈 분양정보 조회 함수
+        // 🌟 [최종 완성본] 청약홈 분양정보 조회 함수 (크로스체크 + 50개 확장)
         async function fetchChungyangInfo(keyword) {
             if (!keyword) return null;
             
-            // 1차 시도: 사용자가 입력한 전체 검색어로 조회 (예: "한강수자인오브센트")
-            let url = `${CHUNGYANG_BASE_URL}?page=1&perPage=10&cond[HOUSE_NM::LIKE]=${encodeURIComponent(keyword)}&serviceKey=${DATA_GO_KR_KEY}`;
+            // 1차 시도: 전체 이름으로 검색 (데이터 50개 넉넉히 호출)
+            let url = `${CHUNGYANG_BASE_URL}?page=1&perPage=50&cond[HOUSE_NM::LIKE]=${encodeURIComponent(keyword)}&serviceKey=${DATA_GO_KR_KEY}`;
             
             try {
                 let response = await fetch(url);
                 if (response.ok) {
                     let data = await response.json();
                     if (data && data.data && data.data.length > 0) {
-                        return data.data[0]; // 찾으면 바로 반환!
+                        return data.data[0]; 
                     }
                 }
 
-                // 2차 시도: 핵심 키워드(4글자) 검색 + 지역명(앞 2글자) 크로스체크!
+                // 2차 시도: 1차 실패 시 핵심 키워드(4글자) + 지역명(앞 2글자) 크로스체크
                 if (keyword.length >= 6) {
                     let shortKeyword = keyword.slice(-4); // 예: "시그니처"
                     let regionFilter = keyword.substring(0, 2); // 예: "광명"
                     
-                    console.log(`1차 실패. [${shortKeyword}] 검색 후 [${regionFilter}] 지역명으로 크로스체크 중...`);
+                    console.log(`1차 실패. [${shortKeyword}] 검색 후 [${regionFilter}] 지역명으로 필터링 중...`);
                     
-                    let retryUrl = `${CHUNGYANG_BASE_URL}?page=1&perPage=10&cond[HOUSE_NM::LIKE]=${encodeURIComponent(shortKeyword)}&serviceKey=${DATA_GO_KR_KEY}`;
+                    let retryUrl = `${CHUNGYANG_BASE_URL}?page=1&perPage=50&cond[HOUSE_NM::LIKE]=${encodeURIComponent(shortKeyword)}&serviceKey=${DATA_GO_KR_KEY}`;
                     let retryRes = await fetch(retryUrl);
+                    
                     if (retryRes.ok) {
                         let retryData = await retryRes.json();
                         if (retryData && retryData.data && retryData.data.length > 0) {
                             
-                            // 🌟 [핵심] 검색된 여러 결과 중 주소(또는 단지명)에 '광명'이 들어간 진짜만 찾기!
+                            // 🌟 주소나 이름에 '광명'이 들어간 진짜 데이터만 쏙 골라내기
                             let matchedItem = retryData.data.find(item => 
                                 (item.HSSPLY_ADRES && item.HSSPLY_ADRES.includes(regionFilter)) || 
                                 (item.HOUSE_NM && item.HOUSE_NM.includes(regionFilter))
                             );
                             
-                            // 크로스체크 통과한 진짜가 있으면 반환, 없으면 엉뚱한 거 안 띄우고 조용히 포기(null)
+                            // 찾았으면 반환, 못 찾았으면 엉뚱한 상동역 띄우지 말고 깔끔하게 포기(null)!
                             return matchedItem || null; 
                         }
                     }
@@ -1856,7 +1856,7 @@
                 return null; 
             }
         }
-
+        
         async function fetchComplexTransactions() {
             const startMonthInput = document.getElementById('searchStartMonth').value;
             const endMonthInput = document.getElementById('searchEndMonth').value;
