@@ -118,10 +118,16 @@
                             <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
                             지도에서 직접 클릭해서 찾기 ▼
                         </button>
-                        <div id="map-container" class="hidden mt-2">
-                            <div class="bg-amber-50 p-2 mb-2 rounded border border-amber-200 text-[11px] text-amber-800 font-medium">
-                                💡 지도를 움직여 원하는 곳을 클릭하면 주소가 자동입력 됩니다. 동호수는 위 칸에 입력 후 조회버튼 클릭!
-                            </div>
+                    <div id="map-container" class="hidden mt-2">
+                        <div class="flex justify-between items-center bg-amber-50 p-2 mb-2 rounded border border-amber-200">
+                            <span class="text-[11px] text-amber-800 font-medium">💡 지도 클릭 시 주소 자동 입력</span>
+                            <button type="button" onclick="openMapModal()" class="flex items-center text-xs bg-white border border-amber-300 text-amber-700 px-2 py-1 rounded hover:bg-amber-100 transition-colors shadow-sm font-bold active:scale-95">
+                                <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+                                크게 보기
+                            </button>
+                        </div>
+                        <!-- 💡 인라인 상태일 때 지도가 담기는 래퍼 -->
+                        <div id="inline-map-wrapper">
                             <div id="map" style="width: 100%; height: 350px; border-radius: 0.5rem; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"></div>
                         </div>
                     </div>
@@ -558,6 +564,41 @@
         <div id="daum-postcode-container" class="w-full flex-1 relative overflow-hidden" style="-webkit-overflow-scrolling:touch;"></div>
     </div>
 
+    <!-- 🌟 지도 확대 모달 (전체화면) -->
+<div id="mapModal" class="fixed inset-0 bg-slate-900/80 z-[9998] hidden flex flex-col items-center justify-center p-4 sm:p-6 opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-2xl w-full max-w-5xl h-[85vh] flex flex-col shadow-2xl transform scale-95 transition-transform duration-300 overflow-hidden">
+        
+        <!-- 헤더 -->
+        <div class="px-4 py-3 border-b border-slate-200 flex justify-between items-center bg-slate-800">
+            <h3 class="text-white font-bold flex items-center text-sm md:text-base">
+                <svg class="w-5 h-5 mr-2 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                지도에서 직접 선택하기
+            </h3>
+            <button onclick="closeMapModal()" class="text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 rounded-full p-1.5 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        
+        <!-- 안내 배너 (클릭 시 피드백 제공) -->
+        <div class="bg-amber-50 p-3 border-b border-amber-200 flex justify-between items-center z-10 shadow-sm relative">
+            <p class="text-[11px] md:text-sm text-amber-800 font-bold">
+                💡 지도를 터치(클릭)하면 주소가 자동으로 입력됩니다.
+            </p>
+            <span id="modal-address-badge" class="hidden bg-white px-2 py-1 rounded text-[10px] md:text-xs text-indigo-600 border border-indigo-200 font-extrabold shadow-sm transition-all whitespace-nowrap ml-2">입력됨!</span>
+        </div>
+
+        <!-- 💡 모달 상태일 때 지도가 이동해 올 래퍼 (남은 높이 100% 차지) -->
+        <div id="modal-map-wrapper" class="flex-1 w-full relative bg-slate-100"></div>
+        
+        <!-- 하단 버튼 -->
+        <div class="p-3 md:p-4 border-t border-slate-200 bg-white">
+            <button onclick="closeMapModal()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 md:py-3.5 rounded-xl shadow-md transition-all text-sm md:text-base">
+                주소 선택 완료 (창 닫기)
+            </button>
+        </div>
+    </div>
+</div>    
+
     <!-- 자바스크립트 영역 -->
     <script>
         const VWORLD_KEY = "75321A8E-275D-32A6-82AC-B9D0D8E551FE";
@@ -684,6 +725,19 @@
                             
                             // 1. 주소창(id="address")에 클릭한 주소 텍스트를 바로 꽂아 넣습니다.
                             document.getElementById('address').value = clickAddress;
+
+                            // 모달 모드일 경우 "주소 입력됨!" 배지 애니메이션 띄우기
+                            const badge = document.getElementById('modal-address-badge');
+                            if (badge) {
+                                badge.classList.remove('hidden');
+                                badge.innerText = `✅ ${clickAddress} 입력 완료`;
+                                badge.classList.add('scale-110', 'text-rose-600', 'border-rose-300');
+                                
+                                // 0.4초 뒤에 튀어오르는 효과 원복
+                                setTimeout(() => {
+                                    badge.classList.remove('scale-110', 'text-rose-600', 'border-rose-300');
+                                }, 400);
+                            }
                             
                             // 2. 동/호수 입력칸 초기화
                             const dongInput = document.getElementById('dong');
@@ -836,6 +890,69 @@
             layer.classList.add('hidden');
             layer.classList.remove('flex');
         }
+
+        // 🌟 지도 팝업(확대) 제어 변수 및 함수
+        let lastMapCenter = null;
+        
+        window.openMapModal = function() {
+            const modal = document.getElementById('mapModal');
+            const mapEl = document.getElementById('map');
+            const modalWrapper = document.getElementById('modal-map-wrapper');
+            
+            // 현재 보고 있던 지도의 중심 좌표 기억하기
+            if (map) lastMapCenter = map.getCenter();
+        
+            // 1. 지도 태그를 모달 영역 안으로 이사(appendChild) 시킵니다.
+            modalWrapper.appendChild(mapEl);
+            
+            // 2. 모달창에 꽉 차도록 스타일 변경
+            mapEl.style.height = '100%';
+            mapEl.style.borderRadius = '0';
+            mapEl.style.border = 'none';
+        
+            // 3. 모달 띄우기
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.querySelector('div').classList.remove('scale-95');
+                
+                // 4. 이사 온 후 지도가 깨지지 않도록 재계산 및 뷰 복구
+                if (map) {
+                    map.relayout();
+                    if (lastMapCenter) map.setCenter(lastMapCenter);
+                }
+            }, 10);
+        };
+        
+        window.closeMapModal = function() {
+            const modal = document.getElementById('mapModal');
+            const mapEl = document.getElementById('map');
+            const inlineWrapper = document.getElementById('inline-map-wrapper');
+            
+            if (map) lastMapCenter = map.getCenter();
+        
+            // 1. 모달 닫기
+            modal.classList.add('opacity-0');
+            modal.querySelector('div').classList.add('scale-95');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                
+                // 2. 지도 태그를 다시 원래 위치(인라인 래퍼)로 이사시킵니다.
+                inlineWrapper.appendChild(mapEl);
+                
+                // 3. 원래의 작은 스타일로 복구
+                mapEl.style.height = '350px';
+                mapEl.style.borderRadius = '0.5rem';
+                mapEl.style.border = '1px solid #cbd5e1';
+        
+                // 4. 재계산 및 뷰 복구
+                if (map) {
+                    map.relayout();
+                    if (lastMapCenter) map.setCenter(lastMapCenter);
+                }
+            }, 300);
+        };
 
         function extractNum(text) {
             if (!text) return "";
