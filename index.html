@@ -866,7 +866,8 @@
             layer.classList.add('flex');
             new daum.Postcode({
                 oncomplete: function(data) {
-                    document.getElementById('address').value = data.roadAddress || data.jibunAddress;
+                    // 지번 주소(jibunAddress)를 먼저 쓰도록 순서 변경!
+                    document.getElementById('address').value = data.jibunAddress || data.roadAddress;
                     closeDaumPostcode();
                     
                     let match = (data.roadAddress || data.jibunAddress).match(/서울(?:특별시)?\s+([가-힣]+구)/);
@@ -1033,12 +1034,17 @@
 
             try {
                 const pnu = await getPnu(address);
-                if (!pnu) {
-                    alert("정확한 지번/도로명을 찾을 수 없습니다. (단, 지역구 연동을 위해 임시 저장합니다.)");
-                }
-                
-                globalCurrentPnu = pnu || "1168010100100010000"; 
-                globalComplexName = ""; 
+            if (!pnu) {
+                alert("VWORLD 서버에서 해당 주소의 고유번호(PNU)를 찾지 못했습니다.\n도로명 대신 '지번 주소'로 다시 검색해주세요.");
+                isGongsiSearching = false;
+                btn.innerText = "스캔 시작하기"; 
+                btn.classList.remove('bg-rose-600', 'hover:bg-rose-700');
+                btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                return; // 🌟 여기서 스캔을 완전히 중단시킴 (가짜 데이터 방지)
+            }
+            
+            globalCurrentPnu = pnu; // 🌟 강남구 가짜 PNU 제거
+            globalComplexName = "";
 
                 fetchDaejangInfo(globalCurrentPnu);
 
