@@ -1107,8 +1107,7 @@
                                 row.landTotal = item.ladRegstrAr || "N/A"; row.landCalc = item.calcPlotAr || row.landTotal;
                                 row.bldTotal = item.buldAllTotAr || "N/A"; 
                                 row.bldTotal = item.buldAllTotAr || "N/A"; 
-row.bldCalc = item.calcBuldTotAr || "API값없음"; // 🌟 안전장치(복사) 제거
-console.log("🔍 VWORLD API 원본 데이터:", item); // 🌟 F12 콘솔창에 진짜 데이터 출력
+                                row.bldCalc = item.buldCalcTotAr || row.bldTotal;
                             }
                             
                             rawHistoryData.push(row);
@@ -2745,7 +2744,7 @@ console.log("🔍 VWORLD API 원본 데이터:", item); // 🌟 F12 콘솔창에
                                                     "대지면적_전체(㎡)": probeType === "단독주택" ? (item.ladRegstrAr || item.totPlotAr || "-") : "-",
                                                     "대지면적_산정(㎡)": probeType === "단독주택" ? (item.calcPlotAr || item.ladRegstrAr || "-") : "-",
                                                     "건물연면적_전체(㎡)": probeType === "단독주택" ? (item.buldAllTotAr || "-") : "-",
-                                                    "건물연면적_산정(㎡)": probeType === "단독주택" ? (item.calcBuldAr || item.calcBuldTotAr || item.buldAllTotAr || "-") : "-" // 🌟 calcBuldAr 추가!
+                                                    "건물연면적_산정(㎡)": probeType === "단독주택" ? (item.buldCalcTotAr || item.buldAllTotAr || "-") : "-"
                                                 });
                                             }
                                         }
