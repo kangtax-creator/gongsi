@@ -1106,7 +1106,9 @@
                             else if (propType === "단독주택" || propType === "상가/건물") {
                                 row.landTotal = item.ladRegstrAr || "N/A"; row.landCalc = item.calcPlotAr || row.landTotal;
                                 row.bldTotal = item.buldAllTotAr || "N/A"; 
-                                row.bldCalc = item.calcBuldAr || item.calcBuldTotAr || row.bldTotal; // 🌟 calcBuldAr 추가!
+                                row.bldTotal = item.buldAllTotAr || "N/A"; 
+row.bldCalc = item.calcBuldTotAr || "API값없음"; // 🌟 안전장치(복사) 제거
+console.log("🔍 VWORLD API 원본 데이터:", item); // 🌟 F12 콘솔창에 진짜 데이터 출력
                             }
                             
                             rawHistoryData.push(row);
