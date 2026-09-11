@@ -1105,7 +1105,8 @@
                             } 
                             else if (propType === "단독주택" || propType === "상가/건물") {
                                 row.landTotal = item.ladRegstrAr || "N/A"; row.landCalc = item.calcPlotAr || row.landTotal;
-                                row.bldTotal = item.buldAllTotAr || "N/A"; row.bldCalc = item.calcBuldTotAr || row.bldTotal;
+                                row.bldTotal = item.buldAllTotAr || "N/A"; 
+                                row.bldCalc = item.calcBuldAr || item.calcBuldTotAr || row.bldTotal; // 🌟 calcBuldAr 추가!
                             }
                             
                             rawHistoryData.push(row);
@@ -2742,7 +2743,7 @@
                                                     "대지면적_전체(㎡)": probeType === "단독주택" ? (item.ladRegstrAr || item.totPlotAr || "-") : "-",
                                                     "대지면적_산정(㎡)": probeType === "단독주택" ? (item.calcPlotAr || item.ladRegstrAr || "-") : "-",
                                                     "건물연면적_전체(㎡)": probeType === "단독주택" ? (item.buldAllTotAr || "-") : "-",
-                                                    "건물연면적_산정(㎡)": probeType === "단독주택" ? (item.calcBuldTotAr || item.buldAllTotAr || "-") : "-"
+                                                    "건물연면적_산정(㎡)": probeType === "단독주택" ? (item.calcBuldAr || item.calcBuldTotAr || item.buldAllTotAr || "-") : "-" // 🌟 calcBuldAr 추가!
                                                 });
                                             }
                                         }
