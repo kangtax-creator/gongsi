@@ -2792,28 +2792,6 @@
             reader.readAsArrayBuffer(file);
         }
 
-        // 🌟 [추가] 서울시 정비사업 제멋대로인 날짜 포맷 강제 변환기
-        function formatSeoulDate(rawDate) {
-            if (!rawDate || rawDate === "null" || String(rawDate).trim() === "") return "-";
-            let str = String(rawDate).trim();
-            
-            // 1. 뒤에 ' 00:00:00.0' 처럼 시간이 붙어있으면 스페이스바 기준으로 앞(날짜)만 싹둑 자름
-            if (str.includes(' ')) str = str.split(' ')[0]; 
-            
-            // 2. 기호(., -, /) 등 숫자 이외의 문자를 기준으로 조각냄 (예: "2015. 5. 4" -> ["2015", "5", "4"])
-            let parts = str.split(/[^0-9]/).filter(p => p.length > 0);
-            
-            if (parts.length >= 3) {
-                // 한 자리 월/일이면 앞에 0을 붙임 (예: 5 -> 05)
-                return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-            } else if (parts.length === 1 && parts[0].length >= 8) {
-                // "20230518" 처럼 기호 없이 숫자만 8개 붙어있는 경우
-                let p = parts[0];
-                return `${p.substring(0,4)}-${p.substring(4,6)}-${p.substring(6,8)}`;
-            }
-            return str;
-        }
-
         async function fetchSeoulRenewal() {
             const thead = document.getElementById('renewal-table-head');
             // 🌟 [수정 1] 아실 스타일 표 뼈대: 모바일에서 자치구, 대표지번 숨김 (hidden md:table-cell)
@@ -2885,20 +2863,47 @@
                     let name = row.ZONE_NM || "-";
                     let step = row.BIZ_STAGE || "-"; // 🌟 진행단계('인가' 등) 원본 완벽 보존!
                     let addr = (row.JIBUN_ADDR && row.JIBUN_ADDR !== "-") ? row.JIBUN_ADDR : (row.ROAD_ADDR || "-");
+
+                    // 🌟 서울시 API 엑셀 일련번호(44973 등) 및 불규칙 포맷 완벽 해독기
+                    const fixDate = (raw) => {
+                        if (!raw || raw === "null" || String(raw).trim() === "") return "-";
+                        let str = String(raw).trim();
+                        
+                        // 1. 엑셀 일련번호 처리 (5자리 숫자, 예: 44973)
+                        if (/^\d{5}$/.test(str)) {
+                            let serial = parseInt(str, 10);
+                            // 엑셀 기준일(1900년)과 JS 기준일(1970년) 차이 보정 (25569일)
+                            let date = new Date((serial - 25569) * 24 * 60 * 60 * 1000);
+                            // UTC 기준으로 연/월/일 추출
+                            return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+                        }
+                        
+                        // 2. YYYYMMDD (8자리 숫자) 처리
+                        if (/^\d{8}$/.test(str)) {
+                            return `${str.substring(0,4)}-${str.substring(4,6)}-${str.substring(6,8)}`;
+                        }
+                        
+                        // 3. 일반적인 기호(2023.05.15 등) 포함 처리
+                        let parts = str.split(/[^0-9]/).filter(p => p.length > 0);
+                        if (parts.length >= 3 && parts[0].length === 4) {
+                            return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+                        }
+                        
+                        return str;
+                    };
                     
-                    // 🌟 새로운 formatSeoulDate 함수 적용!
-                    const d_zone_init = formatSeoulDate(row.ZONE_DESIGNATION_INIT_YMD);
-                    const d_zone_last = formatSeoulDate(row.ZONE_DESIGNATION_LAST_YMD);
-                    const d_prom = formatSeoulDate(row.PROMOTION_COMMITTEE_YMD);
-                    const d_assoc = formatSeoulDate(row.ASSOCIATION_ESTABLISHMENT_YMD);
-                    const d_arch = formatSeoulDate(row.ARCHITECTURAL_REVIEW_YMD);
-                    const d_biz_init = formatSeoulDate(row.BIZ_IMPLEMENTATION_INIT_YMD);
-                    const d_biz_last = formatSeoulDate(row.BIZ_IMPLEMENTATION_LAST_YMD);
-                    const d_mng_init = formatSeoulDate(row.MGMT_DISPOSITION_INIT_YMD);
-                    const d_mng_last = formatSeoulDate(row.MGMT_DISPOSITION_LAST_YMD);
-                    const d_mig_start = formatSeoulDate(row.MIGRATION_START_YMD);
-                    const d_mig_end = formatSeoulDate(row.MIGRATION_END_YMD);
-                    const d_const = formatSeoulDate(row.CONSTRUCTION_START_YMD);
+                    const d_zone_init = fixDate(row.ZONE_DESIGNATION_INIT_YMD);
+                    const d_zone_last = fixDate(row.ZONE_DESIGNATION_LAST_YMD);
+                    const d_prom = fixDate(row.PROMOTION_COMMITTEE_YMD);
+                    const d_assoc = fixDate(row.ASSOCIATION_ESTABLISHMENT_YMD);
+                    const d_arch = fixDate(row.ARCHITECTURAL_REVIEW_YMD);
+                    const d_biz_init = fixDate(row.BIZ_IMPLEMENTATION_INIT_YMD);
+                    const d_biz_last = fixDate(row.BIZ_IMPLEMENTATION_LAST_YMD);
+                    const d_mng_init = fixDate(row.MGMT_DISPOSITION_INIT_YMD);
+                    const d_mng_last = fixDate(row.MGMT_DISPOSITION_LAST_YMD);
+                    const d_mig_start = fixDate(row.MIGRATION_START_YMD);
+                    const d_mig_end = fixDate(row.MIGRATION_END_YMD);
+                    const d_const = fixDate(row.CONSTRUCTION_START_YMD);
 
                     let mainTr = document.createElement('tr');
                     mainTr.className = "hover:bg-slate-50 transition-colors border-b border-slate-200 last:border-0";
