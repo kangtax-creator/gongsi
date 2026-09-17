@@ -941,7 +941,7 @@
             const mapEl = document.getElementById('map');
             const inlineWrapper = document.getElementById('inline-map-wrapper');
 
-       // 🌟 [수정됨] 검색한 지역으로 지도 중심 좌표를 순간이동 시키고 핀을 꽂는 함수
+       // 🌟 [최종 수정본] 검색한 지역으로 지도 중심 좌표를 순간이동 시키고 전용 마커를 꽂는 함수
         window.moveMapCenter = function(inputId) {
             try {
                 const inputEl = document.getElementById(inputId);
@@ -955,53 +955,58 @@
                 }
         
                 if (!map) {
-                    alert("지도가 아직 로딩되지 않았습니다. 잠시 후 다시 시도해주세요.");
+                    alert("지도가 로딩 중입니다. 잠시 후 다시 시도해주세요.");
                     return;
                 }
         
-                // 🌟 마커(핀)가 꼬여서 없을 경우를 대비한 강제 생성 안전장치
-                if (!window.mapMarker) {
-                    window.mapMarker = new kakao.maps.Marker();
+                // 🌟 1. 워프 전용 마커(핀)를 별도로 생성 (마커가 안 나오는 현상 원천 차단)
+                if (!window.warpMarker) {
+                    window.warpMarker = new kakao.maps.Marker({
+                        map: map // 생성과 동시에 지도에 올림
+                    });
                 }
         
-                // 워프 + 마커 표시를 동시에 처리하는 내부 로직
+                // 🌟 2. 워프 실행 및 마커 찍기 내부 로직
                 const warpAndMark = (lat, lng) => {
-                    // 🚀 핵심: 모달창이 열리면서 지도가 찌그러진 상태일 수 있으므로 이동 직전에 무조건 크기 재계산!
+                    // 🚀 핵심: 모달창 애니메이션 때문에 지도가 0x0으로 찌그러진 상태일 수 있으므로 이동 직전에 강제 리레이아웃!
                     map.relayout(); 
         
                     const coords = new kakao.maps.LatLng(lat, lng);
                     map.setCenter(coords);
                     map.setLevel(5); // 지방 토지도 잘 보이게 뷰포트 확대
                     
-                    // 📍 검색한 정중앙 위치에 빨간 핀(마커) 꽂기
-                    window.mapMarker.setPosition(coords);
-                    window.mapMarker.setMap(map);
+                    // 검색된 좌표 정중앙에 빨간 핀(마커) 꽂기
+                    window.warpMarker.setPosition(coords);
+                    window.warpMarker.setMap(map);
         
-                    // 입력창 텍스트 양쪽 동기화
+                    // 작은 지도창과 큰 모달창의 입력칸 텍스트 똑같이 맞추기
                     const inlineInput = document.getElementById('mapMoveInput');
                     const modalInput = document.getElementById('modalMapMoveInput');
                     if (inlineInput) inlineInput.value = keyword;
                     if (modalInput) modalInput.value = keyword;
                 };
         
-                const ps = new kakao.maps.services.Places();
+                // 🌟 3. 주소 -> 장소명 2중 검색 엔진 가동
+                const geocoder = new kakao.maps.services.Geocoder();
                 
-                ps.keywordSearch(keyword, function(data, status) {
+                // 1순위: 정식 주소로 찾기 (예: '제주도 애월읍', '강남구 역삼동')
+                geocoder.addressSearch(keyword, function(result, status) {
                     if (status === kakao.maps.services.Status.OK) {
-                        warpAndMark(data[0].y, data[0].x);
+                        warpAndMark(result[0].y, result[0].x);
                     } else {
-                        const geocoder = new kakao.maps.services.Geocoder();
-                        geocoder.addressSearch(keyword, function(result, status) {
-                            if (status === kakao.maps.services.Status.OK) {
-                                warpAndMark(result[0].y, result[0].x);
+                        // 2순위: 주소가 아니면 키워드/건물명으로 찾기 (예: '은마아파트', '해운대해수욕장')
+                        const ps = new kakao.maps.services.Places();
+                        ps.keywordSearch(keyword, function(data, kStatus) {
+                            if (kStatus === kakao.maps.services.Status.OK) {
+                                warpAndMark(data[0].y, data[0].x);
                             } else {
-                                alert("해당 지역을 찾을 수 없습니다. (예: '제주도 애월읍'처럼 상위 지역명을 함께 적어보세요.)");
+                                alert("해당 지역을 찾을 수 없습니다. (예: '평창군 장평리'처럼 상위 지역명을 함께 적어주세요.)");
                             }
                         });
                     }
                 });
             } catch (error) {
-                alert("지도 이동 중 오류가 발생했습니다: " + error.message);
+                console.error("지도 이동 에러:", error);
             }
         };
             
