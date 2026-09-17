@@ -942,30 +942,38 @@
         // 🌟 지도 팝업(확대) 제어 변수 및 함수
         let lastMapCenter = null;
         
-        // 🌟 [수정됨] 모달창 열기 함수 (애니메이션이 끝난 후 지도를 렌더링하도록 딜레이 추가)
-            window.openMapModal = function() {
+        // 🌟 [최종 종결판] 모달창 열기 함수 (지도 뻗음 현상 원천 차단)
+window.openMapModal = function() {
     const modal = document.getElementById('mapModal');
     const mapEl = document.getElementById('map');
     const modalWrapper = document.getElementById('modal-map-wrapper');
     
-    if (map) lastMapCenter = map.getCenter();
+    // 1. 혹시 모를 에러에 대비해 강남역을 기본값으로 안전하게 좌표 저장
+    let safeCenter = new kakao.maps.LatLng(37.498095, 127.027610);
+    try { if (map) safeCenter = map.getCenter() || safeCenter; } catch(e) {}
 
+    // 2. 모달을 먼저 화면에 그립니다. (이 단계가 없으면 지도가 0x0으로 찌그러져서 뻗습니다)
+    modal.classList.remove('hidden');
+    
+    // 3. 지도를 모달 안으로 이사시킵니다.
     modalWrapper.appendChild(mapEl);
     mapEl.style.height = '100%';
     mapEl.style.borderRadius = '0';
     mapEl.style.border = 'none';
 
-    modal.classList.remove('hidden');
-    
+    // 4. 부드러운 애니메이션 시작
     requestAnimationFrame(() => {
         modal.classList.remove('opacity-0');
         modal.querySelector('div').classList.remove('scale-95');
         
+        // 5. 애니메이션이 끝난 후(0.35초 뒤) 레이아웃을 다시 계산하고 좌표를 맞춥니다.
         setTimeout(() => {
-            if (map) {
-                map.relayout();
-                if (lastMapCenter) map.setCenter(lastMapCenter);
-            }
+            try {
+                if (map) {
+                    map.relayout();
+                    map.setCenter(safeCenter);
+                }
+            } catch(e) { console.error("지도 리레이아웃 에러 방어:", e); }
         }, 350); 
     });
 };
@@ -975,15 +983,15 @@
             const mapEl = document.getElementById('map');
             const inlineWrapper = document.getElementById('inline-map-wrapper');
 
-       // 🌟 [최종 수정본] 검색한 지역으로 지도 중심 좌표를 순간이동 시키고 전용 마커를 꽂는 함수
-        window.moveMapCenter = async function(inputId) {
+       // 🌟 [최종 종결판] 3중 엔진 워프 & 도착 시 메인 주소창 자동 연동
+window.moveMapCenter = async function(inputId) {
     try {
         const inputEl = document.getElementById(inputId);
         if (!inputEl) return;
 
         const keyword = inputEl.value.trim();
         if (!keyword) {
-            alert("이동할 지역명(시/군/구 또는 동/읍/면/리)이나 지번을 입력해주세요.");
+            alert("이동할 지역명이나 지번을 입력해주세요.");
             inputEl.focus();
             return;
         }
@@ -993,39 +1001,46 @@
             return;
         }
 
-        if (!window.warpMarker) window.warpMarker = new kakao.maps.Marker({ map: map });
+        // 🌟 뻗음 방지용 안전 마커 생성
+        if (!window.mapMarker) window.mapMarker = new kakao.maps.Marker();
 
+        // 🚀 워프 후 즉시 주소를 꽂아주는 내부 로직
         const warpAndMarkAndInput = (lat, lng) => {
-            map.relayout(); 
-            const coords = new kakao.maps.LatLng(lat, lng);
-            map.setCenter(coords);
-            map.setLevel(4);
-            
-            window.warpMarker.setPosition(coords);
-            window.warpMarker.setMap(map);
+            try {
+                map.relayout(); 
+                const coords = new kakao.maps.LatLng(lat, lng);
+                map.setCenter(coords);
+                map.setLevel(4);
+                
+                window.mapMarker.setPosition(coords);
+                window.mapMarker.setMap(map);
 
-            if (document.getElementById('mapMoveInput')) document.getElementById('mapMoveInput').value = keyword;
-            if (document.getElementById('modalMapMoveInput')) document.getElementById('modalMapMoveInput').value = keyword;
+                if (document.getElementById('mapMoveInput')) document.getElementById('mapMoveInput').value = keyword;
+                if (document.getElementById('modalMapMoveInput')) document.getElementById('modalMapMoveInput').value = keyword;
 
-            const geocoder = new kakao.maps.services.Geocoder();
-            geocoder.coord2Address(coords.getLng(), coords.getLat(), function(result, status) {
-                if (status === kakao.maps.services.Status.OK) {
-                    const clickAddress = result[0].address.address_name;
-                    const mainAddrInput = document.getElementById('address');
-                    if(mainAddrInput) mainAddrInput.value = clickAddress;
+                // 🌟 도착 지점의 좌표를 읽어와 메인 주소창에 자동 세팅 (이제 스캔을 바로 누를 수 있습니다!)
+                const geocoder = new kakao.maps.services.Geocoder();
+                geocoder.coord2Address(coords.getLng(), coords.getLat(), function(result, status) {
+                    if (status === kakao.maps.services.Status.OK) {
+                        const clickAddress = result[0].address.address_name;
+                        const mainAddrInput = document.getElementById('address');
+                        if(mainAddrInput) mainAddrInput.value = clickAddress;
 
-                    const badge = document.getElementById('modal-address-badge');
-                    if (badge) {
-                        badge.classList.remove('hidden');
-                        badge.innerText = `✅ [ ${clickAddress} ] 자동 연동 완료!`;
-                        badge.classList.add('scale-110', 'text-rose-600', 'border-rose-300');
-                        setTimeout(() => badge.classList.remove('scale-110', 'text-rose-600', 'border-rose-300'), 800);
+                        const badge = document.getElementById('modal-address-badge');
+                        if (badge) {
+                            badge.classList.remove('hidden');
+                            badge.innerText = `✅ [ ${clickAddress} ] 연동 완료! 스캔을 시작하세요.`;
+                            badge.classList.add('scale-110', 'text-rose-600', 'border-rose-300');
+                            setTimeout(() => badge.classList.remove('scale-110', 'text-rose-600', 'border-rose-300'), 1500);
+                        }
+                        
+                        if(document.getElementById('dong')) document.getElementById('dong').value = "";
+                        if(document.getElementById('ho')) document.getElementById('ho').value = "";
                     }
-                    
-                    if(document.getElementById('dong')) document.getElementById('dong').value = "";
-                    if(document.getElementById('ho')) document.getElementById('ho').value = "";
-                }
-            });
+                });
+            } catch(e) {
+                alert("지도 워프 중 에러가 발생했습니다: " + e.message);
+            }
         };
 
         const geocoder = new kakao.maps.services.Geocoder();
@@ -1050,7 +1065,7 @@
                                 alert("해당 위치를 찾을 수 없습니다.\n오타가 없는지 확인해주시거나, 상위 지역명(예: 제주도 애월읍)으로 먼저 이동해주세요.");
                             }
                         } catch (e) {
-                            alert("주소 검색 중 오류가 발생했습니다.");
+                            alert("주소 검색 통신 중 오류가 발생했습니다.");
                         }
                     }
                 });
