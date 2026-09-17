@@ -598,6 +598,7 @@
         <div class="p-2 bg-slate-100 border-b border-slate-200 flex space-x-2 z-10 shadow-sm relative">
             <input type="text" id="modalMapMoveInput" placeholder="이동할 동/읍/면/리 입력 (예: 제주도 애월읍 하귀리)" class="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 font-bold" onkeypress="if(event.key==='Enter') moveMapCenter('modalMapMoveInput')">
             <button type="button" onclick="moveMapCenter('modalMapMoveInput')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors whitespace-nowrap">지도 워프 🚀</button>
+            <button type="button" onclick="toggleCadastralMap()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors whitespace-nowrap cursor-pointer z-50 relative">지적도 온오프</button>
         </div>
 
         <!-- 💡 모달 상태일 때 지도가 이동해 올 래퍼 (남은 높이 100% 차지) -->
@@ -643,6 +644,25 @@
         let isGongsiSearching = false;
         let cancelGongsiSearch = false;
         let isPresaleSwitchOn = false;
+
+        // 🌟 [추가됨] 지적편집도(지적도) 켬/끔 토글 함수
+        let isCadastralOn = false;
+        window.toggleCadastralMap = function() {
+            if (!map) {
+                alert("지도가 로딩되지 않았습니다.");
+                return;
+            }
+            
+            if (isCadastralOn) {
+                // 지적도 끄기
+                map.removeOverlayMapTypeId(kakao.maps.MapTypeId.USE_DISTRICT);
+                isCadastralOn = false;
+            } else {
+                // 지적도 켜기
+                map.addOverlayMapTypeId(kakao.maps.MapTypeId.USE_DISTRICT);
+                isCadastralOn = true;
+            }
+        };
 
         const DAEJANG_DICT = {
             "pnu": "고유번호(PNU)", "lndcgrCodeNm": "지목", "lndcgrCode": "지목코드", "lndpclAr": "대지면적(㎡)",
