@@ -1054,30 +1054,7 @@ window.moveMapCenter = async function(inputId) {
     }
 };
             
-            if (map) lastMapCenter = map.getCenter();
-        
-            // 1. 모달 닫기
-            modal.classList.add('opacity-0');
-            modal.querySelector('div').classList.add('scale-95');
             
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                
-                // 2. 지도 태그를 다시 원래 위치(인라인 래퍼)로 이사시킵니다.
-                inlineWrapper.appendChild(mapEl);
-                
-                // 3. 원래의 작은 스타일로 복구
-                mapEl.style.height = '350px';
-                mapEl.style.borderRadius = '0.5rem';
-                mapEl.style.border = '1px solid #cbd5e1';
-        
-                // 4. 재계산 및 뷰 복구
-                if (map) {
-                    map.relayout();
-                    if (lastMapCenter) map.setCenter(lastMapCenter);
-                }
-            }, 300);
-        };
 
         function extractNum(text) {
             if (!text) return "";
@@ -2258,8 +2235,7 @@ window.moveMapCenter = async function(inputId) {
                     console.log("청약홈 조회 실패 또는 데이터 없음", err);
                 });
             }
-       }    
-    }         
+       }            
                 
             // 수동으로 단지명을 타이핑할 경우, 일단 스위치를 켜서 청약홈을 찔러보도록 허용
         document.getElementById('searchKeyword').addEventListener('input', () => {
