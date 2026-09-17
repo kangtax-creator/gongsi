@@ -88,35 +88,33 @@
                             </label>
                         </div>
                     </div>
-                    <div class="relative mb-4">
+                    <!-- 1. 단지명 검색 영역에 ID 추가 -->
+                    <div class="relative mb-4" id="complex-search-container">
                         <label class="block text-xs font-bold text-slate-700 mb-1">🏢 단지명 통합 검색 (분양권 포함)</label>
                         <input type="text" id="keywordAutoSearch" placeholder="단지명 입력 (예: 레벤투스, 래미안)" class="w-full px-4 py-3 bg-indigo-50 border-2 border-indigo-200 rounded-xl focus:outline-none focus:border-indigo-600 focus:bg-white transition-colors font-bold text-slate-800 placeholder-indigo-300 shadow-inner">
-                        
-                        <!-- 검색 결과 드롭다운 -->
                         <ul id="keywordAutoResults" class="absolute z-50 w-full bg-white border border-slate-300 rounded-xl shadow-2xl mt-1 max-h-60 overflow-y-auto hidden divide-y divide-slate-100"></ul>
                     </div>
-                    <div class="flex flex-col space-y-2 mb-4">
-                    <div class="flex space-x-2">
-                        <!-- 🌟 1. readonly 속성 제거, onclick 이벤트 제거 (자유롭게 타이핑 가능하도록 변경) -->
-                        <input type="text" id="address" placeholder="우측 버튼으로 검색하거나 직접 타이핑하세요" class="flex-1 bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all shadow-sm">
-                        
-                        <!-- 🌟 2. 팝업을 띄우는 전용 버튼으로 명확히 분리 -->
-                        <button type="button" onclick="execDaumPostcode()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-transform active:scale-95 whitespace-nowrap shadow-sm flex items-center">
-                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                            팝업 검색
-                        </button>
-                    </div>
-    
-                    <!-- 🌟 3. 카카오맵에서 못 찾는 지방 토지용 직관적 안내 가이드 추가 -->
-                    <div class="bg-orange-50 border border-orange-200 p-3 rounded-xl shadow-sm">
-                        <p class="text-[11px] md:text-xs text-orange-800 leading-relaxed">
-                            <span class="font-black text-orange-600">💡 맹지/지방 토지 검색 팁:</span><br>
-                            카카오 팝업에서 정확한 지번이 안 나오고 <b class="underline">근처 지번</b>만 나온다면, 팝업창을 닫고 <b>위 입력창에 주소를 직접 타이핑</b>해 주세요! (국가 공간정보망이 대신 스캔합니다)
-                        </p>
-                    </div>
-                </div>
                     
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="flex flex-col space-y-2 mb-4">
+                        <div class="flex space-x-2">
+                            <input type="text" id="address" placeholder="도로명 주소나 단지명을 입력하세요 (또는 우측 팝업)" class="flex-1 bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all shadow-sm">
+                            <button type="button" onclick="execDaumPostcode()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-transform active:scale-95 whitespace-nowrap shadow-sm flex items-center">
+                                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                팝업 검색
+                            </button>
+                        </div>
+                        
+                        <!-- 2. 맹지 팁 박스에 ID 추가 및 초기 숨김(hidden) 처리 -->
+                        <div id="land-tip-box" class="bg-orange-50 border border-orange-200 p-3 rounded-xl shadow-sm hidden">
+                            <p class="text-[11px] md:text-xs text-orange-800 leading-relaxed">
+                                <span class="font-black text-orange-600">💡 맹지/지방 토지 검색 팁:</span><br>
+                                카카오 팝업에서 정확한 지번이 안 나오고 <b class="underline">근처 지번</b>만 나온다면, 팝업창을 닫고 <b>위 입력창에 지번을 직접 타이핑</b>해 주세요! (국가 공간정보망이 대신 스캔합니다)
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- 3. 동/호수 영역에 ID 추가 -->
+                    <div class="grid grid-cols-2 gap-4" id="dong-ho-container">
                         <input type="text" id="dong" placeholder="동 (선택) ex: 101" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none">
                         <input type="text" id="ho" placeholder="호 (선택) ex: 502" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none">
                     </div>
@@ -946,31 +944,31 @@
         
         // 🌟 [수정됨] 모달창 열기 함수 (애니메이션이 끝난 후 지도를 렌더링하도록 딜레이 추가)
             window.openMapModal = function() {
-                const modal = document.getElementById('mapModal');
-                const mapEl = document.getElementById('map');
-                const modalWrapper = document.getElementById('modal-map-wrapper');
-                
-                if (map) lastMapCenter = map.getCenter();
-            
-                modalWrapper.appendChild(mapEl);
-                mapEl.style.height = '100%';
-                mapEl.style.borderRadius = '0';
-                mapEl.style.border = 'none';
-            
-                modal.classList.remove('hidden');
-                setTimeout(() => {
-                    modal.classList.remove('opacity-0');
-                    modal.querySelector('div').classList.remove('scale-95');
-                    
-                    // 🚀 핵심: 모달창이 커지는 애니메이션(300ms)이 완전히 끝난 후 리레이아웃을 해야 에러가 안 납니다.
-                    setTimeout(() => {
-                        if (map) {
-                            map.relayout();
-                            if (lastMapCenter) map.setCenter(lastMapCenter);
-                        }
-                    }, 300);
-                }, 10);
-            };
+    const modal = document.getElementById('mapModal');
+    const mapEl = document.getElementById('map');
+    const modalWrapper = document.getElementById('modal-map-wrapper');
+    
+    if (map) lastMapCenter = map.getCenter();
+
+    modalWrapper.appendChild(mapEl);
+    mapEl.style.height = '100%';
+    mapEl.style.borderRadius = '0';
+    mapEl.style.border = 'none';
+
+    modal.classList.remove('hidden');
+    
+    requestAnimationFrame(() => {
+        modal.classList.remove('opacity-0');
+        modal.querySelector('div').classList.remove('scale-95');
+        
+        setTimeout(() => {
+            if (map) {
+                map.relayout();
+                if (lastMapCenter) map.setCenter(lastMapCenter);
+            }
+        }, 350); 
+    });
+};
         
         window.closeMapModal = function() {
             const modal = document.getElementById('mapModal');
@@ -978,73 +976,90 @@
             const inlineWrapper = document.getElementById('inline-map-wrapper');
 
        // 🌟 [최종 수정본] 검색한 지역으로 지도 중심 좌표를 순간이동 시키고 전용 마커를 꽂는 함수
-        window.moveMapCenter = function(inputId) {
-            try {
-                const inputEl = document.getElementById(inputId);
-                if (!inputEl) return;
-        
-                const keyword = inputEl.value.trim();
-                if (!keyword) {
-                    alert("이동할 지역명(시/군/구 또는 동/읍/면/리)을 입력해주세요.");
-                    inputEl.focus();
-                    return;
-                }
-        
-                if (!map) {
-                    alert("지도가 로딩 중입니다. 잠시 후 다시 시도해주세요.");
-                    return;
-                }
-        
-                // 🌟 1. 워프 전용 마커(핀)를 별도로 생성 (마커가 안 나오는 현상 원천 차단)
-                if (!window.warpMarker) {
-                    window.warpMarker = new kakao.maps.Marker({
-                        map: map // 생성과 동시에 지도에 올림
-                    });
-                }
-        
-                // 🌟 2. 워프 실행 및 마커 찍기 내부 로직
-                const warpAndMark = (lat, lng) => {
-                    // 🚀 핵심: 모달창 애니메이션 때문에 지도가 0x0으로 찌그러진 상태일 수 있으므로 이동 직전에 강제 리레이아웃!
-                    map.relayout(); 
-        
-                    const coords = new kakao.maps.LatLng(lat, lng);
-                    map.setCenter(coords);
-                    map.setLevel(5); // 지방 토지도 잘 보이게 뷰포트 확대
+        window.moveMapCenter = async function(inputId) {
+    try {
+        const inputEl = document.getElementById(inputId);
+        if (!inputEl) return;
+
+        const keyword = inputEl.value.trim();
+        if (!keyword) {
+            alert("이동할 지역명(시/군/구 또는 동/읍/면/리)이나 지번을 입력해주세요.");
+            inputEl.focus();
+            return;
+        }
+
+        if (!map) {
+            alert("지도가 로딩 중입니다. 잠시 후 다시 시도해주세요.");
+            return;
+        }
+
+        if (!window.warpMarker) window.warpMarker = new kakao.maps.Marker({ map: map });
+
+        const warpAndMarkAndInput = (lat, lng) => {
+            map.relayout(); 
+            const coords = new kakao.maps.LatLng(lat, lng);
+            map.setCenter(coords);
+            map.setLevel(4);
+            
+            window.warpMarker.setPosition(coords);
+            window.warpMarker.setMap(map);
+
+            if (document.getElementById('mapMoveInput')) document.getElementById('mapMoveInput').value = keyword;
+            if (document.getElementById('modalMapMoveInput')) document.getElementById('modalMapMoveInput').value = keyword;
+
+            const geocoder = new kakao.maps.services.Geocoder();
+            geocoder.coord2Address(coords.getLng(), coords.getLat(), function(result, status) {
+                if (status === kakao.maps.services.Status.OK) {
+                    const clickAddress = result[0].address.address_name;
+                    const mainAddrInput = document.getElementById('address');
+                    if(mainAddrInput) mainAddrInput.value = clickAddress;
+
+                    const badge = document.getElementById('modal-address-badge');
+                    if (badge) {
+                        badge.classList.remove('hidden');
+                        badge.innerText = `✅ [ ${clickAddress} ] 자동 연동 완료!`;
+                        badge.classList.add('scale-110', 'text-rose-600', 'border-rose-300');
+                        setTimeout(() => badge.classList.remove('scale-110', 'text-rose-600', 'border-rose-300'), 800);
+                    }
                     
-                    // 검색된 좌표 정중앙에 빨간 핀(마커) 꽂기
-                    window.warpMarker.setPosition(coords);
-                    window.warpMarker.setMap(map);
-        
-                    // 작은 지도창과 큰 모달창의 입력칸 텍스트 똑같이 맞추기
-                    const inlineInput = document.getElementById('mapMoveInput');
-                    const modalInput = document.getElementById('modalMapMoveInput');
-                    if (inlineInput) inlineInput.value = keyword;
-                    if (modalInput) modalInput.value = keyword;
-                };
-        
-                // 🌟 3. 주소 -> 장소명 2중 검색 엔진 가동
-                const geocoder = new kakao.maps.services.Geocoder();
-                
-                // 1순위: 정식 주소로 찾기 (예: '제주도 애월읍', '강남구 역삼동')
-                geocoder.addressSearch(keyword, function(result, status) {
-                    if (status === kakao.maps.services.Status.OK) {
-                        warpAndMark(result[0].y, result[0].x);
+                    if(document.getElementById('dong')) document.getElementById('dong').value = "";
+                    if(document.getElementById('ho')) document.getElementById('ho').value = "";
+                }
+            });
+        };
+
+        const geocoder = new kakao.maps.services.Geocoder();
+        const ps = new kakao.maps.services.Places();
+
+        geocoder.addressSearch(keyword, function(result, status) {
+            if (status === kakao.maps.services.Status.OK) {
+                warpAndMarkAndInput(result[0].y, result[0].x);
+            } else {
+                ps.keywordSearch(keyword, async function(data, kStatus) {
+                    if (kStatus === kakao.maps.services.Status.OK) {
+                        warpAndMarkAndInput(data[0].y, data[0].x);
                     } else {
-                        // 2순위: 주소가 아니면 키워드/건물명으로 찾기 (예: '은마아파트', '해운대해수욕장')
-                        const ps = new kakao.maps.services.Places();
-                        ps.keywordSearch(keyword, function(data, kStatus) {
-                            if (kStatus === kakao.maps.services.Status.OK) {
-                                warpAndMark(data[0].y, data[0].x);
+                        try {
+                            const vworldUrl = `https://api.vworld.kr/req/search?service=search&request=search&version=2.0&query=${encodeURIComponent(keyword)}&type=address&category=parcel&format=json&key=${VWORLD_KEY}&domain=${DOMAIN}`;
+                            const vData = await fetchJSONP(vworldUrl);
+                            
+                            if (vData.response && vData.response.status === 'OK' && vData.response.result.items.length > 0) {
+                                const point = vData.response.result.items[0].point;
+                                warpAndMarkAndInput(point.y, point.x);
                             } else {
-                                alert("해당 지역을 찾을 수 없습니다. (예: '평창군 장평리'처럼 상위 지역명을 함께 적어주세요.)");
+                                alert("해당 위치를 찾을 수 없습니다.\n오타가 없는지 확인해주시거나, 상위 지역명(예: 제주도 애월읍)으로 먼저 이동해주세요.");
                             }
-                        });
+                        } catch (e) {
+                            alert("주소 검색 중 오류가 발생했습니다.");
+                        }
                     }
                 });
-            } catch (error) {
-                console.error("지도 이동 에러:", error);
             }
-        };
+        });
+    } catch (error) {
+        console.error("지도 이동 에러:", error);
+    }
+};
             
             if (map) lastMapCenter = map.getCenter();
         
@@ -3342,52 +3357,71 @@
             const addressValue = document.getElementById('address') ? document.getElementById('address').value : '상세내역';
             XLSX.writeFile(workbook, `강승완세무사_실거래가_${addressValue}.xlsx`);
         }
-       // =================================================================
-        // 🌟 [UI 편의성] 부동산 유형(라디오 버튼) 변경 시 동/호수 입력값 리셋
-        // =================================================================
-        document.addEventListener('DOMContentLoaded', () => {
-            const propRadios = document.querySelectorAll('input[name="propType"]');
-            const dongInput = document.getElementById('dong');
-            const hoInput = document.getElementById('ho');
-            const sigaSelect = document.getElementById('sigaTargetType');
-            const banner = document.getElementById('indu-notice-banner');
+       document.addEventListener('DOMContentLoaded', () => {
+    const propRadios = document.querySelectorAll('input[name="propType"]');
+    const dongInput = document.getElementById('dong');
+    const hoInput = document.getElementById('ho');
+    const addressInput = document.getElementById('address');
+    const sigaSelect = document.getElementById('sigaTargetType');
+    const banner = document.getElementById('indu-notice-banner');
+    
+    // 새로 추가된 UI 요소들 제어
+    const complexContainer = document.getElementById('complex-search-container');
+    const dongHoContainer = document.getElementById('dong-ho-container');
+    const landTipBox = document.getElementById('land-tip-box');
 
-            if (propRadios) {
-                propRadios.forEach(radio => {
-                    radio.addEventListener('change', (e) => {
-                        if (dongInput) dongInput.value = "";
-                        if (hoInput) hoInput.value = "";
-                        
-                        const val = e.target.value;
-                        
-                        // 1. 공장/창고일 때만 녹색 안내 배너 표시
-                        if (banner) {
-                            if (val === '공장/창고') banner.classList.remove('hidden');
-                            else banner.classList.add('hidden');
-                        }
+    if (propRadios) {
+        propRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const val = e.target.value;
+                
+                // 값 초기화
+                if (dongInput) dongInput.value = "";
+                if (hoInput) hoInput.value = "";
+                if (addressInput) addressInput.value = "";
+                
+                // 1. 공동주택 선택 시
+                if (val === '공동주택') {
+                    if(complexContainer) complexContainer.classList.remove('hidden');
+                    if(dongHoContainer) dongHoContainer.classList.remove('hidden');
+                    if(landTipBox) landTipBox.classList.add('hidden');
+                    if(addressInput) addressInput.placeholder = "도로명 주소나 단지명을 입력하세요 (또는 우측 팝업)";
+                    if (sigaSelect) sigaSelect.value = 'APT';
+                } 
+                // 2. 토지 또는 공장/창고 선택 시
+                else if (val === '토지' || val === '공장/창고') {
+                    if(complexContainer) complexContainer.classList.add('hidden');
+                    if(dongHoContainer) dongHoContainer.classList.add('hidden');
+                    if(landTipBox) landTipBox.classList.remove('hidden');
+                    if(addressInput) addressInput.placeholder = "지번 주소를 정확히 입력하세요 (예: 무이리 123)";
+                    if (sigaSelect) sigaSelect.value = val === '토지' ? 'NRG' : 'INDU';
+                } 
+                // 3. 단독주택 또는 상가/일반건물 선택 시
+                else {
+                    if(complexContainer) complexContainer.classList.add('hidden');
+                    if(dongHoContainer) dongHoContainer.classList.add('hidden');
+                    if(landTipBox) landTipBox.classList.add('hidden');
+                    if(addressInput) addressInput.placeholder = "도로명 또는 지번 주소를 입력하세요";
+                    if (sigaSelect) sigaSelect.value = val === '단독주택' ? 'RH' : 'NRG';
+                }
 
-                        // 2. 2번 탭 실거래가 기본 물건 유형 자동 연동
-                        if (sigaSelect) {
-                            if (val === '공동주택') sigaSelect.value = 'APT';
-                            else if (val === '단독주택') sigaSelect.value = 'RH';
-                            else if (val === '상가/건물') sigaSelect.value = 'NRG';
-                            else if (val === '공장/창고') sigaSelect.value = 'INDU';
-                            else if (val === '토지') sigaSelect.value = 'NRG';
-                        }
-                    });
-                });
-            }
-
-            // 2번 탭 셀렉트박스를 직접 바꿀 때도 배너 연동
-            if (sigaSelect) {
-                sigaSelect.addEventListener('change', (e) => {
-                    if (banner) {
-                        if (e.target.value === 'INDU') banner.classList.remove('hidden');
-                        else banner.classList.add('hidden');
-                    }
-                });
+                if (banner) {
+                    if (val === '공장/창고') banner.classList.remove('hidden');
+                    else banner.classList.add('hidden');
+                }
+            });
+        });
+    }
+    
+    if (sigaSelect) {
+        sigaSelect.addEventListener('change', (e) => {
+            if (banner) {
+                if (e.target.value === 'INDU') banner.classList.remove('hidden');
+                else banner.classList.add('hidden');
             }
         });
+    }
+});
 
         // 🌟 전체 호실 리스트 열기/닫기 (아코디언 기능)
         window.toggleExposList = function() {
