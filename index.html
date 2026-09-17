@@ -723,14 +723,12 @@
         };
 
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+let map; 
 
-        let map; // 지도를 전역 변수로 선언
-        
-       // 1. 좌표 오염(NaN) 방어용 안전 좌표 추출기
+// 1. 좌표 오염(NaN) 방어용 안전 좌표 추출기
 function getSafeCenter() {
-    if (!map) return new kakao.maps.LatLng(37.498095, 127.027610); // 기본값 강남역
+    if (!map) return new kakao.maps.LatLng(37.498095, 127.027610); 
     let center = map.getCenter();
-    // 지도가 찌그러져서 좌표가 깨졌을 경우를 대비한 방어 로직
     if (!center || isNaN(center.getLat()) || isNaN(center.getLng())) {
         return new kakao.maps.LatLng(37.498095, 127.027610);
     }
@@ -741,17 +739,12 @@ function getSafeCenter() {
 window.toggleMap = function() {
     const container = document.getElementById('map-container');
     const btn = document.getElementById('map-toggle-btn');
-    
     if (container.classList.contains('hidden')) {
         container.classList.remove('hidden');
         btn.innerHTML = '지도 닫기 ▲';
         btn.classList.add('bg-slate-200');
-        
         setTimeout(() => { 
-            if (map) {
-                map.relayout();
-                map.setCenter(getSafeCenter());
-            }
+            if (map) { map.relayout(); map.setCenter(getSafeCenter()); }
         }, 100);
     } else {
         container.classList.add('hidden');
@@ -760,63 +753,40 @@ window.toggleMap = function() {
     }
 };
 
-        // DOM이 모두 로드된 후 안전하게 지도 세팅
-        document.addEventListener("DOMContentLoaded", () => {
-            var mapContainer = document.getElementById('map');
-            if(mapContainer) {
-                var mapOption = {
-                    center: new kakao.maps.LatLng(37.498095, 127.027610), // 기본 위치 (강남역)
-                    level: 3
-                };
-                map = new kakao.maps.Map(mapContainer, mapOption);
-                var geocoder = new kakao.maps.services.Geocoder();
-                var marker = new kakao.maps.Marker();
+// 3. DOM 로드 후 안전하게 지도 세팅
+document.addEventListener("DOMContentLoaded", () => {
+    var mapContainer = document.getElementById('map');
+    if(mapContainer) {
+        var mapOption = { center: new kakao.maps.LatLng(37.498095, 127.027610), level: 3 };
+        map = new kakao.maps.Map(mapContainer, mapOption);
+        
+        kakao.maps.event.addListener(map, 'click', function(mouseEvent) {
+            var coords = mouseEvent.latLng; 
+            if(!window.mapMarker) window.mapMarker = new kakao.maps.Marker({map: map});
+            window.mapMarker.setPosition(coords);
 
-                kakao.maps.event.addListener(map, 'click', function(mouseEvent) {
-                    var coords = mouseEvent.latLng; 
-                    marker.setPosition(coords);
-                    marker.setMap(map);
+            var geocoder = new kakao.maps.services.Geocoder();
+            geocoder.coord2Address(coords.getLng(), coords.getLat(), function(result, status) {
+                if (status === kakao.maps.services.Status.OK) {
+                    var clickAddress = result[0].address.address_name;
+                    var addrInput = document.getElementById('address');
+                    if(addrInput) addrInput.value = clickAddress;
 
-                    geocoder.coord2Address(coords.getLng(), coords.getLat(), function(result, status) {
-                        if (status === kakao.maps.services.Status.OK) {
-                            var clickAddress = result[0].address.address_name;
-                            
-                            // 1. 주소창(id="address")에 클릭한 주소 텍스트를 바로 꽂아 넣습니다.
-                            document.getElementById('address').value = clickAddress;
-
-                            // 모달 모드일 경우 "주소 입력됨!" 배지 애니메이션 띄우기
-                            const badge = document.getElementById('modal-address-badge');
-                            if (badge) {
-                                badge.classList.remove('hidden');
-                                badge.innerText = `✅ ${clickAddress} 입력 완료`;
-                                badge.classList.add('scale-110', 'text-rose-600', 'border-rose-300');
-                                
-                                // 0.4초 뒤에 튀어오르는 효과 원복
-                                setTimeout(() => {
-                                    badge.classList.remove('scale-110', 'text-rose-600', 'border-rose-300');
-                                }, 400);
-                            }
-                            
-                            // 2. 동/호수 입력칸 초기화
-                            const dongInput = document.getElementById('dong');
-                            const hoInput = document.getElementById('ho');
-                            if(dongInput) dongInput.value = "";
-                            if(hoInput) hoInput.value = "";
-
-                            // 3. 자동 스캔 실행을 제거하고, 라디오 버튼 상태를 확인합니다.
-                            const propType = document.querySelector('input[name="propType"]:checked').value;
-                            
-                            // 4. 공동주택이면 동 입력칸으로, 아니면 검색 버튼으로 포커스 이동
-                            if (propType === '공동주택' && dongInput) {
-                                dongInput.focus();
-                            } else {
-                                document.getElementById('searchBtn').focus();
-                            }
-                        }
-                    });
-                });
-            }
+                    const badge = document.getElementById('modal-address-badge');
+                    if (badge) {
+                        badge.classList.remove('hidden');
+                        badge.innerText = `✅ ${clickAddress} 입력 완료`;
+                        badge.classList.add('scale-110', 'text-rose-600', 'border-rose-300');
+                        setTimeout(() => badge.classList.remove('scale-110', 'text-rose-600', 'border-rose-300'), 400);
+                    }
+                    
+                    if(document.getElementById('dong')) document.getElementById('dong').value = "";
+                    if(document.getElementById('ho')) document.getElementById('ho').value = "";
+                }
+            });
         });
+    }
+});
 
         // 🌟 VWORLD 연동용 원래 함수 (건드리지 않음)
         function fetchJSONP(url) {
@@ -950,23 +920,18 @@ window.toggleMap = function() {
             layer.classList.remove('flex');
         }
 
-        // 🌟 지도 팝업(확대) 제어 변수 및 함수
-        let lastMapCenter = null;
-        
-        // 🌟 [최종 종결판] 모달창 열기 함수 (지도 뻗음 현상 원천 차단)
-// 3. 모달창 열기 (애니메이션 꼬임 완벽 방지)
+        // 🌟 지도 팝업 제어 및 하이브리드 워프 엔진
+let lastMapCenter = null;
+
 window.openMapModal = function() {
     const modal = document.getElementById('mapModal');
     const mapEl = document.getElementById('map');
     const modalWrapper = document.getElementById('modal-map-wrapper');
     
-    // 오염되지 않은 안전한 현재 좌표 킵해두기
     let safeCenter = getSafeCenter();
-
-    // 지도를 모달로 이사시킴
     modalWrapper.appendChild(mapEl);
     mapEl.style.height = '100%';
-    mapEl.style.width = '100%'; // width 100% 명시적 보장
+    mapEl.style.width = '100%';
     mapEl.style.borderRadius = '0';
     mapEl.style.border = 'none';
 
@@ -975,45 +940,32 @@ window.openMapModal = function() {
     requestAnimationFrame(() => {
         modal.classList.remove('opacity-0');
         modal.querySelector('div').classList.remove('scale-95');
-        
-        // 애니메이션(300ms)이 완전히 끝난 후 리레이아웃
         setTimeout(() => {
-            if (map) {
-                map.relayout();
-                map.setCenter(safeCenter);
-            }
+            if (map) { map.relayout(); map.setCenter(safeCenter); }
         }, 350); 
     });
 };
-        
-        // 4. 모달창 닫기 (안전 좌표 복구)
+
 window.closeMapModal = function() {
     const modal = document.getElementById('mapModal');
     const mapEl = document.getElementById('map');
     const inlineWrapper = document.getElementById('inline-map-wrapper');
     
     let safeCenter = getSafeCenter();
-
     modal.classList.add('opacity-0');
     modal.querySelector('div').classList.add('scale-95');
     
     setTimeout(() => {
         modal.classList.add('hidden');
-        
         inlineWrapper.appendChild(mapEl);
         mapEl.style.height = '350px';
         mapEl.style.width = '100%';
         mapEl.style.borderRadius = '0.5rem';
         mapEl.style.border = '1px solid #cbd5e1';
-        
-        if (map) {
-            map.relayout();
-            map.setCenter(safeCenter);
-        }
+        if (map) { map.relayout(); map.setCenter(safeCenter); }
     }, 300);
 };
 
-// 5. 하이브리드 워프 엔진 & 주소 자동 연동
 window.moveMapCenter = async function(inputId) {
     try {
         const inputEl = document.getElementById(inputId);
@@ -1033,21 +985,18 @@ window.moveMapCenter = async function(inputId) {
 
         if (!window.warpMarker) window.warpMarker = new kakao.maps.Marker({ map: map });
 
-        // 🚀 워프 후 즉시 주소를 꽂아주는 내부 로직
         const warpAndMarkAndInput = (lat, lng) => {
             try {
-                map.relayout(); // 워프 직전 찌그러짐 강제 펴기
+                map.relayout(); 
                 const coords = new kakao.maps.LatLng(lat, lng);
                 map.setCenter(coords);
                 map.setLevel(4);
                 
                 window.warpMarker.setPosition(coords);
-                window.warpMarker.setMap(map);
-
+                
                 if (document.getElementById('mapMoveInput')) document.getElementById('mapMoveInput').value = keyword;
                 if (document.getElementById('modalMapMoveInput')) document.getElementById('modalMapMoveInput').value = keyword;
 
-                // 도착 지점의 좌표를 메인 주소창에 자동 세팅
                 const geocoder = new kakao.maps.services.Geocoder();
                 geocoder.coord2Address(coords.getLng(), coords.getLat(), function(result, status) {
                     if (status === kakao.maps.services.Status.OK) {
@@ -1075,17 +1024,14 @@ window.moveMapCenter = async function(inputId) {
         const geocoder = new kakao.maps.services.Geocoder();
         const ps = new kakao.maps.services.Places();
 
-        // 1순위: 카카오 주소 검색
         geocoder.addressSearch(keyword, function(result, status) {
             if (status === kakao.maps.services.Status.OK) {
                 warpAndMarkAndInput(result[0].y, result[0].x);
             } else {
-                // 2순위: 카카오 장소 검색
                 ps.keywordSearch(keyword, async function(data, kStatus) {
                     if (kStatus === kakao.maps.services.Status.OK) {
                         warpAndMarkAndInput(data[0].y, data[0].x);
                     } else {
-                        // 3순위: VWORLD 국가공간정보망 강제 스캔
                         try {
                             const vworldUrl = `https://api.vworld.kr/req/search?service=search&request=search&version=2.0&query=${encodeURIComponent(keyword)}&type=address&category=parcel&format=json&key=${VWORLD_KEY}&domain=${DOMAIN}`;
                             const vData = await fetchJSONP(vworldUrl);
