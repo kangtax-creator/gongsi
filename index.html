@@ -908,86 +908,102 @@
         // 🌟 지도 팝업(확대) 제어 변수 및 함수
         let lastMapCenter = null;
         
-        window.openMapModal = function() {
-            const modal = document.getElementById('mapModal');
-            const mapEl = document.getElementById('map');
-            const modalWrapper = document.getElementById('modal-map-wrapper');
-            
-            // 현재 보고 있던 지도의 중심 좌표 기억하기
-            if (map) lastMapCenter = map.getCenter();
-        
-            // 1. 지도 태그를 모달 영역 안으로 이사(appendChild) 시킵니다.
-            modalWrapper.appendChild(mapEl);
-            
-            // 2. 모달창에 꽉 차도록 스타일 변경
-            mapEl.style.height = '100%';
-            mapEl.style.borderRadius = '0';
-            mapEl.style.border = 'none';
-        
-            // 3. 모달 띄우기
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                modal.classList.remove('opacity-0');
-                modal.querySelector('div').classList.remove('scale-95');
+        // 🌟 [수정됨] 모달창 열기 함수 (애니메이션이 끝난 후 지도를 렌더링하도록 딜레이 추가)
+            window.openMapModal = function() {
+                const modal = document.getElementById('mapModal');
+                const mapEl = document.getElementById('map');
+                const modalWrapper = document.getElementById('modal-map-wrapper');
                 
-                // 4. 이사 온 후 지도가 깨지지 않도록 재계산 및 뷰 복구
-                if (map) {
-                    map.relayout();
-                    if (lastMapCenter) map.setCenter(lastMapCenter);
-                }
-            }, 10);
-        };
+                if (map) lastMapCenter = map.getCenter();
+            
+                modalWrapper.appendChild(mapEl);
+                mapEl.style.height = '100%';
+                mapEl.style.borderRadius = '0';
+                mapEl.style.border = 'none';
+            
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modal.classList.remove('opacity-0');
+                    modal.querySelector('div').classList.remove('scale-95');
+                    
+                    // 🚀 핵심: 모달창이 커지는 애니메이션(300ms)이 완전히 끝난 후 리레이아웃을 해야 에러가 안 납니다.
+                    setTimeout(() => {
+                        if (map) {
+                            map.relayout();
+                            if (lastMapCenter) map.setCenter(lastMapCenter);
+                        }
+                    }, 300);
+                }, 10);
+            };
         
         window.closeMapModal = function() {
             const modal = document.getElementById('mapModal');
             const mapEl = document.getElementById('map');
             const inlineWrapper = document.getElementById('inline-map-wrapper');
 
-       // 🌟 [추가됨] 검색한 지역으로 지도 중심 좌표를 순간이동 시키는 함수
+       // 🌟 [수정됨] 검색한 지역으로 지도 중심 좌표를 순간이동 시키고 핀을 꽂는 함수
         window.moveMapCenter = function(inputId) {
-            const inputEl = document.getElementById(inputId);
-            const keyword = inputEl.value.trim();
+            try {
+                const inputEl = document.getElementById(inputId);
+                if (!inputEl) return;
         
-            if (!keyword) {
-                alert("이동할 지역명(시/군/구 또는 동/읍/면/리)을 입력해주세요.");
-                inputEl.focus();
-                return;
-            }
-        
-            if (!map) return;
-        
-            // 카카오 장소 검색 객체 생성 (이미 세무사님 코드에 services 라이브러리가 호출되어 있어 즉시 사용 가능합니다)
-            const ps = new kakao.maps.services.Places();
-        
-            // 1차 시도: '키워드'로 검색 (관공서, 지역명 등 유연한 검색)
-            ps.keywordSearch(keyword, function(data, status, pagination) {
-                if (status === kakao.maps.services.Status.OK) {
-                    // 검색된 첫 번째 장소의 좌표로 이동
-                    const coords = new kakao.maps.LatLng(data[0].y, data[0].x);
-                    map.setCenter(coords);
-                    map.setLevel(5); // 지방 토지 검색을 위해 살짝 넓은 5레벨로 뷰포트 설정
-        
-                    // 작은 지도와 큰 지도의 입력창 텍스트 동기화
-                    document.getElementById('mapMoveInput').value = keyword;
-                    document.getElementById('modalMapMoveInput').value = keyword;
-                } else {
-                    // 2차 시도: 키워드로 실패할 경우 '정식 주소' 체계로 검색
-                    const geocoder = new kakao.maps.services.Geocoder();
-                    geocoder.addressSearch(keyword, function(result, status) {
-                        if (status === kakao.maps.services.Status.OK) {
-                            const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
-                            map.setCenter(coords);
-                            map.setLevel(5);
-                            
-                            document.getElementById('mapMoveInput').value = keyword;
-                            document.getElementById('modalMapMoveInput').value = keyword;
-                        } else {
-                            alert("해당 지역을 찾을 수 없습니다. \n(예: '제주도 애월읍' 또는 '평창군 장평리' 처럼 상위 지역구를 함께 적어보세요.)");
-                        }
-                    });
+                const keyword = inputEl.value.trim();
+                if (!keyword) {
+                    alert("이동할 지역명(시/군/구 또는 동/읍/면/리)을 입력해주세요.");
+                    inputEl.focus();
+                    return;
                 }
-            });
-        };     
+        
+                if (!map) {
+                    alert("지도가 아직 로딩되지 않았습니다. 잠시 후 다시 시도해주세요.");
+                    return;
+                }
+        
+                // 🌟 마커(핀)가 꼬여서 없을 경우를 대비한 강제 생성 안전장치
+                if (!window.mapMarker) {
+                    window.mapMarker = new kakao.maps.Marker();
+                }
+        
+                // 워프 + 마커 표시를 동시에 처리하는 내부 로직
+                const warpAndMark = (lat, lng) => {
+                    // 🚀 핵심: 모달창이 열리면서 지도가 찌그러진 상태일 수 있으므로 이동 직전에 무조건 크기 재계산!
+                    map.relayout(); 
+        
+                    const coords = new kakao.maps.LatLng(lat, lng);
+                    map.setCenter(coords);
+                    map.setLevel(5); // 지방 토지도 잘 보이게 뷰포트 확대
+                    
+                    // 📍 검색한 정중앙 위치에 빨간 핀(마커) 꽂기
+                    window.mapMarker.setPosition(coords);
+                    window.mapMarker.setMap(map);
+        
+                    // 입력창 텍스트 양쪽 동기화
+                    const inlineInput = document.getElementById('mapMoveInput');
+                    const modalInput = document.getElementById('modalMapMoveInput');
+                    if (inlineInput) inlineInput.value = keyword;
+                    if (modalInput) modalInput.value = keyword;
+                };
+        
+                const ps = new kakao.maps.services.Places();
+                
+                ps.keywordSearch(keyword, function(data, status) {
+                    if (status === kakao.maps.services.Status.OK) {
+                        warpAndMark(data[0].y, data[0].x);
+                    } else {
+                        const geocoder = new kakao.maps.services.Geocoder();
+                        geocoder.addressSearch(keyword, function(result, status) {
+                            if (status === kakao.maps.services.Status.OK) {
+                                warpAndMark(result[0].y, result[0].x);
+                            } else {
+                                alert("해당 지역을 찾을 수 없습니다. (예: '제주도 애월읍'처럼 상위 지역명을 함께 적어보세요.)");
+                            }
+                        });
+                    }
+                });
+            } catch (error) {
+                alert("지도 이동 중 오류가 발생했습니다: " + error.message);
+            }
+        };
             
             if (map) lastMapCenter = map.getCenter();
         
