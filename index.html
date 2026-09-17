@@ -95,23 +95,24 @@
                         <ul id="keywordAutoResults" class="absolute z-50 w-full bg-white border border-slate-300 rounded-xl shadow-2xl mt-1 max-h-60 overflow-y-auto hidden divide-y divide-slate-100"></ul>
                     </div>
                     
-                    <div class="flex flex-col space-y-2 mb-4">
-                        <div class="flex space-x-2">
-                            <input type="text" id="address" placeholder="도로명 주소나 단지명을 입력하세요 (또는 우측 팝업)" class="flex-1 bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all shadow-sm">
-                            <button type="button" onclick="execDaumPostcode()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-transform active:scale-95 whitespace-nowrap shadow-sm flex items-center">
-                                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                                팝업 검색
-                            </button>
-                        </div>
-                        
-                        <!-- 2. 맹지 팁 박스에 ID 추가 및 초기 숨김(hidden) 처리 -->
-                        <div id="land-tip-box" class="bg-orange-50 border border-orange-200 p-3 rounded-xl shadow-sm hidden">
-                            <p class="text-[11px] md:text-xs text-orange-800 leading-relaxed">
-                                <span class="font-black text-orange-600">💡 맹지/지방 토지 검색 팁:</span><br>
-                                카카오 팝업에서 정확한 지번이 안 나오고 <b class="underline">근처 지번</b>만 나온다면, 팝업창을 닫고 <b>위 입력창에 지번을 직접 타이핑</b>해 주세요! (국가 공간정보망이 대신 스캔합니다)
-                            </p>
-                        </div>
+                    <div class="flex flex-col space-y-3 mb-4">
+                    <!-- 🌟 1. 위로 독립시킨 주소찾기 팝업 버튼 (가로 폭 꽉 차게 큼직하게 배치) -->
+                    <button type="button" onclick="execDaumPostcode()" class="w-full bg-slate-800 hover:bg-slate-700 text-white px-4 py-3 rounded-xl text-sm font-bold transition-transform active:scale-95 shadow-sm flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        카카오 주소찾기 (우편번호 검색)
+                    </button>
+                
+                    <!-- 🌟 2. 아래로 분리된 수동 타이핑 입력창 (엔터키 스캔 기능 추가) -->
+                    <input type="text" id="address" placeholder="위 버튼으로 검색하거나, 지번을 직접 타이핑하세요" onkeypress="if(event.key==='Enter') document.getElementById('searchBtn').click();" class="w-full bg-white border-2 border-slate-300 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all shadow-sm">
+                    
+                    <!-- 🌟 3. 맹지 팁 박스 -->
+                    <div id="land-tip-box" class="bg-orange-50 border border-orange-200 p-3 rounded-xl shadow-sm hidden">
+                        <p class="text-[11px] md:text-xs text-orange-800 leading-relaxed">
+                            <span class="font-black text-orange-600">💡 맹지/지방 토지 검색 팁:</span><br>
+                            카카오 팝업에서 정확한 지번이 안 나오고 <b class="underline">근처 지번</b>만 나온다면, 팝업창을 닫고 <b>위 입력창에 지번을 직접 타이핑</b>해 주세요! (국가 공간정보망이 대신 스캔합니다)
+                        </p>
                     </div>
+                </div>
                     
                     <!-- 3. 동/호수 영역에 ID 추가 -->
                     <div class="grid grid-cols-2 gap-4" id="dong-ho-container">
