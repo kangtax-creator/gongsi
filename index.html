@@ -126,6 +126,12 @@
                                 크게 보기
                             </button>
                         </div>
+
+                        <!-- 🌟 [추가됨] 지도 이동 검색창 (작은 지도용) -->
+                        <div class="flex space-x-2 mb-2">
+                            <input type="text" id="mapMoveInput" placeholder="이동할 동/읍/면/리 입력 (예: 애월읍, 장평리)" class="flex-1 bg-white border border-slate-300 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500 font-bold" onkeypress="if(event.key==='Enter') moveMapCenter('mapMoveInput')">
+                            <button type="button" onclick="moveMapCenter('mapMoveInput')" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded text-xs font-bold transition-colors whitespace-nowrap shadow-sm">해당 지역으로 이동</button>
+                        </div>
                         <!-- 💡 인라인 상태일 때 지도가 담기는 래퍼 -->
                         <div id="inline-map-wrapper">
                             <div id="map" style="width: 100%; height: 350px; border-radius: 0.5rem; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"></div>
@@ -588,6 +594,12 @@
             <span id="modal-address-badge" class="hidden bg-white px-2 py-1 rounded text-[10px] md:text-xs text-indigo-600 border border-indigo-200 font-extrabold shadow-sm transition-all whitespace-nowrap ml-2">입력됨!</span>
         </div>
 
+        <!-- 🌟 [추가됨] 지도 이동 검색창 (전체화면 모달용) -->
+        <div class="p-2 bg-slate-100 border-b border-slate-200 flex space-x-2 z-10 shadow-sm relative">
+            <input type="text" id="modalMapMoveInput" placeholder="이동할 동/읍/면/리 입력 (예: 제주도 애월읍 하귀리)" class="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 font-bold" onkeypress="if(event.key==='Enter') moveMapCenter('modalMapMoveInput')">
+            <button type="button" onclick="moveMapCenter('modalMapMoveInput')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors whitespace-nowrap">지도 워프 🚀</button>
+        </div>
+
         <!-- 💡 모달 상태일 때 지도가 이동해 올 래퍼 (남은 높이 100% 차지) -->
         <div id="modal-map-wrapper" class="flex-1 w-full relative bg-slate-100"></div>
         
@@ -930,6 +942,52 @@
             const modal = document.getElementById('mapModal');
             const mapEl = document.getElementById('map');
             const inlineWrapper = document.getElementById('inline-map-wrapper');
+
+       // 🌟 [추가됨] 검색한 지역으로 지도 중심 좌표를 순간이동 시키는 함수
+        window.moveMapCenter = function(inputId) {
+            const inputEl = document.getElementById(inputId);
+            const keyword = inputEl.value.trim();
+        
+            if (!keyword) {
+                alert("이동할 지역명(시/군/구 또는 동/읍/면/리)을 입력해주세요.");
+                inputEl.focus();
+                return;
+            }
+        
+            if (!map) return;
+        
+            // 카카오 장소 검색 객체 생성 (이미 세무사님 코드에 services 라이브러리가 호출되어 있어 즉시 사용 가능합니다)
+            const ps = new kakao.maps.services.Places();
+        
+            // 1차 시도: '키워드'로 검색 (관공서, 지역명 등 유연한 검색)
+            ps.keywordSearch(keyword, function(data, status, pagination) {
+                if (status === kakao.maps.services.Status.OK) {
+                    // 검색된 첫 번째 장소의 좌표로 이동
+                    const coords = new kakao.maps.LatLng(data[0].y, data[0].x);
+                    map.setCenter(coords);
+                    map.setLevel(5); // 지방 토지 검색을 위해 살짝 넓은 5레벨로 뷰포트 설정
+        
+                    // 작은 지도와 큰 지도의 입력창 텍스트 동기화
+                    document.getElementById('mapMoveInput').value = keyword;
+                    document.getElementById('modalMapMoveInput').value = keyword;
+                } else {
+                    // 2차 시도: 키워드로 실패할 경우 '정식 주소' 체계로 검색
+                    const geocoder = new kakao.maps.services.Geocoder();
+                    geocoder.addressSearch(keyword, function(result, status) {
+                        if (status === kakao.maps.services.Status.OK) {
+                            const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
+                            map.setCenter(coords);
+                            map.setLevel(5);
+                            
+                            document.getElementById('mapMoveInput').value = keyword;
+                            document.getElementById('modalMapMoveInput').value = keyword;
+                        } else {
+                            alert("해당 지역을 찾을 수 없습니다. \n(예: '제주도 애월읍' 또는 '평창군 장평리' 처럼 상위 지역구를 함께 적어보세요.)");
+                        }
+                    });
+                }
+            });
+        };     
             
             if (map) lastMapCenter = map.getCenter();
         
