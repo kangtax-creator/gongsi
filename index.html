@@ -167,7 +167,7 @@
 
                         <!-- 🌟 [추가됨] 지도 이동 검색창 (작은 지도용) -->
                         <div class="flex space-x-2 mb-2">
-                            <input type="text" id="mapMoveInput" placeholder="이동할 주소지 입" class="flex-1 bg-white border border-slate-300 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500 font-bold" onkeypress="if(event.key==='Enter') moveMapCenter('mapMoveInput')">
+                            <input type="text" id="mapMoveInput" placeholder="이동할 지역(주소지) 입력" class="flex-1 bg-white border border-slate-300 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500 font-bold" onkeypress="if(event.key==='Enter') moveMapCenter('mapMoveInput')">
                             <button type="button" onclick="moveMapCenter('mapMoveInput')" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded text-xs font-bold transition-colors whitespace-nowrap shadow-sm">해당 지역으로 이동</button>
                         </div>
                         <!-- 💡 인라인 상태일 때 지도가 담기는 래퍼 -->
@@ -634,7 +634,7 @@
 
         <!-- 🌟 [추가됨] 지도 이동 검색창 (전체화면 모달용) -->
         <div class="p-2 bg-slate-100 border-b border-slate-200 flex space-x-2 z-10 shadow-sm relative">
-            <input type="text" id="modalMapMoveInput" placeholder="이동할 동/읍/면/리 입력 (예: 제주도 애월읍 하귀리)" class="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 font-bold" onkeypress="if(event.key==='Enter') moveMapCenter('modalMapMoveInput')">
+            <input type="text" id="modalMapMoveInput" placeholder="이동할 지역(주소지) 입력" class="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 font-bold" onkeypress="if(event.key==='Enter') moveMapCenter('modalMapMoveInput')">
             <button type="button" onclick="moveMapCenter('modalMapMoveInput')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors whitespace-nowrap">검색지로 이동 🚀</button>
             <button type="button" onclick="toggleCadastralMap()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors whitespace-nowrap cursor-pointer z-50 relative">지적도 켜기(끄기)</button>
         </div>
