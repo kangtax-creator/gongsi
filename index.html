@@ -2438,7 +2438,7 @@ window.moveMapCenter = async function(inputId) {
                                 let isJibunValid = matchJibun(item.jibun, isSan, bon, bu);
                                 let isNameValid = false;
                                 // 👇 [추가] 공장/창고(INDU)일 경우 지번 대신 '법정동' 일치 여부로 합격 판정 처리!
-                                if (targetType === "INDU") {
+                                if (targetType === "INDU" || targetType === "LAND") {
                                     if (targetUmdNm) {
                                         // includes 대신 === (완전 일치)를 사용하여 옆동네 데이터 차단
                                         if (item.umdNm && item.umdNm.trim() === targetUmdNm.trim()) {
@@ -2625,6 +2625,7 @@ window.moveMapCenter = async function(inputId) {
                     if (row.type === '매매' || row.type.includes('권')) {
                         if (row.dealingGbn === '직거래') extraBadge += '<span class="text-rose-500 text-[10px] font-bold block leading-none mt-1">직거래</span>';
                         if (row.cdealType) extraBadge += '<span class="text-slate-400 text-[10px] font-bold block leading-none mt-1">취소됨</span>';
+                        if (row.ownershipGbn === '지분') extraBadge += '<span class="text-amber-600 bg-amber-50 border border-amber-200 px-1 py-0.5 rounded text-[10px] font-extrabold block mt-1 w-fit mx-auto">지분</span>';
                     } else {
                         if (row.contractType === '갱신') extraBadge += '<span class="text-slate-800 text-[10px] font-extrabold block leading-none mt-1">갱신</span>';
                         if (row.useRRRight === '사용') extraBadge += '<span class="text-indigo-500 text-[10px] font-bold block leading-none mt-1">청구권</span>';
