@@ -289,6 +289,7 @@
                                 <option value="OFFI">오피스텔</option>
                                 <option value="NRG">상업/업무용 (상가·빌딩)</option>
                                 <option value="INDU">공장/창고</option>
+                                <option value="LAND">토지 (대지/임야 등)</option>
                             </select>
                         </div>
                     </div>
@@ -1536,6 +1537,8 @@ window.moveMapCenter = async function(inputId) {
                     sigaSelect.value = "INDU";
                 } else if (propType === "상가/건물" || propType === "단독/다가구" || propType === "단독주택") {
                    sigaSelect.value = "NRG";
+                } else if (propType === "토지") {
+                   sigaSelect.value = "LAND";    
                 } else {
                    sigaSelect.value = "APT";
                 }
@@ -1902,9 +1905,14 @@ window.moveMapCenter = async function(inputId) {
                         if (item.buildingAr || item.buildingar) bldAr = parseFloat(String(item.buildingAr || item.buildingar).replace(/,/g, ''));
                         if (item.plottageAr || item.plottagear) plotAr = parseFloat(String(item.plottageAr || item.plottagear).replace(/,/g, ''));
 
+                        if (item.dealArea) plotAr = parseFloat(String(item.dealArea).replace(/,/g, ''));
+                        let jimok = String(item.jimok || item.지목 || "").trim();
+                        let landUse = String(item.landUse || item.용도지역 || "").trim();
+
                         let regionStr = (umdNm && jibun) ? `${umdNm} ${jibun}` : umdNm;
                         let complexName = "";
                         if (regionStr) complexName += `${regionStr} `;
+                        if (jimok || landUse) complexName += `[${jimok}] ${landUse} `;
                         if (purps) complexName += `[${purps}] `;
                         if (bldNm) complexName += bldNm;
                         if (!complexName.trim()) complexName = "-";
@@ -1990,7 +1998,7 @@ window.moveMapCenter = async function(inputId) {
                 let bldAr = 0;
                 let plotAr = 0;
                 let bldArText = getText(item, ["buildingAr", "buildingar"]);
-                let plotArText = getText(item, ["plottageAr", "plottagear"]);
+                let plotArText = getText(item, ["plottageAr", "plottagear", "dealArea", "거래면적"]);
                 
                 if (bldArText) bldAr = parseFloat(bldArText.replace(/,/g, ''));
                 if (plotArText) plotAr = parseFloat(plotArText.replace(/,/g, ''));
@@ -1998,6 +2006,7 @@ window.moveMapCenter = async function(inputId) {
                 let regionStr = (umdNm && jibun) ? `${umdNm} ${jibun}` : umdNm;
                 let complexName = "";
                 if (regionStr) complexName += `${regionStr} `;
+                if (jimok || landUse) complexName += `[${jimok}] ${landUse} `;
                 if (purps) complexName += `[${purps}] `;
                 if (bldNm) complexName += bldNm;
                 if (!complexName.trim()) complexName = "-";
@@ -2359,6 +2368,11 @@ window.moveMapCenter = async function(inputId) {
                    // 👇 공장 및 창고 API 엔드포인트 적용
                    tradeApiPath = "RTMSDataSvcInduTrade/getRTMSDataSvcInduTrade";
                    includeRent = false; // 공장/창고는 전월세 통합 API가 없으므로 제외
+                   includeSilv = false;    
+                } else if (targetType === "LAND") {
+                   // 👇 토지 실거래가 전용 엔드포인트 적용
+                   tradeApiPath = "RTMSDataSvcLandTrade/getRTMSDataSvcLandTrade";
+                   includeRent = false; // 토지는 전월세 API가 없음
                    includeSilv = false;    
                 }
 
@@ -3397,7 +3411,7 @@ window.moveMapCenter = async function(inputId) {
                     if(dongHoContainer) dongHoContainer.classList.add('hidden');
                     if(landTipBox) landTipBox.classList.remove('hidden');
                     if(addressInput) addressInput.placeholder = "지번 주소를 정확히 입력하세요 (예: 무이리 123)";
-                    if (sigaSelect) sigaSelect.value = val === '토지' ? 'NRG' : 'INDU';
+                    if (sigaSelect) sigaSelect.value = val === '토지' ? 'LAND' : 'INDU';
                 } 
                 // 3. 단독주택 또는 상가/일반건물 선택 시
                 else {
