@@ -3682,14 +3682,19 @@ window.moveMapCenter = async function(inputId) {
             }
         };
 
+        let isGongmaeLoading = false; // 중복 스캔 방지용 플래그
+
         async function fetchGongmaeData() {
             const btn = document.getElementById('gongmaeBtn');
             const tbody = document.getElementById('gongmae-table-body');
             
-            btn.innerText = "전국 공매 데이터 전수조사 중... (데이터양에 따라 3~5초 소요)";
+            if (isGongmaeLoading) return; 
+            isGongmaeLoading = true;
+
+            btn.innerText = "초기 데이터 쾌속 스캔 중... (약 1~2초 소요)";
             btn.classList.add('scanning-active');
             btn.disabled = true;
-            tbody.innerHTML = `<tr><td colspan="5" class="py-12 text-center text-orange-500 font-bold animate-pulse">전국 단위 대용량 공매 데이터를 100% 수집 중입니다...</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" class="py-12 text-center text-orange-500 font-bold animate-pulse">국가 공매 서버에 접속하여 최신 데이터를 가져오는 중입니다...</td></tr>`;
 
             try {
                 let items = [];
@@ -3697,14 +3702,12 @@ window.moveMapCenter = async function(inputId) {
                 let attempts = 0;
                 let foundDate = null;
                 let totalCount = 0;
-
-                // 🌟 1단계: 가장 최근에 업데이트된 날짜 찾기 (한 번에 5000건씩 크게 스캔)
-                const rowsPerPage = 5000;
+                
+                // 🌟 1단계: 가장 최근 데이터를 찾아 첫 페이지(2000건)만 빛의 속도로 스캔
+                const rowsPerPage = 2000; 
                 
                 while (items.length === 0 && attempts < 5) {
                     const basDt = `${targetDate.getFullYear()}${String(targetDate.getMonth() + 1).padStart(2, '0')}${String(targetDate.getDate()).padStart(2, '0')}`;
-                    console.log(`[공매 스캔] ${basDt} 일자 데이터 탐색 중...`);
-                    
                     const url = `https://apis.data.go.kr/1160100/service/GetPublDispAsseInfoService/getPublDispAsse?serviceKey=${DATA_GO_KR_KEY}&pageNo=1&numOfRows=${rowsPerPage}&resultType=json&basDt=${basDt}`;
                     
                     const resJson = await fetchWithProxy(url);
@@ -3716,30 +3719,81 @@ window.moveMapCenter = async function(inputId) {
                     
                     if (items.length > 0) {
                         foundDate = basDt;
-                        console.log(`✅ [1페이지 수집] ${basDt} 기준 ${items.length} / 총 ${totalCount}건`);
-                        break;
+                        break; 
                     }
-                    
                     targetDate.setDate(targetDate.getDate() - 1);
                     attempts++;
                 }
 
-                // 🌟 2단계: 전체 물건이 5000건이 넘으면, 남은 페이지를 끝까지 추적해서 100% 긁어오기
-                if (foundDate && totalCount > rowsPerPage) {
-                    const totalPages = Math.ceil(totalCount / rowsPerPage);
-                    for (let p = 2; p <= totalPages; p++) {
-                        console.log(`[공매 스캔] 추가 데이터 수집 중... (${p}/${totalPages} 페이지)`);
-                        const nextUrl = `https://apis.data.go.kr/1160100/service/GetPublDispAsseInfoService/getPublDispAsse?serviceKey=${DATA_GO_KR_KEY}&pageNo=${p}&numOfRows=${rowsPerPage}&resultType=json&basDt=${foundDate}`;
-                        
-                        const nextJson = await fetchWithProxy(nextUrl);
-                        if (nextJson?.response?.body?.items?.item) {
-                            let moreItems = Array.isArray(nextJson.response.body.items.item) ? nextJson.response.body.items.item : [nextJson.response.body.items.item];
-                            items = items.concat(moreItems);
-                        }
-                        // 우회망 서버가 차단하지 않도록 아주 잠깐(0.1초) 숨 고르기
-                        await sleep(100); 
-                    }
+                if (!foundDate || items.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="py-12 text-center text-slate-500 font-medium">최근 5일간 업데이트된 공매 데이터가 없습니다.</td></tr>`;
+                    resetGongmaeBtn(btn);
+                    return;
                 }
+
+                // 🌟 2단계: 첫 번째 뭉치(2000건) 즉시 화면에 렌더링 (사용자는 대기시간을 1초로 느낌)
+                globalGongmaeRawData = items;
+                applyGongmaeFilters(); 
+
+                // 🌟 3단계: 남은 데이터가 있다면 백그라운드에서 조용히 추가 로딩 (비동기)
+                if (totalCount > rowsPerPage) {
+                    btn.innerText = `백그라운드 스캔 중... (1/${Math.ceil(totalCount/rowsPerPage)} 완료) - 실시간 검색 가능`;
+                    btn.disabled = false; // 로딩 중에도 필터를 조작할 수 있게 버튼 잠금 해제
+                    fetchRemainingGongmaeData(foundDate, totalCount, rowsPerPage); 
+                } else {
+                    resetGongmaeBtn(btn);
+                }
+
+            } catch (err) {
+                console.error("공매 API 에러:", err);
+                tbody.innerHTML = `<tr><td colspan="5" class="py-12 text-center text-rose-500 font-bold">API 통신 오류가 발생했습니다. 잠시 후 다시 시도해주세요.</td></tr>`;
+                resetGongmaeBtn(btn);
+            }
+        }
+
+        // 🌟 백그라운드 무소음 로딩 엔진
+        async function fetchRemainingGongmaeData(foundDate, totalCount, rowsPerPage) {
+            const btn = document.getElementById('gongmaeBtn');
+            const totalPages = Math.ceil(totalCount / rowsPerPage);
+            
+            for (let p = 2; p <= totalPages; p++) {
+                try {
+                    const nextUrl = `https://apis.data.go.kr/1160100/service/GetPublDispAsseInfoService/getPublDispAsse?serviceKey=${DATA_GO_KR_KEY}&pageNo=${p}&numOfRows=${rowsPerPage}&resultType=json&basDt=${foundDate}`;
+                    const nextJson = await fetchWithProxy(nextUrl);
+                    
+                    if (nextJson?.response?.body?.items?.item) {
+                        let moreItems = Array.isArray(nextJson.response.body.items.item) ? nextJson.response.body.items.item : [nextJson.response.body.items.item];
+                        
+                        // 기존 데이터 뭉치에 새로 가져온 데이터를 이어 붙임
+                        globalGongmaeRawData = globalGongmaeRawData.concat(moreItems);
+                        
+                        // 화면을 새로고침하여 추가된 물건들을 자연스럽게 밑으로 스르륵 나타나게 함
+                        applyGongmaeFilters();
+                    }
+                    
+                    btn.innerText = `백그라운드 추가 데이터 수집 중... (${p}/${totalPages} 페이지) - 실시간 업데이트 중`;
+                    await sleep(150); // API 차단 방지용 숨고르기
+                } catch (e) {
+                    console.warn(`공매 데이터 ${p}페이지 수집 실패`, e);
+                }
+            }
+            
+            // 모든 페이지 수집이 완료되면 버튼 상태 복구
+            btn.innerText = `✅ 전국 공매 스캔 완료 (총 ${globalGongmaeRawData.length}건 탑재)`;
+            btn.classList.remove('scanning-active');
+            isGongmaeLoading = false;
+            
+            setTimeout(() => {
+                btn.innerText = "공매 데이터 전국 스캔 및 필터 적용";
+            }, 4000);
+        }
+
+        function resetGongmaeBtn(btn) {
+            btn.innerText = "공매 데이터 전국 스캔 및 필터 적용";
+            btn.classList.remove('scanning-active');
+            btn.disabled = false;
+            isGongmaeLoading = false;
+        }
 
                 globalGongmaeRawData = items;
                 console.log(`🚀 [최종 완료] 총 ${globalGongmaeRawData.length}건의 공매 데이터 전수 수집 완료!`);
