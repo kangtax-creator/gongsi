@@ -2536,6 +2536,18 @@ window.moveMapCenter = async function(inputId) {
         
         function populateAreaFilter() {
             const areaSelect = document.getElementById('areaFilter');
+            const targetType = document.getElementById('sigaTargetType').value;
+
+            // 🌟 토지(LAND) 및 공장/창고(INDU)일 경우 면적 대신 '지분/일반' 필터로 스마트 전환!
+            if (targetType === 'LAND' || targetType === 'INDU') {
+                areaSelect.innerHTML = `
+                    <option value="all">전체 거래 보기</option>
+                    <option value="normal">✅ 일반 거래만 (지분 제외)</option>
+                    <option value="share">⚠️ 지분 거래만</option>
+                `;
+                return;
+            }
+
             const uniqueAreas = [...new Set(globalTransactions.map(t => Number(t.area.toFixed(2))))].sort((a, b) => a - b);
             
             let html = '<option value="all">전체 면적</option>';
@@ -2549,11 +2561,22 @@ window.moveMapCenter = async function(inputId) {
 
         function applyFilters() {
             const selectedArea = document.getElementById('areaFilter').value;
+            const targetType = document.getElementById('sigaTargetType').value;
             
             let areaFiltered = globalTransactions;
-            if (selectedArea !== 'all') {
-                const targetArea = parseFloat(selectedArea);
-                areaFiltered = areaFiltered.filter(r => Number(r.area.toFixed(2)) === targetArea);
+
+            // 🌟 필터 적용 로직: 토지/공장(지분 필터) vs 주택/상가(면적 필터)
+            if (targetType === 'LAND' || targetType === 'INDU') {
+                if (selectedArea === 'normal') {
+                    areaFiltered = areaFiltered.filter(r => !r.ownershipGbn || !r.ownershipGbn.includes('지분'));
+                } else if (selectedArea === 'share') {
+                    areaFiltered = areaFiltered.filter(r => r.ownershipGbn && r.ownershipGbn.includes('지분'));
+                }
+            } else {
+                if (selectedArea !== 'all') {
+                    const targetArea = parseFloat(selectedArea);
+                    areaFiltered = areaFiltered.filter(r => Number(r.area.toFixed(2)) === targetArea);
+                }
             }
 
             let tradeCount = areaFiltered.filter(r => r.type === '매매').length;
@@ -2573,7 +2596,6 @@ window.moveMapCenter = async function(inputId) {
             renderSigaTable(finalFiltered);
             updateSigaChart(finalFiltered, currentTransactionFilter);
         }
-
         function filterTransactions(type) {
             currentTransactionFilter = type;
             
