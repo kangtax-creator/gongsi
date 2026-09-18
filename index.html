@@ -225,22 +225,20 @@
         </div>
 
         <!-- 오른쪽: 결과 출력 영역 -->
-        <div class="lg:col-span-2 space-y-6">
-            <div class="flex space-x-1 md:space-x-2 border-b border-slate-200 overflow-x-auto whitespace-nowrap hide-scrollbar pt-6 lg:pt-0">
-                <button onclick="switchTab('gongsi')" id="tab-gongsi" class="px-3 md:px-4 py-3 text-xs md:text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 focus:outline-none whitespace-nowrap">
-                    1. 공시가격 연혁
-                </button>
-                <button onclick="switchTab('siga')" id="tab-siga" class="px-3 md:px-4 py-3 text-xs md:text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap">
-                    2. 실거래가 조회
-                </button>
-                <button onclick="switchTab('daejang')" id="tab-daejang" class="px-3 md:px-4 py-3 text-xs md:text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap">
-                    3. 건축물/토지대장
-                </button>
-                <button onclick="switchTab('renewal')" id="tab-renewal" class="px-3 md:px-4 py-3 text-xs md:text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap">
-                    4. 정비사업현황
-                </button>
-                
-            </div>
+        <div class="flex space-x-2 border-b border-slate-200 overflow-x-auto whitespace-nowrap hide-scrollbar pt-6 lg:pt-0">
+            <button onclick="switchTab('gongsi')" id="tab-gongsi" class="px-5 py-3 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 focus:outline-none whitespace-nowrap">
+                1. 공시가격 연혁
+            </button>
+            <button onclick="switchTab('siga')" id="tab-siga" class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap">
+                2. 실거래가 조회
+            </button>
+            <button onclick="switchTab('daejang')" id="tab-daejang" class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap">
+                3. 건축물/토지대장
+            </button>
+            <button onclick="switchTab('renewal')" id="tab-renewal" class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap">
+                4. 정비사업현황
+            </button>
+        </div>
 
             <!-- 탭 1: 공시가격 컨텐츠 -->
             <div id="content-gongsi" class="space-y-6">
@@ -3574,19 +3572,21 @@ window.moveMapCenter = async function(inputId) {
         });
 
 
-        // 🌟 탭 전환 함수 덮어쓰기 (공매 제거, 4개 탭 원상복구)
+        // 🌟 탭 전환 함수 덮어쓰기 (원래의 넓은 여백과 폰트 크기로 복구)
         window.switchTab = function(tab) {
-            const tabs = ['gongsi', 'siga', 'daejang', 'renewal']; // gongmae 제거됨
+            const tabs = ['gongsi', 'siga', 'daejang', 'renewal'];
             tabs.forEach(t => {
                 const btn = document.getElementById('tab-' + t);
                 const content = document.getElementById('content-' + t);
                 if (!btn || !content) return;
                 
                 if (t === tab) {
-                    btn.className = "px-3 md:px-4 py-3 text-xs md:text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 focus:outline-none whitespace-nowrap";
+                    // 원래 설정인 px-5, text-sm 적용
+                    btn.className = "px-5 py-3 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 focus:outline-none whitespace-nowrap";
                     content.classList.remove('hidden');
                 } else {
-                    btn.className = "px-3 md:px-4 py-3 text-xs md:text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap";
+                    // 원래 설정인 px-5, text-sm 적용
+                    btn.className = "px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap";
                     content.classList.add('hidden');
                 }
             });
