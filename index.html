@@ -222,23 +222,24 @@
                     </div>
                 </div>
             </div>
+           </div> 
 
-        <!-- 오른쪽: 결과 출력 영역 -->
-        <div class="lg:col-span-8 w-full">
-        <div class="flex space-x-2 border-b border-slate-200 overflow-x-auto whitespace-nowrap hide-scrollbar pt-6 lg:pt-0">
-            <button onclick="switchTab('gongsi')" id="tab-gongsi" class="px-5 py-3 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 focus:outline-none whitespace-nowrap">
-                1. 공시가격 연혁
-            </button>
-            <button onclick="switchTab('siga')" id="tab-siga" class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap">
-                2. 실거래가 조회
-            </button>
-            <button onclick="switchTab('daejang')" id="tab-daejang" class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap">
-                3. 건축물/토지대장
-            </button>
-            <button onclick="switchTab('renewal')" id="tab-renewal" class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap">
-                4. 정비사업현황
-            </button>
-        </div>
+        !-- 🌟 오른쪽: 결과 출력 영역 (3칸 중 2칸 차지) 🌟 -->
+        <div class="lg:col-span-2 w-full space-y-6">
+            <div class="flex space-x-2 border-b border-slate-200 overflow-x-auto whitespace-nowrap hide-scrollbar pt-6 lg:pt-0">
+                <button onclick="switchTab('gongsi')" id="tab-gongsi" class="px-5 py-3 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 focus:outline-none whitespace-nowrap">
+                    1. 공시가격 연혁
+                </button>
+                <button onclick="switchTab('siga')" id="tab-siga" class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap">
+                    2. 실거래가 조회
+                </button>
+                <button onclick="switchTab('daejang')" id="tab-daejang" class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap">
+                    3. 건축물/토지대장
+                </button>
+                <button onclick="switchTab('renewal')" id="tab-renewal" class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap">
+                    4. 정비사업현황
+                </button>
+            </div>
 
             <!-- 탭 1: 공시가격 컨텐츠 -->
             <div id="content-gongsi" class="space-y-6">
