@@ -3646,9 +3646,6 @@ window.moveMapCenter = async function(inputId) {
         let globalGongmaeRawData = [];
         let isGongmaeLoading = false; 
 
-        // 🌟 에러 방지용 타이머 함수
-        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
         // 🌟 탭 전환 함수 덮어쓰기
         window.switchTab = function(tab) {
             const tabs = ['gongsi', 'siga', 'daejang', 'renewal', 'gongmae'];
