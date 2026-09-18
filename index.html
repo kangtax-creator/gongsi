@@ -3686,41 +3686,63 @@ window.moveMapCenter = async function(inputId) {
             const btn = document.getElementById('gongmaeBtn');
             const tbody = document.getElementById('gongmae-table-body');
             
-            btn.innerText = "전국 공매 데이터 수집 및 정밀 스캔 중... (최대 10초 소요)";
+            btn.innerText = "전국 공매 데이터 전수조사 중... (데이터양에 따라 3~5초 소요)";
             btn.classList.add('scanning-active');
             btn.disabled = true;
-            tbody.innerHTML = `<tr><td colspan="5" class="py-12 text-center text-orange-500 font-bold animate-pulse">국가 공매 서버의 가장 최근 데이터를 탐색 중입니다...</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" class="py-12 text-center text-orange-500 font-bold animate-pulse">전국 단위 대용량 공매 데이터를 100% 수집 중입니다...</td></tr>`;
 
             try {
                 let items = [];
                 let targetDate = new Date();
                 let attempts = 0;
+                let foundDate = null;
+                let totalCount = 0;
 
-                // 🌟 [핵심] 오늘 데이터가 없으면 어제, 그제 순으로 최대 5일 전까지 타임머신 탐색!
+                // 🌟 1단계: 가장 최근에 업데이트된 날짜 찾기 (한 번에 5000건씩 크게 스캔)
+                const rowsPerPage = 5000;
+                
                 while (items.length === 0 && attempts < 5) {
                     const basDt = `${targetDate.getFullYear()}${String(targetDate.getMonth() + 1).padStart(2, '0')}${String(targetDate.getDate()).padStart(2, '0')}`;
                     console.log(`[공매 스캔] ${basDt} 일자 데이터 탐색 중...`);
                     
-                    // 프록시 서버(우회망)가 뻗지 않도록 가장 최신 데이터 1000건만 안전하게 호출
-                    const url = `https://apis.data.go.kr/1160100/service/GetPublDispAsseInfoService/getPublDispAsse?serviceKey=${DATA_GO_KR_KEY}&pageNo=1&numOfRows=1000&resultType=json&basDt=${basDt}`;
+                    const url = `https://apis.data.go.kr/1160100/service/GetPublDispAsseInfoService/getPublDispAsse?serviceKey=${DATA_GO_KR_KEY}&pageNo=1&numOfRows=${rowsPerPage}&resultType=json&basDt=${basDt}`;
                     
                     const resJson = await fetchWithProxy(url);
                     
                     if (resJson?.response?.body?.items?.item) {
                         items = Array.isArray(resJson.response.body.items.item) ? resJson.response.body.items.item : [resJson.response.body.items.item];
+                        totalCount = resJson.response.body.totalCount || items.length;
                     }
                     
                     if (items.length > 0) {
-                        console.log(`✅ [공매 스캔 성공] ${basDt} 기준 ${items.length}건 수집 완료`);
-                        break; // 데이터를 찾았으면 탐색 중단
+                        foundDate = basDt;
+                        console.log(`✅ [1페이지 수집] ${basDt} 기준 ${items.length} / 총 ${totalCount}건`);
+                        break;
                     }
                     
-                    // 데이터를 못 찾았으면 하루 전날로 되돌림
                     targetDate.setDate(targetDate.getDate() - 1);
                     attempts++;
                 }
 
+                // 🌟 2단계: 전체 물건이 5000건이 넘으면, 남은 페이지를 끝까지 추적해서 100% 긁어오기
+                if (foundDate && totalCount > rowsPerPage) {
+                    const totalPages = Math.ceil(totalCount / rowsPerPage);
+                    for (let p = 2; p <= totalPages; p++) {
+                        console.log(`[공매 스캔] 추가 데이터 수집 중... (${p}/${totalPages} 페이지)`);
+                        const nextUrl = `https://apis.data.go.kr/1160100/service/GetPublDispAsseInfoService/getPublDispAsse?serviceKey=${DATA_GO_KR_KEY}&pageNo=${p}&numOfRows=${rowsPerPage}&resultType=json&basDt=${foundDate}`;
+                        
+                        const nextJson = await fetchWithProxy(nextUrl);
+                        if (nextJson?.response?.body?.items?.item) {
+                            let moreItems = Array.isArray(nextJson.response.body.items.item) ? nextJson.response.body.items.item : [nextJson.response.body.items.item];
+                            items = items.concat(moreItems);
+                        }
+                        // 우회망 서버가 차단하지 않도록 아주 잠깐(0.1초) 숨 고르기
+                        await sleep(100); 
+                    }
+                }
+
                 globalGongmaeRawData = items;
+                console.log(`🚀 [최종 완료] 총 ${globalGongmaeRawData.length}건의 공매 데이터 전수 수집 완료!`);
                 applyGongmaeFilters(); 
 
             } catch (err) {
