@@ -3431,7 +3431,7 @@ window.moveMapCenter = async function(inputId) {
                 }
 
                 if (banner) {
-                    if (val === '공장/창고') banner.classList.remove('hidden');
+                    if (val === '공장/창고' || val === '토지') banner.classList.remove('hidden');
                     else banner.classList.add('hidden');
                 }
             });
@@ -3441,7 +3441,7 @@ window.moveMapCenter = async function(inputId) {
     if (sigaSelect) {
         sigaSelect.addEventListener('change', (e) => {
             if (banner) {
-                if (e.target.value === 'INDU') banner.classList.remove('hidden');
+                if (e.target.value === 'INDU' || e.target.value === 'LAND') banner.classList.remove('hidden');
                 else banner.classList.add('hidden');
             }
         });
