@@ -3639,48 +3639,6 @@ window.moveMapCenter = async function(inputId) {
             }
         });
 
-                // =================================================================
-        // 🌟 5번 탭: 공매(캠코) 데이터 통신 및 필터링 엔진
-        // =================================================================
-        let globalGongmaeRawData = [];
-
-        // 탭 전환 함수 덮어쓰기 (gongmae 탭 추가 및 디자인 축소 유지)
-        window.switchTab = function(tab) {
-            const tabs = ['gongsi', 'siga', 'daejang', 'renewal', 'gongmae'];
-            tabs.forEach(t => {
-                const btn = document.getElementById('tab-' + t);
-                const content = document.getElementById('content-' + t);
-                if (!btn || !content) return;
-                
-                if (t === tab) {
-                    // 🌟 활성화된 탭 디자인 (여백과 폰트 크기 축소 반영)
-                    btn.className = "px-3 md:px-4 py-3 text-xs md:text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 focus:outline-none whitespace-nowrap";
-                    content.classList.remove('hidden');
-                } else {
-                    // 🌟 비활성화된 탭 디자인 (여백과 폰트 크기 축소 반영)
-                    btn.className = "px-3 md:px-4 py-3 text-xs md:text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap";
-                    content.classList.add('hidden');
-                }
-            });
-            
-            setTimeout(() => {
-                const targetTab = document.getElementById('tab-' + tab);
-                if(targetTab) targetTab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-            }, 50);
-        };
-
-        // 대분류 선택에 따른 부동산 소분류 UI 토글
-        window.toggleGongmaeSubCategory = function() {
-            const mainCat = document.getElementById('gongmaeMainCategory').value;
-            const subWrap = document.getElementById('gongmaeSubCategoryWrap');
-            if (mainCat === 'REAL_ESTATE' || mainCat === 'ALL') {
-                subWrap.classList.remove('hidden');
-                subWrap.classList.add('flex');
-            } else {
-                subWrap.classList.add('hidden');
-                subWrap.classList.remove('flex');
-            }
-        };
 
         // =================================================================
         // 🌟 5번 탭: 공매(캠코) 데이터 통신 및 필터링 엔진
