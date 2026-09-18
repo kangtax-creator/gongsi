@@ -148,7 +148,7 @@
                     </button>
 
                     <p class="text-xs text-slate-500 mt-3 bg-slate-50 p-2.5 rounded-lg border border-slate-100 leading-relaxed">
-                        💡 <b>4번 정비사업현황</b> 탭은 위 주소 검색을 하지 않아도 <b>'자치구'나 '사업명'으로 즉시 검색</b>이 가능합니다.
+                        💡 <b>4번(정비사업)</b> 및 <b>5번(공매현황)</b> 탭은 위 주소 스캔을 거치지 않아도 <b>각 탭에서 지역명으로 즉시 독립 검색</b>이 가능합니다.
                     </p>
 
                     <div class="w-full mt-4 border-t border-slate-200 pt-4">
@@ -226,20 +226,21 @@
 
         <!-- 오른쪽: 결과 출력 영역 -->
         <div class="lg:col-span-2 space-y-6">
-            <div class="flex space-x-2 border-b border-slate-200 overflow-x-auto whitespace-nowrap hide-scrollbar pt-6 lg:pt-0">
-                <button onclick="switchTab('gongsi')" id="tab-gongsi" class="px-5 py-3 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 focus:outline-none">
-                    1. 공시가격 연혁 데이터
+            <div class="flex space-x-1 md:space-x-2 border-b border-slate-200 overflow-x-auto whitespace-nowrap hide-scrollbar pt-6 lg:pt-0">
+                <button onclick="switchTab('gongsi')" id="tab-gongsi" class="px-3 md:px-4 py-3 text-xs md:text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 focus:outline-none whitespace-nowrap">
+                    1. 공시가격 연혁
                 </button>
-                <button onclick="switchTab('siga')" id="tab-siga" class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none">
-                    2. 단지 내 매매/전월세 조회
+                <button onclick="switchTab('siga')" id="tab-siga" class="px-3 md:px-4 py-3 text-xs md:text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap">
+                    2. 실거래가 조회
                 </button>
-                <button onclick="switchTab('daejang')" id="tab-daejang" class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none">
-                    3. 건축물 / 토지 대장
+                <button onclick="switchTab('daejang')" id="tab-daejang" class="px-3 md:px-4 py-3 text-xs md:text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap">
+                    3. 건축물/토지대장
                 </button>
-                <button onclick="switchTab('renewal')" id="tab-renewal" class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none">
+                <button onclick="switchTab('renewal')" id="tab-renewal" class="px-3 md:px-4 py-3 text-xs md:text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap">
                     4. 정비사업현황
-                <button onclick="switchTab('gongmae')" id="tab-gongmae" class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap">
-                    5. 전국 공매(캠코) 현황    
+                </button>
+                <button onclick="switchTab('gongmae')" id="tab-gongmae" class="px-3 md:px-4 py-3 text-xs md:text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap">
+                    5. 전국 공매(캠코)
                 </button>
             </div>
 
@@ -3643,8 +3644,7 @@ window.moveMapCenter = async function(inputId) {
         // =================================================================
         let globalGongmaeRawData = [];
 
-        // 탭 전환 함수 덮어쓰기 (gongmae 탭 추가)
-        const originalSwitchTab = window.switchTab;
+        // 탭 전환 함수 덮어쓰기 (gongmae 탭 추가 및 디자인 축소 유지)
         window.switchTab = function(tab) {
             const tabs = ['gongsi', 'siga', 'daejang', 'renewal', 'gongmae'];
             tabs.forEach(t => {
@@ -3653,10 +3653,12 @@ window.moveMapCenter = async function(inputId) {
                 if (!btn || !content) return;
                 
                 if (t === tab) {
-                    btn.className = "px-5 py-3 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 focus:outline-none whitespace-nowrap";
+                    // 🌟 활성화된 탭 디자인 (여백과 폰트 크기 축소 반영)
+                    btn.className = "px-3 md:px-4 py-3 text-xs md:text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 focus:outline-none whitespace-nowrap";
                     content.classList.remove('hidden');
                 } else {
-                    btn.className = "px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap";
+                    // 🌟 비활성화된 탭 디자인 (여백과 폰트 크기 축소 반영)
+                    btn.className = "px-3 md:px-4 py-3 text-xs md:text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap";
                     content.classList.add('hidden');
                 }
             });
