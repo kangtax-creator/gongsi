@@ -238,6 +238,8 @@
                 </button>
                 <button onclick="switchTab('renewal')" id="tab-renewal" class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none">
                     4. 정비사업현황
+                <button onclick="switchTab('gongmae')" id="tab-gongmae" class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap">
+                    5. 전국 공매(캠코) 현황    
                 </button>
             </div>
 
@@ -480,7 +482,71 @@
 
         </div>
     </div>
+                <!-- 🌟 탭 5: 전국 공매(캠코) 진행 현황 영역 -->
+            <div id="content-gongmae" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-extrabold text-slate-800 flex items-center">
+                            <span class="w-2 h-2 bg-orange-500 rounded-full mr-2"></span> 미니 온비드 (전국 공매물건 스마트 필터링)
+                        </h2>
+                    </div>
 
+                    <div class="bg-orange-50 border border-orange-200 p-4 rounded-xl mb-5 shadow-sm">
+                        <p class="text-[11px] text-orange-800 leading-relaxed font-medium">
+                            💡 <b>스마트 로컬 필터:</b> 국가 서버에서 오늘 자 기준 전국 단위 공매 데이터를 일괄 수집한 후, 세무사님의 PC에서 실시간으로 정밀 필터링합니다. 부동산 외에 압류된 차량, 주식, 회원권 등도 조회할 수 있습니다.
+                        </p>
+                    </div>
+                    
+                    <!-- 🌟 공매 상세 검색 컨트롤러 -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">📍 지역 또는 물건명 검색</label>
+                            <input type="text" id="gongmaeKeyword" placeholder="예: 역삼동, 강남구, 자동차, 아파트" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 font-bold text-slate-800">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">💎 자산 대분류</label>
+                            <select id="gongmaeMainCategory" onchange="toggleGongmaeSubCategory()" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none font-bold text-slate-700">
+                                <option value="ALL">전체 자산</option>
+                                <option value="REAL_ESTATE" selected>🏢 부동산 (토지/건물)</option>
+                                <option value="MOVABLES">🚗 동산 (차량/기계/예술품)</option>
+                                <option value="SECURITIES">📉 유가증권 및 회원권</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 부동산 선택 시 나타나는 소분류 -->
+                    <div id="gongmaeSubCategoryWrap" class="mb-4 bg-white p-3 rounded-xl border border-slate-200 flex flex-wrap gap-2">
+                        <span class="text-xs font-bold text-slate-600 mr-2 flex items-center">부동산 상세:</span>
+                        <label class="cursor-pointer"><input type="radio" name="gongmaeSub" value="ALL" checked class="sr-only peer"><span class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-medium peer-checked:bg-orange-100 peer-checked:border-orange-500 peer-checked:text-orange-800 transition-all">전체</span></label>
+                        <label class="cursor-pointer"><input type="radio" name="gongmaeSub" value="APT" class="sr-only peer"><span class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-medium peer-checked:bg-orange-100 peer-checked:border-orange-500 peer-checked:text-orange-800 transition-all">주거용(아파트/주택)</span></label>
+                        <label class="cursor-pointer"><input type="radio" name="gongmaeSub" value="COMM" class="sr-only peer"><span class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-medium peer-checked:bg-orange-100 peer-checked:border-orange-500 peer-checked:text-orange-800 transition-all">상업용(상가/오피스텔)</span></label>
+                        <label class="cursor-pointer"><input type="radio" name="gongmaeSub" value="LAND" class="sr-only peer"><span class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-medium peer-checked:bg-orange-100 peer-checked:border-orange-500 peer-checked:text-orange-800 transition-all">토지(임야/대지)</span></label>
+                        <label class="cursor-pointer"><input type="radio" name="gongmaeSub" value="FACT" class="sr-only peer"><span class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-medium peer-checked:bg-orange-100 peer-checked:border-orange-500 peer-checked:text-orange-800 transition-all">공장/창고/기타</span></label>
+                    </div>
+
+                    <button onclick="fetchGongmaeData()" id="gongmaeBtn" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-md transition-all">
+                        공매 데이터 전국 스캔 및 필터 적용
+                    </button>
+
+                    <div class="overflow-x-auto max-h-[650px] border border-slate-100 rounded-lg mt-6">
+                        <table class="w-full text-left border-collapse relative">
+                            <thead class="sticky top-0 bg-slate-50 shadow-sm z-10">
+                                <tr class="border-b border-slate-200 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
+                                    <th class="py-3 px-3 whitespace-nowrap text-center">상태(유찰)</th>
+                                    <th class="py-3 px-3 whitespace-nowrap">물건분류</th>
+                                    <th class="py-3 px-3 min-w-[200px]">소재지 및 물건명</th>
+                                    <th class="py-3 px-3 text-right whitespace-nowrap">감정가 vs 최저입찰가</th>
+                                    <th class="py-3 px-3 text-center whitespace-nowrap hidden md:table-cell">공고/개찰일</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gongmae-table-body" class="text-xs divide-y divide-slate-100 text-slate-700">
+                                <tr><td colspan="5" class="py-12 text-center text-slate-400 font-medium">검색 조건을 설정하고 스캔 버튼을 눌러주세요.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+    
     <!-- 🌟 하단으로 이동된 면책 조항 및 주의 안내 -->
     <div class="w-full bg-[#0f172a] border-t border-slate-800 mt-auto py-8 px-4">
         <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center md:items-start gap-4 text-slate-400 text-xs leading-relaxed">
@@ -3571,6 +3637,196 @@ window.moveMapCenter = async function(inputId) {
                 });
             }
         });
+
+                // =================================================================
+        // 🌟 5번 탭: 공매(캠코) 데이터 통신 및 필터링 엔진
+        // =================================================================
+        let globalGongmaeRawData = [];
+
+        // 탭 전환 함수 덮어쓰기 (gongmae 탭 추가)
+        const originalSwitchTab = window.switchTab;
+        window.switchTab = function(tab) {
+            const tabs = ['gongsi', 'siga', 'daejang', 'renewal', 'gongmae'];
+            tabs.forEach(t => {
+                const btn = document.getElementById('tab-' + t);
+                const content = document.getElementById('content-' + t);
+                if (!btn || !content) return;
+                
+                if (t === tab) {
+                    btn.className = "px-5 py-3 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 focus:outline-none whitespace-nowrap";
+                    content.classList.remove('hidden');
+                } else {
+                    btn.className = "px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap";
+                    content.classList.add('hidden');
+                }
+            });
+            
+            setTimeout(() => {
+                const targetTab = document.getElementById('tab-' + tab);
+                if(targetTab) targetTab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            }, 50);
+        };
+
+        // 대분류 선택에 따른 부동산 소분류 UI 토글
+        window.toggleGongmaeSubCategory = function() {
+            const mainCat = document.getElementById('gongmaeMainCategory').value;
+            const subWrap = document.getElementById('gongmaeSubCategoryWrap');
+            if (mainCat === 'REAL_ESTATE' || mainCat === 'ALL') {
+                subWrap.classList.remove('hidden');
+                subWrap.classList.add('flex');
+            } else {
+                subWrap.classList.add('hidden');
+                subWrap.classList.remove('flex');
+            }
+        };
+
+        async function fetchGongmaeData() {
+            const btn = document.getElementById('gongmaeBtn');
+            const tbody = document.getElementById('gongmae-table-body');
+            
+            btn.innerText = "전국 공매 데이터 수집 및 정밀 스캔 중... (최대 10초 소요)";
+            btn.classList.add('scanning-active');
+            btn.disabled = true;
+            tbody.innerHTML = `<tr><td colspan="5" class="py-12 text-center text-orange-500 font-bold animate-pulse">전국 단위 대용량 공매 데이터를 분석하고 있습니다...</td></tr>`;
+
+            try {
+                // 오늘 날짜 기준으로 데이터 요청 (주말일 경우 빈 데이터 방지를 위해 어제나 평일 로직이 필요할 수 있으나, 공매는 진행중 상태값이 보통 유지됨)
+                const today = new Date();
+                const basDt = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+                
+                // 1회 호출로 전국 3000건 쓸어오기
+                const url = `https://apis.data.go.kr/1160100/service/GetPublDispAsseInfoService/getPublDispAsse?serviceKey=${DATA_GO_KR_KEY}&pageNo=1&numOfRows=3000&resultType=json&basDt=${basDt}`;
+                
+                const resJson = await fetchWithProxy(url);
+                
+                let items = [];
+                if (resJson?.response?.body?.items?.item) {
+                    items = Array.isArray(resJson.response.body.items.item) ? resJson.response.body.items.item : [resJson.response.body.items.item];
+                }
+
+                globalGongmaeRawData = items;
+                applyGongmaeFilters(); 
+
+            } catch (err) {
+                console.error("공매 API 에러:", err);
+                tbody.innerHTML = `<tr><td colspan="5" class="py-12 text-center text-rose-500 font-bold">API 통신 오류가 발생했습니다. 잠시 후 다시 시도해주세요.</td></tr>`;
+            } finally {
+                btn.innerText = "공매 데이터 전국 스캔 및 필터 적용";
+                btn.classList.remove('scanning-active');
+                btn.disabled = false;
+            }
+        }
+
+        function applyGongmaeFilters() {
+            const keyword = document.getElementById('gongmaeKeyword').value.trim().toLowerCase();
+            const mainCat = document.getElementById('gongmaeMainCategory').value;
+            const subCat = document.querySelector('input[name="gongmaeSub"]:checked').value;
+            
+            const tbody = document.getElementById('gongmae-table-body');
+            
+            if (globalGongmaeRawData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-12 text-center text-slate-500 font-medium">현재 국가 시스템 상 진행 중인 공매 물건이 조회되지 않습니다.</td></tr>`;
+                return;
+            }
+
+            let filtered = globalGongmaeRawData.filter(item => {
+                // 1. 키워드 필터링 (주소, 건물명, 물건종류 등 폭넓게 검색)
+                if (keyword) {
+                    const searchTarget = `${item.ntnlAstLctnRdnmAdr||''} ${item.ntnlAstLctnNoloAdr||''} ${item.ntnlAstObjcNm||''} ${item.ntnlAstPtrnNm||''}`.toLowerCase();
+                    if (!searchTarget.includes(keyword)) return false;
+                }
+
+                // 2. 대분류 필터링 (명칭 기반 휴리스틱 분류)
+                const lccdNm = String(item.ntnlAstLccdNm || "").trim(); // 대분류명
+                const mccdNm = String(item.ntnlAstMccdNm || "").trim(); // 중분류명
+                const sccdNm = String(item.ntnlAstSccdNm || "").trim(); // 소분류명
+
+                let isRealEstate = lccdNm.includes('부동산') || mccdNm.includes('토지') || mccdNm.includes('건물') || sccdNm.includes('대지');
+                let isSecurities = lccdNm.includes('유가증권') || lccdNm.includes('회원권') || mccdNm.includes('주식');
+                let isMovables = !isRealEstate && !isSecurities; // 나머지를 동산으로 간주
+
+                if (mainCat === 'REAL_ESTATE' && !isRealEstate) return false;
+                if (mainCat === 'MOVABLES' && !isMovables) return false;
+                if (mainCat === 'SECURITIES' && !isSecurities) return false;
+
+                // 3. 부동산 소분류 필터링
+                if ((mainCat === 'REAL_ESTATE' || mainCat === 'ALL') && subCat !== 'ALL') {
+                    let isApt = sccdNm.includes('아파트') || sccdNm.includes('주택') || sccdNm.includes('연립') || sccdNm.includes('다세대');
+                    let isComm = sccdNm.includes('상가') || sccdNm.includes('오피스텔') || sccdNm.includes('근린');
+                    let isLand = mccdNm.includes('토지') || sccdNm.includes('대지') || sccdNm.includes('임야') || sccdNm.includes('전') || sccdNm.includes('답');
+                    
+                    if (subCat === 'APT' && !isApt) return false;
+                    if (subCat === 'COMM' && !isComm) return false;
+                    if (subCat === 'LAND' && !isLand) return false;
+                    if (subCat === 'FACT' && (isApt || isComm || isLand)) return false; // 분류 안된 나머지를 공장/기타로
+                }
+
+                return true;
+            });
+
+            // 렌더링
+            tbody.innerHTML = "";
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-12 text-center text-slate-500 font-medium">설정한 필터 조건에 일치하는 물건이 없습니다.</td></tr>`;
+                return;
+            }
+
+            const formatMoneyKR = (moneyStr) => {
+                let money = parseInt(moneyStr) || 0;
+                if (money === 0) return "0";
+                let uk = Math.floor(money / 100000000);
+                let man = Math.floor((money % 100000000) / 10000);
+                let res = "";
+                if (uk > 0) res += `${uk}억`;
+                if (man > 0) res += (uk > 0 ? " " : "") + man.toLocaleString();
+                return res ? res + "원" : money.toLocaleString() + "원";
+            };
+
+            filtered.forEach(item => {
+                let status = item.ntnlAstObjcStusNm || "-";
+                let isFail = status.includes('유찰');
+                let failCnt = parseInt(item.pusaFbidFcnt || "0");
+                
+                let statusBadge = isFail || failCnt > 0 
+                    ? `<span class="bg-rose-100 text-rose-700 font-black px-2 py-1 rounded text-[10px] block text-center mb-1">🚨 ${failCnt}회 유찰</span>`
+                    : `<span class="bg-emerald-100 text-emerald-700 font-bold px-2 py-1 rounded text-[10px] block text-center mb-1">${status}</span>`;
+
+                let categoryNm = item.ntnlAstSccdNm || item.ntnlAstMccdNm || item.ntnlAstLccdNm || "-";
+                let objName = item.ntnlAstObjcNm || "-";
+                let addr = item.ntnlAstLctnRdnmAdr || item.ntnlAstLctnNoloAdr || "-";
+                
+                let evalPrice = formatMoneyKR(item.apsEvlAvgAmt);
+                let minPrice = formatMoneyKR(item.mnmPusaPric);
+                
+                let pubDate = item.fstPbcnDt ? `${item.fstPbcnDt.substring(0,4)}.${item.fstPbcnDt.substring(4,6)}.${item.fstPbcnDt.substring(6,8)}` : '-';
+                let bidDate = item.opbiDt ? `${item.opbiDt.substring(0,4)}.${item.opbiDt.substring(4,6)}.${item.opbiDt.substring(6,8)}` : '-';
+
+                let tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors border-b border-slate-200 last:border-0";
+                tr.innerHTML = `
+                    <td class="py-3 px-2 md:px-3 align-middle w-20">
+                        ${statusBadge}
+                        <span class="text-[10px] text-slate-500 block text-center font-medium">${item.dsslAstDspMcdNm || ''}</span>
+                    </td>
+                    <td class="py-3 px-2 md:px-3 font-bold text-slate-600 text-[11px] md:text-xs text-center whitespace-nowrap">${categoryNm}</td>
+                    <td class="py-3 px-2 md:px-3">
+                        <div class="text-[12px] md:text-sm font-extrabold text-slate-800 mb-1 truncate max-w-[150px] md:max-w-[250px]" title="${objName}">${objName}</div>
+                        <div class="text-[10px] md:text-[11px] text-slate-500 truncate max-w-[150px] md:max-w-[250px]" title="${addr}">${addr}</div>
+                        <div class="text-[10px] text-indigo-500 mt-1 truncate">위임: ${item.dsslAstMndtInstNm || '-'}</div>
+                    </td>
+                    <td class="py-3 px-2 md:px-3 text-right">
+                        <div class="text-[11px] text-slate-500 line-through mb-1">감정: ${evalPrice}</div>
+                        <div class="text-[13px] md:text-sm font-black text-rose-600">최저: ${minPrice}</div>
+                    </td>
+                    <td class="py-3 px-3 text-center hidden md:table-cell">
+                        <div class="text-[11px] text-slate-500 mb-1">공고: ${pubDate}</div>
+                        <div class="text-[11px] font-bold text-slate-700">개찰: ${bidDate}</div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        
     </script>
 </body>
 </html>
