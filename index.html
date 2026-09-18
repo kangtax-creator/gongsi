@@ -3689,21 +3689,35 @@ window.moveMapCenter = async function(inputId) {
             btn.innerText = "전국 공매 데이터 수집 및 정밀 스캔 중... (최대 10초 소요)";
             btn.classList.add('scanning-active');
             btn.disabled = true;
-            tbody.innerHTML = `<tr><td colspan="5" class="py-12 text-center text-orange-500 font-bold animate-pulse">전국 단위 대용량 공매 데이터를 분석하고 있습니다...</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" class="py-12 text-center text-orange-500 font-bold animate-pulse">국가 공매 서버의 가장 최근 데이터를 탐색 중입니다...</td></tr>`;
 
             try {
-                // 오늘 날짜 기준으로 데이터 요청 (주말일 경우 빈 데이터 방지를 위해 어제나 평일 로직이 필요할 수 있으나, 공매는 진행중 상태값이 보통 유지됨)
-                const today = new Date();
-                const basDt = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
-                
-                // 1회 호출로 전국 3000건 쓸어오기
-                const url = `https://apis.data.go.kr/1160100/service/GetPublDispAsseInfoService/getPublDispAsse?serviceKey=${DATA_GO_KR_KEY}&pageNo=1&numOfRows=3000&resultType=json&basDt=${basDt}`;
-                
-                const resJson = await fetchWithProxy(url);
-                
                 let items = [];
-                if (resJson?.response?.body?.items?.item) {
-                    items = Array.isArray(resJson.response.body.items.item) ? resJson.response.body.items.item : [resJson.response.body.items.item];
+                let targetDate = new Date();
+                let attempts = 0;
+
+                // 🌟 [핵심] 오늘 데이터가 없으면 어제, 그제 순으로 최대 5일 전까지 타임머신 탐색!
+                while (items.length === 0 && attempts < 5) {
+                    const basDt = `${targetDate.getFullYear()}${String(targetDate.getMonth() + 1).padStart(2, '0')}${String(targetDate.getDate()).padStart(2, '0')}`;
+                    console.log(`[공매 스캔] ${basDt} 일자 데이터 탐색 중...`);
+                    
+                    // 프록시 서버(우회망)가 뻗지 않도록 가장 최신 데이터 1000건만 안전하게 호출
+                    const url = `https://apis.data.go.kr/1160100/service/GetPublDispAsseInfoService/getPublDispAsse?serviceKey=${DATA_GO_KR_KEY}&pageNo=1&numOfRows=1000&resultType=json&basDt=${basDt}`;
+                    
+                    const resJson = await fetchWithProxy(url);
+                    
+                    if (resJson?.response?.body?.items?.item) {
+                        items = Array.isArray(resJson.response.body.items.item) ? resJson.response.body.items.item : [resJson.response.body.items.item];
+                    }
+                    
+                    if (items.length > 0) {
+                        console.log(`✅ [공매 스캔 성공] ${basDt} 기준 ${items.length}건 수집 완료`);
+                        break; // 데이터를 찾았으면 탐색 중단
+                    }
+                    
+                    // 데이터를 못 찾았으면 하루 전날로 되돌림
+                    targetDate.setDate(targetDate.getDate() - 1);
+                    attempts++;
                 }
 
                 globalGongmaeRawData = items;
