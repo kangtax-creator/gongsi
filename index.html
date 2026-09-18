@@ -2488,7 +2488,7 @@ window.moveMapCenter = async function(inputId) {
                                     area: parseFloat(item.area) || 0,
                                     amount: parsedAmount * 10000,
                                     monthlyRent: parsedMonthly * 10000,
-                                    // 🌟 [추가된 필드들] 🌟
+                                    ownershipGbn: item.ownershipGbn,
                                     dealingGbn: item.dealingGbn,
                                     contractType: item.contractType,
                                     useRRRight: item.useRRRight,
@@ -2625,7 +2625,8 @@ window.moveMapCenter = async function(inputId) {
                     if (row.type === '매매' || row.type.includes('권')) {
                         if (row.dealingGbn === '직거래') extraBadge += '<span class="text-rose-500 text-[10px] font-bold block leading-none mt-1">직거래</span>';
                         if (row.cdealType) extraBadge += '<span class="text-slate-400 text-[10px] font-bold block leading-none mt-1">취소됨</span>';
-                        if (row.ownershipGbn === '지분') extraBadge += '<span class="text-amber-600 bg-amber-50 border border-amber-200 px-1 py-0.5 rounded text-[10px] font-extrabold block mt-1 w-fit mx-auto">지분</span>';
+                        // 🌟 API가 '지분 ' 등 띄어쓰기를 포함할 때를 대비해 includes로 강력하게 잡기
+                        if (row.ownershipGbn && row.ownershipGbn.includes('지분')) extraBadge += '<span class="text-amber-600 bg-amber-50 border border-amber-200 px-1 py-0.5 rounded text-[10px] font-extrabold block mt-1 w-fit mx-auto">지분</span>';
                     } else {
                         if (row.contractType === '갱신') extraBadge += '<span class="text-slate-800 text-[10px] font-extrabold block leading-none mt-1">갱신</span>';
                         if (row.useRRRight === '사용') extraBadge += '<span class="text-indigo-500 text-[10px] font-bold block leading-none mt-1">청구권</span>';
