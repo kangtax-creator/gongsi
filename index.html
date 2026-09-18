@@ -1899,25 +1899,30 @@ window.moveMapCenter = async function(inputId) {
                         let purps = String(item.buildingUse || item.buildinguse || item.purps || item.purpsNm || item.건물주용도 || item.용도 || "").trim();
                         let bldNm = String(item.bldgNm || item.bldNm || item.aptNm || item.mhouseNm || item.offiNm || item.단지명 || item.건물명 || "").trim();
                         
-                        // 🌟 1. 건물면적(bldAr)과 대지면적(plotAr) 분리 추출
+                        // 🌟 토지 전용 필드 추출 (JSON 파싱)
+                        let jimok = String(item.jimok || item.지목 || "").trim();
+                        let landUse = String(item.landUse || item.용도지역 || "").trim();
+
                         let bldAr = 0;
                         let plotAr = 0;
                         if (item.buildingAr || item.buildingar) bldAr = parseFloat(String(item.buildingAr || item.buildingar).replace(/,/g, ''));
                         if (item.plottageAr || item.plottagear) plotAr = parseFloat(String(item.plottageAr || item.plottagear).replace(/,/g, ''));
-
-                        if (item.dealArea) plotAr = parseFloat(String(item.dealArea).replace(/,/g, ''));
-                        let jimok = String(item.jimok || item.지목 || "").trim();
-                        let landUse = String(item.landUse || item.용도지역 || "").trim();
+                        
+                        // 🌟 토지 거래면적 덮어쓰기
+                        if (item.dealArea || item.거래면적) {
+                            let da = String(item.dealArea || item.거래면적).replace(/,/g, '');
+                            if(parseFloat(da) > 0) plotAr = parseFloat(da);
+                        }
 
                         let regionStr = (umdNm && jibun) ? `${umdNm} ${jibun}` : umdNm;
                         let complexName = "";
                         if (regionStr) complexName += `${regionStr} `;
+                        // 🌟 지목과 용도지역이 있으면 괄호로 묶어서 단지명 자리에 표시
                         if (jimok || landUse) complexName += `[${jimok}] ${landUse} `;
                         if (purps) complexName += `[${purps}] `;
                         if (bldNm) complexName += bldNm;
                         if (!complexName.trim()) complexName = "-";
                         
-                        // 🌟 2. 단지명 뒤에 대지면적 괄호 추가
                         if (!isNaN(plotAr) && plotAr > 0) {
                             if (complexName === "-") complexName = `(대지: ${plotAr}㎡)`;
                             else complexName += ` (대지: ${plotAr}㎡)`;
@@ -1947,7 +1952,6 @@ window.moveMapCenter = async function(inputId) {
                             }
                         }
 
-                        // 🌟 3. 최종 면적 세팅 (건물면적 우선, 없으면 대지면적)
                         let finalArea = bldAr > 0 ? bldAr : (plotAr > 0 ? plotAr : rawArea);
                         let dealingGbn = String(item.dealingGbn || item.reqGbn || item.거래유형 || "").trim();
                         let contractType = String(item.contractType || item.계약구분 || "").trim();
@@ -1957,7 +1961,7 @@ window.moveMapCenter = async function(inputId) {
                         extractedItems.push({
                             dealAmount: String(item.dealAmount || item.dealamount || item.거래금액 || item.deposit || item.보증금액 || "0"),
                             monthly: String(item.monthlyRent || item.월세금액 || "0"),
-                            area: finalArea, // 👈 핵심 수정 부위 (rawArea -> finalArea)
+                            area: finalArea,
                             year: String(item.dealYear || item.dealyear || item.년 || ""),
                             month: String(item.dealMonth || item.dealmonth || item.월 || ""),
                             day: String(item.dealDay || item.dealday || item.일 || "1").split('~')[0].trim(),
@@ -1966,13 +1970,12 @@ window.moveMapCenter = async function(inputId) {
                             umdNm: umdNm,
                             floor: String(item.floor || item.flr || item.층 || "-"),
                             ownershipGbn: String(item.shareDealingType || item.pdealingtype || item.ownershipGbn || item.구분 || ""),
-
                             dealingGbn: dealingGbn,
                             contractType: contractType,
                             useRRRight: useRRRight,
                             cdealType: cdealType
                         });
-                });
+                    });
                     return extractedItems;
                 }
             } catch (e) {}
@@ -1995,10 +1998,14 @@ window.moveMapCenter = async function(inputId) {
                 let purps = getText(item, ["buildingUse", "buildinguse", "purps", "purpsNm", "건물주용도", "용도"]).trim();
                 let bldNm = getText(item, ["bldgNm", "bldNm", "건물명", "aptNm", "단지명"]).trim();
                 
+                // 🌟 토지 전용 필드 추출 (XML 파싱)
+                let jimok = getText(item, ["jimok", "지목"]).trim();
+                let landUse = getText(item, ["landUse", "용도지역"]).trim();
+
                 let bldAr = 0;
                 let plotAr = 0;
                 let bldArText = getText(item, ["buildingAr", "buildingar"]);
-                let plotArText = getText(item, ["plottageAr", "plottagear", "dealArea", "거래면적"]);
+                let plotArText = getText(item, ["plottageAr", "plottagear", "dealArea", "거래면적"]); // 🌟 토지 거래면적 반영
                 
                 if (bldArText) bldAr = parseFloat(bldArText.replace(/,/g, ''));
                 if (plotArText) plotAr = parseFloat(plotArText.replace(/,/g, ''));
@@ -2006,6 +2013,7 @@ window.moveMapCenter = async function(inputId) {
                 let regionStr = (umdNm && jibun) ? `${umdNm} ${jibun}` : umdNm;
                 let complexName = "";
                 if (regionStr) complexName += `${regionStr} `;
+                // 🌟 지목과 용도지역이 있으면 괄호로 묶어서 단지명 자리에 표시
                 if (jimok || landUse) complexName += `[${jimok}] ${landUse} `;
                 if (purps) complexName += `[${purps}] `;
                 if (bldNm) complexName += bldNm;
@@ -2057,7 +2065,7 @@ window.moveMapCenter = async function(inputId) {
                 extractedItems.push({
                     dealAmount: getText(item, ["dealAmount", "dealamount", "거래금액", "deposit", "보증금액"]) || "0",
                     monthly: getText(item, ["monthlyRent", "월세금액"]) || "0",
-                    area: finalArea, // 👈 핵심 수정 부위 (XML 파싱 부분)
+                    area: finalArea,
                     year: getText(item, ["dealYear", "dealyear", "년"]),
                     month: getText(item, ["dealMonth", "dealmonth", "월"]),
                     day: (getText(item, ["dealDay", "dealday", "일"]) || "1").split('~')[0].trim(),
@@ -2066,13 +2074,12 @@ window.moveMapCenter = async function(inputId) {
                     umdNm: umdNm,
                     floor: getText(item, ["floor", "층"]) || "-",
                     ownershipGbn: getText(item, ["shareDealingType", "pdealingtype", "ownershipGbn", "구분"]) || "",
-
                     dealingGbn: dealingGbn,
                     contractType: contractType,
                     useRRRight: useRRRight,
                     cdealType: cdealType
                 });
-        }
+            }
             return extractedItems;
         }
 
