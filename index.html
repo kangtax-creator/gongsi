@@ -3682,8 +3682,52 @@ window.moveMapCenter = async function(inputId) {
             }
         };
 
-        let isGongmaeLoading = false; // 중복 스캔 방지용 플래그
+        // =================================================================
+        // 🌟 5번 탭: 공매(캠코) 데이터 통신 및 필터링 엔진
+        // =================================================================
+        let globalGongmaeRawData = [];
+        let isGongmaeLoading = false; 
 
+        // 🌟 에러 방지용 타이머 함수
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        // 🌟 탭 전환 함수 덮어쓰기
+        window.switchTab = function(tab) {
+            const tabs = ['gongsi', 'siga', 'daejang', 'renewal', 'gongmae'];
+            tabs.forEach(t => {
+                const btn = document.getElementById('tab-' + t);
+                const content = document.getElementById('content-' + t);
+                if (!btn || !content) return;
+                
+                if (t === tab) {
+                    btn.className = "px-3 md:px-4 py-3 text-xs md:text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 focus:outline-none whitespace-nowrap";
+                    content.classList.remove('hidden');
+                } else {
+                    btn.className = "px-3 md:px-4 py-3 text-xs md:text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap";
+                    content.classList.add('hidden');
+                }
+            });
+            
+            setTimeout(() => {
+                const targetTab = document.getElementById('tab-' + tab);
+                if(targetTab) targetTab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            }, 50);
+        };
+
+        // 🌟 자산 대분류 선택 시 소분류 UI 토글
+        window.toggleGongmaeSubCategory = function() {
+            const mainCat = document.getElementById('gongmaeMainCategory').value;
+            const subWrap = document.getElementById('gongmaeSubCategoryWrap');
+            if (mainCat === 'REAL_ESTATE' || mainCat === 'ALL') {
+                subWrap.classList.remove('hidden');
+                subWrap.classList.add('flex');
+            } else {
+                subWrap.classList.add('hidden');
+                subWrap.classList.remove('flex');
+            }
+        };
+
+        // 🌟 공매 데이터 점진적 로딩 엔진 (1단계)
         async function fetchGongmaeData() {
             const btn = document.getElementById('gongmaeBtn');
             const tbody = document.getElementById('gongmae-table-body');
@@ -3703,7 +3747,6 @@ window.moveMapCenter = async function(inputId) {
                 let foundDate = null;
                 let totalCount = 0;
                 
-                // 🌟 1단계: 가장 최근 데이터를 찾아 첫 페이지(2000건)만 빛의 속도로 스캔
                 const rowsPerPage = 2000; 
                 
                 while (items.length === 0 && attempts < 5) {
@@ -3731,14 +3774,12 @@ window.moveMapCenter = async function(inputId) {
                     return;
                 }
 
-                // 🌟 2단계: 첫 번째 뭉치(2000건) 즉시 화면에 렌더링 (사용자는 대기시간을 1초로 느낌)
                 globalGongmaeRawData = items;
                 applyGongmaeFilters(); 
 
-                // 🌟 3단계: 남은 데이터가 있다면 백그라운드에서 조용히 추가 로딩 (비동기)
                 if (totalCount > rowsPerPage) {
                     btn.innerText = `백그라운드 스캔 중... (1/${Math.ceil(totalCount/rowsPerPage)} 완료) - 실시간 검색 가능`;
-                    btn.disabled = false; // 로딩 중에도 필터를 조작할 수 있게 버튼 잠금 해제
+                    btn.disabled = false; 
                     fetchRemainingGongmaeData(foundDate, totalCount, rowsPerPage); 
                 } else {
                     resetGongmaeBtn(btn);
@@ -3751,7 +3792,7 @@ window.moveMapCenter = async function(inputId) {
             }
         }
 
-        // 🌟 백그라운드 무소음 로딩 엔진
+        // 🌟 백그라운드 무소음 로딩 엔진 (2단계)
         async function fetchRemainingGongmaeData(foundDate, totalCount, rowsPerPage) {
             const btn = document.getElementById('gongmaeBtn');
             const totalPages = Math.ceil(totalCount / rowsPerPage);
@@ -3763,22 +3804,17 @@ window.moveMapCenter = async function(inputId) {
                     
                     if (nextJson?.response?.body?.items?.item) {
                         let moreItems = Array.isArray(nextJson.response.body.items.item) ? nextJson.response.body.items.item : [nextJson.response.body.items.item];
-                        
-                        // 기존 데이터 뭉치에 새로 가져온 데이터를 이어 붙임
                         globalGongmaeRawData = globalGongmaeRawData.concat(moreItems);
-                        
-                        // 화면을 새로고침하여 추가된 물건들을 자연스럽게 밑으로 스르륵 나타나게 함
                         applyGongmaeFilters();
                     }
                     
                     btn.innerText = `백그라운드 추가 데이터 수집 중... (${p}/${totalPages} 페이지) - 실시간 업데이트 중`;
-                    await sleep(150); // API 차단 방지용 숨고르기
+                    await sleep(150); 
                 } catch (e) {
                     console.warn(`공매 데이터 ${p}페이지 수집 실패`, e);
                 }
             }
             
-            // 모든 페이지 수집이 완료되면 버튼 상태 복구
             btn.innerText = `✅ 전국 공매 스캔 완료 (총 ${globalGongmaeRawData.length}건 탑재)`;
             btn.classList.remove('scanning-active');
             isGongmaeLoading = false;
@@ -3788,28 +3824,15 @@ window.moveMapCenter = async function(inputId) {
             }, 4000);
         }
 
+        // 🌟 스캔 버튼 초기화 함수
         function resetGongmaeBtn(btn) {
             btn.innerText = "공매 데이터 전국 스캔 및 필터 적용";
             btn.classList.remove('scanning-active');
             btn.disabled = false;
             isGongmaeLoading = false;
         }
-    }       
 
-                globalGongmaeRawData = items;
-                console.log(`🚀 [최종 완료] 총 ${globalGongmaeRawData.length}건의 공매 데이터 전수 수집 완료!`);
-                applyGongmaeFilters(); 
-
-            } catch (err) {
-                console.error("공매 API 에러:", err);
-                tbody.innerHTML = `<tr><td colspan="5" class="py-12 text-center text-rose-500 font-bold">API 통신 오류가 발생했습니다. 잠시 후 다시 시도해주세요.</td></tr>`;
-            } finally {
-                btn.innerText = "공매 데이터 전국 스캔 및 필터 적용";
-                btn.classList.remove('scanning-active');
-                btn.disabled = false;
-            }
-        }
-
+        // 🌟 공매 데이터 필터링 엔진
         function applyGongmaeFilters() {
             const keyword = document.getElementById('gongmaeKeyword').value.trim().toLowerCase();
             const mainCat = document.getElementById('gongmaeMainCategory').value;
@@ -3823,26 +3846,23 @@ window.moveMapCenter = async function(inputId) {
             }
 
             let filtered = globalGongmaeRawData.filter(item => {
-                // 1. 키워드 필터링 (주소, 건물명, 물건종류 등 폭넓게 검색)
                 if (keyword) {
                     const searchTarget = `${item.ntnlAstLctnRdnmAdr||''} ${item.ntnlAstLctnNoloAdr||''} ${item.ntnlAstObjcNm||''} ${item.ntnlAstPtrnNm||''}`.toLowerCase();
                     if (!searchTarget.includes(keyword)) return false;
                 }
 
-                // 2. 대분류 필터링 (명칭 기반 휴리스틱 분류)
-                const lccdNm = String(item.ntnlAstLccdNm || "").trim(); // 대분류명
-                const mccdNm = String(item.ntnlAstMccdNm || "").trim(); // 중분류명
-                const sccdNm = String(item.ntnlAstSccdNm || "").trim(); // 소분류명
+                const lccdNm = String(item.ntnlAstLccdNm || "").trim(); 
+                const mccdNm = String(item.ntnlAstMccdNm || "").trim(); 
+                const sccdNm = String(item.ntnlAstSccdNm || "").trim(); 
 
                 let isRealEstate = lccdNm.includes('부동산') || mccdNm.includes('토지') || mccdNm.includes('건물') || sccdNm.includes('대지');
                 let isSecurities = lccdNm.includes('유가증권') || lccdNm.includes('회원권') || mccdNm.includes('주식');
-                let isMovables = !isRealEstate && !isSecurities; // 나머지를 동산으로 간주
+                let isMovables = !isRealEstate && !isSecurities; 
 
                 if (mainCat === 'REAL_ESTATE' && !isRealEstate) return false;
                 if (mainCat === 'MOVABLES' && !isMovables) return false;
                 if (mainCat === 'SECURITIES' && !isSecurities) return false;
 
-                // 3. 부동산 소분류 필터링
                 if ((mainCat === 'REAL_ESTATE' || mainCat === 'ALL') && subCat !== 'ALL') {
                     let isApt = sccdNm.includes('아파트') || sccdNm.includes('주택') || sccdNm.includes('연립') || sccdNm.includes('다세대');
                     let isComm = sccdNm.includes('상가') || sccdNm.includes('오피스텔') || sccdNm.includes('근린');
@@ -3851,16 +3871,15 @@ window.moveMapCenter = async function(inputId) {
                     if (subCat === 'APT' && !isApt) return false;
                     if (subCat === 'COMM' && !isComm) return false;
                     if (subCat === 'LAND' && !isLand) return false;
-                    if (subCat === 'FACT' && (isApt || isComm || isLand)) return false; // 분류 안된 나머지를 공장/기타로
+                    if (subCat === 'FACT' && (isApt || isComm || isLand)) return false; 
                 }
 
                 return true;
             });
 
-            // 렌더링
             tbody.innerHTML = "";
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="py-12 text-center text-slate-500 font-medium">설정한 필터 조건에 일치하는 물건이 없습니다.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" class="py-12 text-center text-slate-500 font-medium">설정한 필터 조건에 일치하는 물건이 없습니다. (백그라운드 스캔 중 추가될 수 있습니다)</td></tr>`;
                 return;
             }
 
