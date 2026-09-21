@@ -2663,7 +2663,6 @@ window.moveMapCenter = async function(inputId) {
                     else if (row.type === '월세') typeClass = 'text-emerald-600';
                     else typeClass = 'text-purple-600';
 
-                    // 뱃지 가로 나열
                     let extraBadge = '';
                     if (row.type === '매매' || row.type.includes('권')) {
                         if (row.dealingGbn === '직거래') extraBadge += '<span class="text-rose-500 bg-rose-50 border border-rose-200 px-1 py-0.5 rounded text-[10px] font-bold mr-1">직거래</span>';
@@ -2674,7 +2673,6 @@ window.moveMapCenter = async function(inputId) {
                         if (row.useRRRight === '사용') extraBadge += '<span class="text-indigo-500 bg-indigo-50 border border-indigo-200 px-1 py-0.5 rounded text-[10px] font-bold mr-1">청구권</span>';
                     }
 
-                    // 1열: 날짜 및 등기
                     let shortDate = row.date.substring(2).replace(/-/g, '.'); 
                     let rgstStr = "";
                     if (row.rgstDate && row.rgstDate.length >= 8) {
@@ -2684,12 +2682,16 @@ window.moveMapCenter = async function(inputId) {
                         rgstStr = `<br><span class="text-[10px] text-slate-400 font-medium block mt-0.5">등기 ${rYear}.${rMon}.${rDay}</span>`;
                     }
 
-                    // 2열: 동·층·면적 (소수점 제거)
+                    // 🌟 [수정된 부분] 2열: 단지명/지번 + 동·층 통합 (지번 별표 마스킹 포함)
                     let floorStr = (row.floor && row.floor !== '-') ? `${row.floor}층` : '';
                     let dongFloor = row.aptDong ? `${row.aptDong} ${floorStr}` : floorStr;
                     let shortArea = Math.floor(Number(row.area)); 
 
-                    // 3열: 거래 주체 (스마트 반응형 축약)
+                    let displayName = row.name !== '-' ? row.name : '';
+                    let mainInfo = displayName;
+                    if (dongFloor) mainInfo += ` <span class="text-indigo-600">${dongFloor}</span>`;
+                    if (!mainInfo.trim()) mainInfo = '-';
+
                     let actorStr = "";
                     if (row.type === '매매' && row.slerGbn && row.buyerGbn) {
                         let sShort = getShortGbn(row.slerGbn);
@@ -2701,7 +2703,6 @@ window.moveMapCenter = async function(inputId) {
                         `;
                     }
 
-                    // 4열: 거래금액 (월세 아랫줄 분리)
                     let amountClass = row.cdealType ? 'line-through opacity-50 text-slate-400' : typeClass;
                     let amountText = formatMoney(row.amount);
                     let monthlyText = row.monthlyRent > 0 ? `<br><span class="text-[11px] md:text-xs text-emerald-600 block mt-0.5">월 ${formatMoney(row.monthlyRent)}</span>` : '';
@@ -2712,10 +2713,10 @@ window.moveMapCenter = async function(inputId) {
                             <td class="py-3 px-2 md:px-4 font-bold text-slate-800 text-[11px] md:text-xs whitespace-nowrap align-middle">
                                 ${shortDate}${rgstStr}
                             </td>
-                            <!-- 2열: 위치 및 면적 -->
-                            <td class="py-3 px-2 md:px-4 text-center align-middle">
-                                <span class="font-extrabold text-slate-700 text-[11px] md:text-xs block whitespace-nowrap">${dongFloor || '-'}</span>
-                                <span class="text-[10px] md:text-[11px] text-slate-500 font-mono mt-0.5 block">${shortArea}㎡</span>
+                            <!-- 🌟 [수정된 부분] 2열: 위치 및 면적 (단어 잘림 방지 스타일 적용) -->
+                            <td class="py-3 px-2 md:px-4 text-center align-middle max-w-[130px] md:max-w-[250px]">
+                                <span class="font-extrabold text-slate-700 text-[11px] md:text-xs block whitespace-normal break-keep leading-tight">${mainInfo}</span>
+                                <span class="text-[10px] md:text-[11px] text-slate-500 font-mono mt-1 block">${shortArea}㎡</span>
                             </td>
                             <!-- 3열: 유형/주체 및 뱃지 -->
                             <td class="py-3 px-2 md:px-4 text-center align-middle">
@@ -2731,6 +2732,7 @@ window.moveMapCenter = async function(inputId) {
                 });
             }
         }
+        
         function initSigaChart(data) {
             const ctx = document.getElementById('sigaChart').getContext('2d');
             if (sigaChartInstance) { sigaChartInstance.destroy(); }
