@@ -2094,19 +2094,20 @@ window.moveMapCenter = async function(inputId) {
             return extractedItems;
         }
 
-        // 🌟 [최종 완성본] 청약홈 분양정보 조회 함수 (공백 파괴 & 지역 방어막 탑재)
+        // 🌟 [최종 완성본] 청약홈 분양정보 조회 함수 (2글자 광역망 & 공백 파괴 & 지역 방어막 탑재)
         async function fetchChungyangInfo(keyword) {
             if (!keyword) return null;
 
-            // 1. 공백이 제거된 순수 검색어 (예: "힐스테이트등촌역")
+            // 1. 공백이 제거된 순수 검색어
             let pureKeyword = keyword.replace(/\s/g, '');
             if (pureKeyword.length < 2) return null;
 
-            // 2. API 검색용 핵심 키워드 (앞 4글자만 추출하여 광범위하게 검색)
-            // 이유: 청약홈 DB의 띄어쓰기 유무와 상관없이 일단 데이터를 끌어오기 위함
-            let searchKey = pureKeyword.substring(0, 4); 
+            // 🌟 2. 핵심 해결 로직: 무조건 맨 앞 2글자만 잘라서 API 광역 검색
+            // (예: "창경궁롯"(X) -> "창경"(O) / 띄어쓰기 지뢰 완벽 회피)
+            let searchKey = pureKeyword.substring(0, 2); 
 
-            let url = `${CHUNGYANG_BASE_URL}?page=1&perPage=50&cond[HOUSE_NM::LIKE]=${encodeURIComponent(searchKey)}&serviceKey=${DATA_GO_KR_KEY}`;
+            // 2글자 검색이므로 결과가 많을 수 있어 perPage를 100으로 넉넉히 확장
+            let url = `${CHUNGYANG_BASE_URL}?page=1&perPage=100&cond[HOUSE_NM::LIKE]=${encodeURIComponent(searchKey)}&serviceKey=${DATA_GO_KR_KEY}`;
 
             try {
                 let response = await fetch(url);
@@ -2114,26 +2115,25 @@ window.moveMapCenter = async function(inputId) {
                     let data = await response.json();
                     if (data && data.data && data.data.length > 0) {
                         
-                        // 3. 자바스크립트 단에서 양쪽 다 공백을 지우고 100% 정밀 매칭
+                        // 3. JS 정밀 매칭: API가 던져준 100개 중, 양쪽 다 공백을 지우고 100% 일치하는 것만 걸러냄
                         let matchedItems = data.data.filter(item => {
                             let cleanHouseNm = item.HOUSE_NM.replace(/\s/g, '');
                             return cleanHouseNm.includes(pureKeyword) || pureKeyword.includes(cleanHouseNm);
                         });
 
                         if (matchedItems.length > 0) {
-                            // 4. '롯데캐슬'처럼 여러 지역의 단지가 딸려왔을 경우, 진짜 지역명으로 2차 필터링
+                            // 4. 지역 방어막 (종로 롯데캐슬 vs 광명 롯데캐슬 섞임 방지)
                             if (matchedItems.length > 1 && typeof targetUmdNm !== 'undefined' && targetUmdNm) {
-                                // "등촌동" -> "등촌" 으로 변환하여 방어막 가동
-                                let pureDong = targetUmdNm.replace(/[동가읍면리]$/, ''); 
+                                // 법정동 비교 시에도 공백을 제거하여 철저히 방어
+                                let pureDong = targetUmdNm.replace(/[동가읍면리]$/, '').replace(/\s/g, ''); 
                                 let regionMatch = matchedItems.find(item => 
-                                    (item.HSSPLY_ADRES && item.HSSPLY_ADRES.includes(pureDong)) ||
-                                    (item.HOUSE_NM && item.HOUSE_NM.includes(pureDong))
+                                    (item.HSSPLY_ADRES && item.HSSPLY_ADRES.replace(/\s/g, '').includes(pureDong)) ||
+                                    (item.HOUSE_NM && item.HOUSE_NM.replace(/\s/g, '').includes(pureDong))
                                 );
-                                // 우리 동네 물건이 맞으면 반환!
                                 if (regionMatch) return regionMatch;
                             }
                             
-                            // 지역 방어막이 필요 없거나 1개뿐이면 그냥 첫 번째 단지 반환
+                            // 지역 겹침이 없으면 가장 첫 번째 데이터 반환
                             return matchedItems[0];
                         }
                     }
