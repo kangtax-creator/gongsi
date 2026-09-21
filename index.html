@@ -2447,23 +2447,28 @@ window.moveMapCenter = async function(inputId) {
                                     }
                                 }
 
-                                // 🌟 2. 이름 보조 매칭
+                                // 🌟 2. 이름 보조 매칭 (띄어쓰기 완전 무시 알고리즘 적용)
                                 let isKeywordMatch = false;
                                 if (keywordInput) {
                                     let cleanApi = item.complexName.replace(/\s/g, '').toLowerCase();
                                     let cleanJibun = item.jibun.replace(/\s/g, '').toLowerCase();
                                     
-                                    if (cleanApi.includes(keywordInput) || cleanJibun.includes(keywordInput)) {
+                                    // 유저가 입력한 검색어에서도 띄어쓰기를 싹 제거하여 완벽한 비교군을 만듭니다.
+                                    let cleanInput = keywordInput.replace(/\s/g, '').toLowerCase();
+                                    
+                                    if (cleanApi.includes(cleanInput) || cleanJibun.includes(cleanInput)) {
                                         isKeywordMatch = true;
                                     } 
                                     else if (targetUmdNm) {
                                         let pureDong = targetUmdNm.replace(/[동가읍면리]$/, '');
-                                        let pureKeyword = keywordInput;
+                                        let pureKeyword = cleanInput; 
                                         
-                                        if (pureKeyword.startsWith(targetUmdNm.toLowerCase())) {
-                                            pureKeyword = pureKeyword.substring(targetUmdNm.length).trim();
+                                        let targetUmdNmClean = targetUmdNm.replace(/\s/g, '').toLowerCase();
+                                        
+                                        if (pureKeyword.startsWith(targetUmdNmClean)) {
+                                            pureKeyword = pureKeyword.substring(targetUmdNmClean.length);
                                         } else if (pureDong.length >= 2 && pureKeyword.startsWith(pureDong.toLowerCase())) {
-                                            pureKeyword = pureKeyword.substring(pureDong.length).trim();
+                                            pureKeyword = pureKeyword.substring(pureDong.length);
                                         }
 
                                         if (pureKeyword && pureKeyword.length >= 2 && cleanApi.includes(pureKeyword)) {
