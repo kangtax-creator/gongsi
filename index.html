@@ -349,21 +349,22 @@
                             </button>
                         </div>
                     </div>
+                    <div class="mb-2 flex justify-between items-end px-1">
+                        <p class="text-[10px] md:text-xs text-slate-500 font-medium">※ 주체: 개(개인), 법(법인), 공(공공기관), 기(기타) <span class="hidden md:inline">| 등기 완료 시 동 표출</span></p>
+                    </div>
                     <div class="overflow-x-auto max-h-[600px] border border-slate-100 rounded-lg">
                         <table class="w-full text-left border-collapse relative">
                             <thead class="sticky top-0 bg-white border-b-2 border-slate-600 shadow-sm z-10">
                                 <tr class="text-slate-600 text-[10px] md:text-[11px] font-black uppercase tracking-wider">
-                                    <th class="py-2.5 px-2 md:px-4 text-left whitespace-nowrap">계약일</th>
-                                    <th class="py-2.5 px-2 md:px-4 text-left whitespace-nowrap">유형</th>
-                                    <th class="py-2.5 px-4 hidden md:table-cell text-left whitespace-nowrap">단지명</th>
-                                    <th class="py-2.5 px-2 md:px-4 text-center whitespace-nowrap">면적</th>
-                                    <th class="py-2.5 px-2 md:px-4 text-center whitespace-nowrap">층</th>
+                                    <th class="py-2.5 px-2 md:px-4 text-left whitespace-nowrap">계약/등기</th>
+                                    <th class="py-2.5 px-2 md:px-4 text-center whitespace-nowrap">물건정보(동·층·면적)</th>
+                                    <th class="py-2.5 px-2 md:px-4 text-center whitespace-nowrap">유형/주체 ⓘ</th>
                                     <th class="py-2.5 px-2 md:px-4 text-right whitespace-nowrap">거래금액(만원)</th>
                                 </tr>
                             </thead>
                             <tbody id="siga-table-body" class="text-xs divide-y divide-slate-100 text-slate-700">
                                 <tr>
-                                    <td colspan="6" class="py-12 text-center text-slate-400 font-medium">조회 기간을 설정하고 스캔 버튼을 눌러주세요.</td>
+                                    <td colspan="4" class="py-12 text-center text-slate-400 font-medium">조회 기간을 설정하고 스캔 버튼을 눌러주세요.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1973,7 +1974,12 @@ window.moveMapCenter = async function(inputId) {
                             dealingGbn: dealingGbn,
                             contractType: contractType,
                             useRRRight: useRRRight,
-                            cdealType: cdealType
+                            cdealType: cdealType,
+                            // 🌟 상세 API 데이터 연결
+                            rgstDate: String(item.rgstDate || item.등기일자 || "").trim(),
+                            aptDong: String(item.aptDong || item.아파트동명 || item.동 || "").trim(),
+                            slerGbn: String(item.slerGbn || item.매도자 || "").trim(),
+                            buyerGbn: String(item.buyerGbn || item.매수자 || "").trim()
                         });
                     });
                     return extractedItems;
@@ -2077,7 +2083,12 @@ window.moveMapCenter = async function(inputId) {
                     dealingGbn: dealingGbn,
                     contractType: contractType,
                     useRRRight: useRRRight,
-                    cdealType: cdealType
+                    cdealType: cdealType,
+                    // 🌟 상세 API 데이터 연결
+                    rgstDate: getText(item, ["rgstDate", "등기일자"]).trim(),
+                    aptDong: getText(item, ["aptDong", "아파트동명", "동"]).trim(),
+                    slerGbn: getText(item, ["slerGbn", "매도자"]).trim(),
+                    buyerGbn: getText(item, ["buyerGbn", "매수자"]).trim()
                 });
             }
             return extractedItems;
@@ -2354,12 +2365,12 @@ window.moveMapCenter = async function(inputId) {
                     currentD.setMonth(currentD.getMonth() + 1);
                 }
 
-                let tradeApiPath = "RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade"; 
+                let tradeApiPath = "RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev"; // 🌟 일반에서 상세(Dev) API로 변경
                 let rentApiPath = "RTMSDataSvcAptRent/getRTMSDataSvcAptRent";
                 let silvApiPath = "RTMSDataSvcSilvTrade/getRTMSDataSvcSilvTrade"; 
                 
                 let includeSilv = (targetType === "APT");
-                let includeRent = true; // 👈 전월세 호출 여부를 제어하는 변수 추가
+                let includeRent = true; 
 
                 if (targetType === "RH") {
                     tradeApiPath = "RTMSDataSvcRHTrade/getRTMSDataSvcRHTrade";
@@ -2369,18 +2380,16 @@ window.moveMapCenter = async function(inputId) {
                     rentApiPath = "RTMSDataSvcOffiRent/getRTMSDataSvcOffiRent";
                 } else if (targetType === "NRG") {
                     tradeApiPath = "RTMSDataSvcNrgTrade/getRTMSDataSvcNrgTrade";
-                    includeRent = false; // 공공데이터포털에 상업용 전월세 통합 API는 없음
-                    includeSilv = false; // 상업용은 분양/입주권 조회 제외   
+                    includeRent = false; 
+                    includeSilv = false;    
                 } else if (targetType === "INDU") {
-                   // 👇 공장 및 창고 API 엔드포인트 적용
                    tradeApiPath = "RTMSDataSvcInduTrade/getRTMSDataSvcInduTrade";
-                   includeRent = false; // 공장/창고는 전월세 통합 API가 없으므로 제외
+                   includeRent = false; 
                    includeSilv = false;    
                 } else if (targetType === "LAND") {
-                   // 👇 토지 실거래가 전용 엔드포인트 적용
                    tradeApiPath = "RTMSDataSvcLandTrade/getRTMSDataSvcLandTrade";
-                   includeRent = false; // 토지는 전월세 API가 없음
-                   includeSilv = false;    
+                   includeRent = false; 
+                   includeSilv = false; 
                 }
 
                 for (const ym of targetMonths) {
@@ -2427,47 +2436,47 @@ window.moveMapCenter = async function(inputId) {
                             const parsedItems = parseHybridData(text);
 
                             parsedItems.forEach(item => {
+                                // 🌟 1. 지번 절대 매칭
+                                let isJibunValid = matchJibun(item.jibun, isSan, bon, bu);
+                                
+                                if (targetType === "INDU" || targetType === "LAND") {
+                                    if (targetUmdNm) {
+                                        isJibunValid = (item.umdNm && item.umdNm.trim() === targetUmdNm.trim());
+                                    } else {
+                                        isJibunValid = true; 
+                                    }
+                                }
+
+                                // 🌟 2. 이름 보조 매칭
                                 let isKeywordMatch = false;
                                 if (keywordInput) {
                                     let cleanApi = item.complexName.replace(/\s/g, '').toLowerCase();
                                     let cleanJibun = item.jibun.replace(/\s/g, '').toLowerCase();
-                                    // 🌟 키워드 검색 시, 건물명/용도명 뿐만 아니라 '지번'으로 검색해도 걸리도록 유연화
-                                    if (cleanApi.includes(keywordInput) || cleanJibun.includes(keywordInput)) isKeywordMatch = true;
-                                }
-
-                                let isJibunValid = matchJibun(item.jibun, isSan, bon, bu);
-                                let isNameValid = false;
-                                // 👇 [추가] 공장/창고(INDU)일 경우 지번 대신 '법정동' 일치 여부로 합격 판정 처리!
-                                if (targetType === "INDU" || targetType === "LAND") {
-                                    if (targetUmdNm) {
-                                        // includes 대신 === (완전 일치)를 사용하여 옆동네 데이터 차단
-                                        if (item.umdNm && item.umdNm.trim() === targetUmdNm.trim()) {
-                                            isJibunValid = true; 
-                                        } else {
-                                            isJibunValid = false; 
+                                    
+                                    if (cleanApi.includes(keywordInput) || cleanJibun.includes(keywordInput)) {
+                                        isKeywordMatch = true;
+                                    } 
+                                    else if (targetUmdNm) {
+                                        let pureDong = targetUmdNm.replace(/[동가읍면리]$/, '');
+                                        let pureKeyword = keywordInput;
+                                        
+                                        if (pureKeyword.startsWith(targetUmdNm.toLowerCase())) {
+                                            pureKeyword = pureKeyword.substring(targetUmdNm.length).trim();
+                                        } else if (pureDong.length >= 2 && pureKeyword.startsWith(pureDong.toLowerCase())) {
+                                            pureKeyword = pureKeyword.substring(pureDong.length).trim();
                                         }
-                                    } else {
-                                        // 예외 상황으로 법정동을 도저히 못 찾았다면 해당 구(시군구) 전체 스캔
-                                        isJibunValid = true; 
-                                    }
-                                }
-                                
-                                if (globalComplexName && item.complexName) {
-                                    let cleanGlobal = globalComplexName.replace(/\s/g, '').toLowerCase();
-                                    let cleanApi = item.complexName.replace(/\s/g, '').toLowerCase();
-                                    if (cleanApi.includes(cleanGlobal) || cleanGlobal.includes(cleanApi)) {
-                                        isNameValid = true;
+
+                                        if (pureKeyword && pureKeyword.length >= 2 && cleanApi.includes(pureKeyword)) {
+                                            isKeywordMatch = true;
+                                        }
                                     }
                                 }
 
+                                // 🌟 3. 최종 판독 (분양권은 지번이 없으므로 이름 매칭만 확인)
                                 if (req.type === 'silv') {
-                                    if (!isKeywordMatch && !isNameValid) return; 
+                                    if (!isKeywordMatch) return; 
                                 } else {
-                                    if (keywordInput) {
-                                        if (!isKeywordMatch) return;
-                                    } else {
-                                        if (!isJibunValid && !isNameValid) return;
-                                    }
+                                    if (!isJibunValid && !isKeywordMatch) return;
                                 }
 
                                 let parsedAmount = parseInt(item.dealAmount.replace(/,/g, '').trim()) || 0;
@@ -2492,7 +2501,12 @@ window.moveMapCenter = async function(inputId) {
                                     dealingGbn: item.dealingGbn,
                                     contractType: item.contractType,
                                     useRRRight: item.useRRRight,
-                                    cdealType: item.cdealType
+                                    cdealType: item.cdealType,
+                                    // 🌟 상세 API(Dev) 신규 필드 추가
+                                    rgstDate: item.rgstDate,
+                                    aptDong: item.aptDong,
+                                    slerGbn: item.slerGbn,
+                                    buyerGbn: item.buyerGbn
                                 });
                             });
                         } catch (e) {
@@ -2621,7 +2635,6 @@ window.moveMapCenter = async function(inputId) {
             const tbody = document.getElementById('siga-table-body');
             tbody.innerHTML = "";
 
-            // 🌟 아실 스타일: 한국어 금액 축약 헬퍼 함수 (예: 17억 8,500)
             const formatMoney = (money) => {
                 if (!money || money === 0) return "0";
                 let uk = Math.floor(money / 100000000);
@@ -2632,51 +2645,88 @@ window.moveMapCenter = async function(inputId) {
                 return res;
             };
 
+            const getShortGbn = (str) => {
+                if (!str || str === '-') return '-';
+                if (str.includes('개인')) return '개';
+                if (str.includes('법인')) return '법';
+                if (str.includes('공공')) return '공';
+                return '기';
+            };
+
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-slate-500 font-medium">선택한 조건에 맞는 실거래가 내역이 없습니다.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" class="py-12 text-center text-slate-500 font-medium">선택한 조건에 맞는 실거래가 내역이 없습니다.</td></tr>`;
             } else {
                 filtered.forEach((row) => {
-                    // 🌟 텍스트 중심 압축형 뱃지 색상 세팅 (아실 컬러코드 적용)
                     let typeClass = '';
                     if (row.type === '매매') typeClass = 'text-blue-600';
                     else if (row.type === '전세') typeClass = 'text-rose-500';
                     else if (row.type === '월세') typeClass = 'text-emerald-600';
                     else typeClass = 'text-purple-600';
 
+                    // 뱃지 가로 나열
                     let extraBadge = '';
                     if (row.type === '매매' || row.type.includes('권')) {
-                        if (row.dealingGbn === '직거래') extraBadge += '<span class="text-rose-500 text-[10px] font-bold block leading-none mt-1">직거래</span>';
-                        if (row.cdealType) extraBadge += '<span class="text-slate-400 text-[10px] font-bold block leading-none mt-1">취소됨</span>';
-                        // 🌟 API가 '지분 ' 등 띄어쓰기를 포함할 때를 대비해 includes로 강력하게 잡기
-                        if (row.ownershipGbn && row.ownershipGbn.includes('지분')) extraBadge += '<span class="text-amber-600 bg-amber-50 border border-amber-200 px-1 py-0.5 rounded text-[10px] font-extrabold block mt-1 w-fit mx-auto">지분</span>';
+                        if (row.dealingGbn === '직거래') extraBadge += '<span class="text-rose-500 bg-rose-50 border border-rose-200 px-1 py-0.5 rounded text-[10px] font-bold mr-1">직거래</span>';
+                        if (row.cdealType) extraBadge += '<span class="text-slate-400 bg-slate-50 border border-slate-200 px-1 py-0.5 rounded text-[10px] font-bold mr-1">취소됨</span>';
+                        if (row.ownershipGbn && row.ownershipGbn.includes('지분')) extraBadge += '<span class="text-amber-600 bg-amber-50 border border-amber-200 px-1 py-0.5 rounded text-[10px] font-extrabold mr-1">지분</span>';
                     } else {
-                        if (row.contractType === '갱신') extraBadge += '<span class="text-slate-800 text-[10px] font-extrabold block leading-none mt-1">갱신</span>';
-                        if (row.useRRRight === '사용') extraBadge += '<span class="text-indigo-500 text-[10px] font-bold block leading-none mt-1">청구권</span>';
+                        if (row.contractType === '갱신') extraBadge += '<span class="text-slate-800 bg-slate-100 border border-slate-300 px-1 py-0.5 rounded text-[10px] font-extrabold mr-1">갱신</span>';
+                        if (row.useRRRight === '사용') extraBadge += '<span class="text-indigo-500 bg-indigo-50 border border-indigo-200 px-1 py-0.5 rounded text-[10px] font-bold mr-1">청구권</span>';
                     }
 
-                    // 🌟 날짜, 면적, 층수 축약 (2026-08-11 -> 26.08.11 / 소수점 둘째자리까지 유지)
+                    // 1열: 날짜 및 등기
                     let shortDate = row.date.substring(2).replace(/-/g, '.'); 
-                    let shortArea = Number(row.area).toFixed(2); // 🌟 Math.round 제거하고 .toFixed(2) 적용
-                    // 🌟 금액 포맷팅 (월세 합치기 포함)
+                    let rgstStr = "";
+                    if (row.rgstDate && row.rgstDate.length >= 8) {
+                        let rYear = row.rgstDate.substring(2, 4);
+                        let rMon = row.rgstDate.substring(4, 6);
+                        let rDay = row.rgstDate.substring(6, 8);
+                        rgstStr = `<br><span class="text-[10px] text-slate-400 font-medium block mt-0.5">등기 ${rYear}.${rMon}.${rDay}</span>`;
+                    }
+
+                    // 2열: 동·층·면적 (소수점 제거)
+                    let floorStr = (row.floor && row.floor !== '-') ? `${row.floor}층` : '';
+                    let dongFloor = row.aptDong ? `${row.aptDong} ${floorStr}` : floorStr;
+                    let shortArea = Math.floor(Number(row.area)); 
+
+                    // 3열: 거래 주체 (스마트 반응형 축약)
+                    let actorStr = "";
+                    if (row.type === '매매' && row.slerGbn && row.buyerGbn) {
+                        let sShort = getShortGbn(row.slerGbn);
+                        let bShort = getShortGbn(row.buyerGbn);
+                        actorStr = `
+                            <br>
+                            <span class="text-[10px] text-slate-500 font-bold md:hidden tracking-tighter mt-0.5 inline-block">${sShort}▶${bShort}</span>
+                            <span class="text-[10px] text-slate-500 font-bold hidden md:inline-block mt-0.5">${row.slerGbn} ▶ ${row.buyerGbn}</span>
+                        `;
+                    }
+
+                    // 4열: 거래금액 (월세 아랫줄 분리)
+                    let amountClass = row.cdealType ? 'line-through opacity-50 text-slate-400' : typeClass;
                     let amountText = formatMoney(row.amount);
-                    let monthlyText = row.monthlyRent > 0 ? `<span class="text-emerald-600"> / ${formatMoney(row.monthlyRent)}</span>` : '';
-                    
-                    // 계약 취소된 경우 취소선 처리
-                    let amountClass = typeClass;
-                    if (row.cdealType) amountClass = 'line-through opacity-50 text-slate-400';
+                    let monthlyText = row.monthlyRent > 0 ? `<br><span class="text-[11px] md:text-xs text-emerald-600 block mt-0.5">월 ${formatMoney(row.monthlyRent)}</span>` : '';
 
                     tbody.innerHTML += `
                         <tr class="hover:bg-slate-50 transition-colors border-b border-slate-200 last:border-0">
-                            <td class="py-3 px-2 md:px-4 font-bold text-slate-800 text-[11px] md:text-xs whitespace-nowrap">${shortDate}</td>
-                            <td class="py-3 px-2 md:px-4 flex flex-col justify-center whitespace-nowrap">
-                                <span class="font-extrabold text-[11px] md:text-xs ${typeClass}">${row.type}</span>
-                                ${extraBadge}
+                            <!-- 1열: 계약/등기 -->
+                            <td class="py-3 px-2 md:px-4 font-bold text-slate-800 text-[11px] md:text-xs whitespace-nowrap align-middle">
+                                ${shortDate}${rgstStr}
                             </td>
-                            <!-- 모바일에서 단지명 텍스트 숨김 (hidden md:table-cell) -->
-                            <td class="py-3 px-4 text-slate-600 font-medium truncate max-w-[120px] hidden md:table-cell" title="${row.name}">${row.name}</td>
-                            <td class="py-3 px-2 md:px-4 font-mono font-medium text-slate-600 text-[11px] md:text-xs text-center">${shortArea}</td>
-                            <td class="py-3 px-2 md:px-4 text-slate-600 text-[11px] md:text-xs text-center">${row.floor}층</td>
-                            <td class="py-3 px-2 md:px-4 font-extrabold text-right text-[13px] md:text-sm whitespace-nowrap"><span class="${amountClass}">${amountText}</span>${monthlyText}</td>
+                            <!-- 2열: 위치 및 면적 -->
+                            <td class="py-3 px-2 md:px-4 text-center align-middle">
+                                <span class="font-extrabold text-slate-700 text-[11px] md:text-xs block whitespace-nowrap">${dongFloor || '-'}</span>
+                                <span class="text-[10px] md:text-[11px] text-slate-500 font-mono mt-0.5 block">${shortArea}㎡</span>
+                            </td>
+                            <!-- 3열: 유형/주체 및 뱃지 -->
+                            <td class="py-3 px-2 md:px-4 text-center align-middle">
+                                <span class="font-extrabold text-[11px] md:text-xs ${typeClass} block whitespace-nowrap">${row.type}</span>
+                                ${actorStr}
+                                <div class="mt-1 flex flex-wrap justify-center gap-y-1">${extraBadge}</div>
+                            </td>
+                            <!-- 4열: 거래금액 -->
+                            <td class="py-3 px-2 md:px-4 font-extrabold text-right text-[13px] md:text-[15px] whitespace-nowrap align-middle">
+                                <span class="${amountClass} block">${amountText}</span>${monthlyText}
+                            </td>
                         </tr>`;
                 });
             }
