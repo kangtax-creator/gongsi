@@ -3414,41 +3414,58 @@ window.moveMapCenter = async function(inputId) {
             }
 
             const excelData = globalTransactions.map((item, index) => {
-                let priceStr = item.amount.toLocaleString() + "원";
-                if (item.type === '월세' || item.monthlyRent > 0) {
-                    priceStr = `${item.amount.toLocaleString()} / ${item.monthlyRent.toLocaleString()}원`;
-                }
-
-                // 🌟 엑셀용 특수 조건 텍스트 추가
+                // 🌟 엑셀용 특수 조건 및 상세 API 데이터 텍스트화
                 let remark = [];
                 if (item.dealingGbn === '직거래') remark.push('직거래');
                 if (item.contractType === '갱신') remark.push('갱신계약');
                 if (item.useRRRight === '사용') remark.push('청구권사용');
                 if (item.cdealType) remark.push('계약취소');
+                if (item.ownershipGbn && item.ownershipGbn.includes('지분')) remark.push('지분거래');
+
+                if (item.rgstDate && item.rgstDate.length >= 8) {
+                    remark.push(`등기 ${item.rgstDate.substring(0,4)}.${item.rgstDate.substring(4,6)}.${item.rgstDate.substring(6,8)}`);
+                }
+                if (item.slerGbn && item.buyerGbn) {
+                    remark.push(`주체: ${item.slerGbn}▶${item.buyerGbn}`);
+                }
+
+                let floorStr = (item.floor && item.floor !== '-') ? `${item.floor}층` : '';
+                let dongFloor = item.aptDong ? `${item.aptDong} ${floorStr}` : floorStr;
 
                 return {
                     "연번": index + 1,
-                    "거래유형": item.type,
-                    "단지명": item.name,
                     "계약일자": item.date,
-                    "층": item.floor + "층",
-                    "전용면적(㎡)": item.area,
-                    "거래금액(보증금/월세)": priceStr,
-                    "특이사항": remark.join(', ') || '-' // 👈 새로운 열 추가
+                    "단지명/지번": item.name !== '-' ? item.name : '-',
+                    "동·층": dongFloor || '-',
+                    "전용면적(㎡)": Math.floor(Number(item.area)), 
+                    "거래유형": item.type,
+                    "거래금액(원)": item.amount,        
+                    "월세(원)": item.monthlyRent || 0, 
+                    "특이사항": remark.join(', ') || '-'
                 };
+            });
+
+            // 🌟 기준시가 출력물과 동일한 사무실 정보 꼬리말 추가
+            excelData.push({}); // 한 줄 띄우기
+            excelData.push({
+                "계약일자": "💡 양도세/상속세/증여세 및 부동산 절세 상담:",
+                "단지명/지번": "강승완 세무사",
+                "동·층": typeof OFFICE_PHONE !== 'undefined' ? OFFICE_PHONE : "전화번호",
+                "전용면적(㎡)": "www.micro-tax.com"
             });
 
             const worksheet = XLSX.utils.json_to_sheet(excelData);
             
             worksheet['!cols'] = [
-                { wpx: 40 },  
-                { wpx: 80 },  
-                { wpx: 180 }, 
-                { wpx: 100 }, 
-                { wpx: 60 },  
-                { wpx: 80 },  
-                { wpx: 150 }, 
-                { wpx: 120 }  // 특이사항 열 너비 설정
+                { wpx: 40 },   // 연번
+                { wpx: 240 },  // 계약일자 (홍보 문구를 위해 너비 약간 확장)
+                { wpx: 180 },  // 단지명/지번
+                { wpx: 100 },  // 동·층
+                { wpx: 120 },  // 전용면적(홈페이지 주소를 위해 확장)
+                { wpx: 80 },   // 거래유형
+                { wpx: 120 },  // 거래금액
+                { wpx: 100 },  // 월세
+                { wpx: 250 }   // 특이사항
             ];
 
             const workbook = XLSX.utils.book_new();
