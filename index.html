@@ -2449,36 +2449,42 @@ window.moveMapCenter = async function(inputId) {
                                     }
                                 }
 
-                                // 🌟 2. 이름 보조 매칭 (띄어쓰기 완전 무시 알고리즘 적용)
+                                // 🌟 2. 이름 보조 매칭 (타 지역 동명/유사 단지 침범 완벽 차단)
                                 let isKeywordMatch = false;
                                 if (keywordInput) {
                                     let cleanApi = item.complexName.replace(/\s/g, '').toLowerCase();
                                     let cleanJibun = item.jibun.replace(/\s/g, '').toLowerCase();
-                                    
-                                    // 유저가 입력한 검색어에서도 띄어쓰기를 싹 제거하여 완벽한 비교군을 만듭니다.
                                     let cleanInput = keywordInput.replace(/\s/g, '').toLowerCase();
                                     
+                                    // 1단계: 검색어 그대로 매칭되는지 확인 (가장 확실하고 안전한 방법)
                                     if (cleanApi.includes(cleanInput) || cleanJibun.includes(cleanInput)) {
                                         isKeywordMatch = true;
                                     } 
+                                    // 2단계: 국토부 데이터에 지역명('고촌')이 빠져있는 경우를 대비한 분리 스캔
                                     else if (targetUmdNm) {
                                         let pureDong = targetUmdNm.replace(/[동가읍면리]$/, '');
-                                        let pureKeyword = cleanInput; 
-                                        
+                                        let pureKeyword = cleanInput;
                                         let targetUmdNmClean = targetUmdNm.replace(/\s/g, '').toLowerCase();
                                         
+                                        // "고촌센트럴자이"에서 "고촌"을 떼어내고 "센트럴자이"만 남김
                                         if (pureKeyword.startsWith(targetUmdNmClean)) {
                                             pureKeyword = pureKeyword.substring(targetUmdNmClean.length);
                                         } else if (pureDong.length >= 2 && pureKeyword.startsWith(pureDong.toLowerCase())) {
                                             pureKeyword = pureKeyword.substring(pureDong.length);
                                         }
 
+                                        // 🌟 핵심 방어막: 남은 "센트럴자이"가 포함되어 있더라도, 주소(동)가 다르면 가차없이 버림!
                                         if (pureKeyword && pureKeyword.length >= 2 && cleanApi.includes(pureKeyword)) {
-                                            isKeywordMatch = true;
+                                            let apiUmdNm = (item.umdNm || "").replace(/\s/g, '').toLowerCase();
+                                            let apiJibun = (item.jibun || "").replace(/\s/g, '').toLowerCase();
+                                            
+                                            // 물건의 법정동명이나 지번 주소에 '고촌' 또는 '신곡'이 포함되어 있어야만 통과
+                                            if (apiUmdNm.includes(pureDong) || targetUmdNmClean.includes(apiUmdNm) || apiJibun.includes(pureDong) || apiJibun.includes(targetUmdNmClean)) {
+                                                isKeywordMatch = true;
+                                            }
                                         }
                                     }
                                 }
-
                                 // 🌟 3. 최종 판독 (분양권은 지번이 없으므로 이름 매칭만 확인)
                                 if (req.type === 'silv') {
                                     if (!isKeywordMatch) return; 
