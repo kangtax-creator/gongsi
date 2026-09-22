@@ -500,6 +500,26 @@
         </div>
     </div>
 
+    <!-- 🌟 1. 한국부동산원 아파트 기본정보 요약 대시보드 -->
+<div id="apt-summary-board" class="hidden mb-4 bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm">
+    <div class="flex items-center gap-2 mb-2">
+        <span class="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">단지 제원</span>
+        <h3 id="apt-summary-title" class="text-lg font-bold text-white"></h3>
+    </div>
+    <p id="apt-summary-desc" class="text-sm text-slate-300"></p>
+</div>
+
+<!-- 🌟 2. 과거 최초 분양(청약) 당시 정보 하이라이트 박스 -->
+<div id="past-chungyang-board" class="hidden mb-6 bg-indigo-900/40 border border-indigo-500/50 rounded-lg p-4 shadow-inner">
+    <div class="flex items-center gap-2 mb-2">
+        <span class="bg-indigo-500 text-white text-xs font-bold px-2 py-1 rounded">💡 참고</span>
+        <h3 class="text-md font-bold text-indigo-100">최초 분양(청약) 당시 데이터</h3>
+    </div>
+    <div id="past-chungyang-content" class="text-sm text-indigo-200">
+        <!-- 분양가, 경쟁률 등 데이터가 여기에 꽂힙니다 -->
+    </div>
+</div>
+
     <!-- 🌟 대장 상세 열람 모달 -->
     <div id="daejangModal" class="fixed inset-0 bg-slate-900/60 z-50 hidden flex flex-col items-center justify-center p-4 sm:p-6 opacity-0 transition-opacity duration-300">
         <div class="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl transform scale-95 transition-transform duration-300">
@@ -2094,6 +2114,50 @@ window.moveMapCenter = async function(inputId) {
             return extractedItems;
         }
 
+        const APT_ID_API_KEY = "83a79624397baf59da6f5daea52c9c0478aceccf3f20b707e26f9866c85f7b8f";
+const APT_ID_BASE_URL = "https://api.odcloud.kr/api/AptldInfoSvc/v1"; // 문서에 명시된 URL
+
+// 🌟 한국부동산원 단지 정보 및 과거 이름 추적 함수
+async function fetchAptBasicAndHistoryInfo(address, currentName) {
+    if (!address) return null;
+    
+    // 카카오에서 얻은 주소(예: 창신동 436)를 바탕으로 검색
+    let pureDongJibun = address.split(' ').slice(-2).join(' '); 
+    let infoUrl = `${APT_ID_BASE_URL}/getAptInfo?page=1&perPage=10&cond[ADRES::LIKE]=${encodeURIComponent(pureDongJibun)}&serviceKey=${APT_ID_API_KEY}`;
+    
+    try {
+        let res = await fetch(infoUrl);
+        if (!res.ok) return null;
+        let data = await res.json();
+        
+        if (data && data.data && data.data.length > 0) {
+            let aptInfo = data.data[0];
+            let result = {
+                basicInfo: aptInfo,
+                pastNames: [currentName] // 기본적으로 현재 이름 세팅
+            };
+
+            // 🌟 단지고유번호(COMPLEX_PK)를 얻었으므로 이름 변경 이력(getHistInfo) 추가 조회
+            let histUrl = `${APT_ID_BASE_URL}/getHistInfo?page=1&perPage=10&cond[COMPLEX_PK::EQ]=${aptInfo.COMPLEX_PK}&serviceKey=${APT_ID_API_KEY}`;
+            let histRes = await fetch(histUrl);
+            
+            if (histRes.ok) {
+                let histData = await histRes.json();
+                if (histData && histData.data && histData.data.length > 0) {
+                    // 과거 이름들 수집 ("광명1구역" 등)
+                    histData.data.forEach(hist => {
+                        if (hist.COMPLEX_EX_NM) result.pastNames.push(hist.COMPLEX_EX_NM);
+                    });
+                }
+            }
+            return result;
+        }
+    } catch (error) {
+        console.error("단지 식별정보 호출 실패:", error);
+    }
+    return null;
+}
+
         // 🌟 [최종 완성본] 청약홈 분양정보 조회 함수 (2글자 광역망 & 공백 파괴 & 지역 방어막 탑재)
         async function fetchChungyangInfo(keyword) {
             if (!keyword) return null;
@@ -2222,6 +2286,64 @@ window.moveMapCenter = async function(inputId) {
 
                 // 기존 실거래가 표 안쪽에는 로딩 메시지를 띄워줍니다.
                 tableBody.innerHTML = `<tr><td colspan="10" class="text-center p-4 text-indigo-600 font-bold">국토부 실거래가 데이터를 불러오는 중입니다...</td></tr>`;
+
+                // =====================================================================
+                // 🌟 [여기에 복사/붙여넣기] 한국부동산원 대시보드 & 과거 분양가 낚아채기
+                // =====================================================================
+                let currentAddr = document.getElementById('address').value;
+                let aptData = await fetchAptBasicAndHistoryInfo(currentAddr, searchKeyword); 
+
+                if (aptData && aptData.basicInfo) {
+                    document.getElementById('apt-summary-board').classList.remove('hidden');
+                    document.getElementById('apt-summary-title').textContent = aptData.basicInfo.COMPLEX_NM1 || searchKeyword;
+                    document.getElementById('apt-summary-desc').textContent = 
+                        `준공: ${formatPubDate(aptData.basicInfo.USEAPR_DT) || '-'} | 규모: 총 ${aptData.basicInfo.UNIT_CNT || '-'}세대 (${aptData.basicInfo.DONG_CNT || '-'}개동) | 건축물대장 명칭: ${aptData.basicInfo.COMPLEX_NM2 || '-'}`;
+                } else {
+                    let summaryBoard = document.getElementById('apt-summary-board');
+                    if (summaryBoard) summaryBoard.classList.add('hidden');
+                }
+
+                // '예정/분양' 딱지가 없는 일반 아파트일 때만 과거 청약정보 추적
+                let pastBoard = document.getElementById('past-chungyang-board');
+                if (!isPresaleSwitchOn && searchKeyword) {
+                    let pastChungyangResult = null;
+                    let searchNames = aptData ? aptData.pastNames : [searchKeyword]; 
+
+                    for (let nameToSearch of searchNames) {
+                        pastChungyangResult = await fetchChungyangInfo(nameToSearch);
+                        if (pastChungyangResult) break; 
+                    }
+
+                    if (pastChungyangResult && pastBoard) {
+                        pastBoard.classList.remove('hidden');
+                        
+                        // 과거 분양정보 상세 조회(평형별 분양가) 연동
+                        const pastPriceData = await fetchSalePrices(pastChungyangResult.HOUSE_MANAGE_NO, pastChungyangResult.PBLANC_NO);
+                        let priceHtml = "";
+                        
+                        if (pastPriceData && pastPriceData.length > 0) {
+                            priceHtml = `<div class="mt-3 text-xs border border-indigo-300 rounded overflow-hidden shadow-sm">
+                                <div class="bg-indigo-100 px-2 py-1.5 font-bold text-indigo-900 text-center">평형별 최고 분양가액</div>
+                                <div class="bg-white p-2 max-h-32 overflow-y-auto">`;
+                            pastPriceData.forEach(p => {
+                                let exclusiveArea = p.HOUSE_TY ? parseFloat(p.HOUSE_TY.replace(/[^0-9.]/g, '')) : '-';
+                                let priceStr = p.LTTOT_TOP_AMOUNT ? Number(p.LTTOT_TOP_AMOUNT.replace(/,/g, '')).toLocaleString() : '-';
+                                priceHtml += `<div class="flex justify-between border-b border-slate-100 py-1.5"><span class="font-medium text-slate-600">전용 ${exclusiveArea}㎡</span><span class="font-bold text-rose-500">${priceStr}만원</span></div>`;
+                            });
+                            priceHtml += `</div></div>`;
+                        }
+
+                        document.getElementById('past-chungyang-content').innerHTML = `
+                            <p><strong>공급명:</strong> ${pastChungyangResult.HOUSE_NM}</p>
+                            <p><strong>모집공고일:</strong> ${pastChungyangResult.RCRIT_PBLANC_DE || pastChungyangResult.PBLANC_NO || '데이터 없음'}</p>
+                            ${priceHtml}
+                        `;
+                    } else if (pastBoard) {
+                        pastBoard.classList.add('hidden');
+                    }
+                } else if (pastBoard) {
+                    pastBoard.classList.add('hidden');
+                }
 
                 // 2. 검색어가 있고, 스위치(isPresaleSwitchOn)가 켜져 있을 때 청약홈 분양가 조회!
             if (searchKeyword && isPresaleSwitchOn) {
@@ -3666,16 +3788,9 @@ window.moveMapCenter = async function(inputId) {
                                         
                                         // 2. 우측 2번 탭 '단지명 직접 검색' 칸에 건물명 세팅
                                         if (targetKeywordInput) {
-                                            // 🌟 정규식을 사용해 괄호 '( )' 안의 내용과 '아파트'라는 단어를 모두 깔끔하게 날려버립니다.
                                             let cleanName = doc.place_name.replace(/\([^)]*\)/g, '').replace(/아파트/g, '').trim();
                                             targetKeywordInput.value = cleanName;
-                                            // 🌟 [추가] 청약홈 API 전용 검색어 만들기 (끝에서 4글자만 추출)
-                                            // 예: "한강수자인오브센트" -> "오브센트", "올림픽파크포레온" -> "파크포레온"
-                                        let cyKeyword = cleanName.replace(/\s/g, '');
-                                        if (cleanName.length > 5) {
-                                        cyKeyword = cleanName.slice(-4); // 끝 4글자만 싹둑 자르기
                                         }
-                                    }
 
                                         // 3. 현재 입력창을 선택한 이름으로 바꾸고 드롭다운 닫기
                                         keywordInput.value = doc.place_name;
