@@ -2288,40 +2288,46 @@ async function fetchAptBasicAndHistoryInfo(address, currentName) {
                 tableBody.innerHTML = `<tr><td colspan="10" class="text-center p-4 text-indigo-600 font-bold">국토부 실거래가 데이터를 불러오는 중입니다...</td></tr>`;
 
                 // =====================================================================
-                // 🌟 [통합 교체본] 한국부동산원 대시보드 & 분양가 낚아채기 동적 UI 생성
+                // 🌟 [불도저 통과 버전] 기축 아파트 무조건 출력 + 완벽한 4열 표 복구
                 // =====================================================================
-                cardArea.innerHTML = ""; // 기존 카드 영역 초기화
+                cardArea.innerHTML = ""; 
 
-                // 1. 한국부동산원 아파트 제원 스캔 (현재 아파트 정보)
+                // 1. 단지 제원 스캔 (부동산원 API가 뻗어도, 기존 건축물대장으로 무조건 방어!)
                 let currentAddr = document.getElementById('address').value;
                 let aptData = await fetchAptBasicAndHistoryInfo(currentAddr, searchKeyword); 
-
-                // 🌟 기축/신축 아파트 제원 대시보드는 무조건 1순위로 렌더링합니다.
-                if (aptData && aptData.basicInfo) {
+                
+                // 🌟 이중 안전장치: aptData가 실패하면 이미 확보해둔 globalTitleItem(건축물대장) 즉시 투입
+                let bldName = aptData?.basicInfo?.COMPLEX_NM1 || aptData?.basicInfo?.COMPLEX_NM2 || (globalTitleItem ? globalTitleItem.bldNm : searchKeyword);
+                let useApr = aptData?.basicInfo?.USEAPR_DT ? formatPubDate(aptData.basicInfo.USEAPR_DT) : (globalTitleItem?.useAprDay ? formatPubDate(globalTitleItem.useAprDay) : '-');
+                let unitCnt = aptData?.basicInfo?.UNIT_CNT || (globalTitleItem ? globalTitleItem.hoCnt : '-');
+                let dongCnt = aptData?.basicInfo?.DONG_CNT || (globalTitleItem ? globalTitleItem.mainBldCnt : '-');
+                
+                if (bldName && bldName !== '-' && searchKeyword) {
                     cardArea.innerHTML += `
                         <div class="mb-4 bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm">
                             <div class="flex items-center gap-2 mb-2">
                                 <span class="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">단지 제원</span>
-                                <h3 class="text-lg font-bold text-white">${aptData.basicInfo.COMPLEX_NM1 || searchKeyword}</h3>
+                                <h3 class="text-lg font-bold text-white">${bldName}</h3>
                             </div>
-                            <p class="text-sm text-slate-300">준공: ${formatPubDate(aptData.basicInfo.USEAPR_DT) || '-'} | 규모: 총 ${aptData.basicInfo.UNIT_CNT || '-'}세대 (${aptData.basicInfo.DONG_CNT || '-'}개동) | 건축물대장 명칭: ${aptData.basicInfo.COMPLEX_NM2 || '-'}</p>
+                            <p class="text-sm text-slate-300">준공: ${useApr} | 규모: 총 ${unitCnt}세대 (${dongCnt}개동)</p>
                         </div>
                     `;
                 }
 
-                // 2. 청약홈 (분양권 or 기축 아파트 과거 분양가) 연쇄 스캔
+                // 2. 청약홈 스캔 (기축 아파트라도 멈추지 않고 무조건 찔러보도록 조건문 해제)
                 if (searchKeyword) {
                     let cyResult = null;
                     
-                    if (isPresaleSwitchOn) {
-                        // 예정/분양권 모드: 현재 키워드로 바로 스캔
-                        cyResult = await fetchChungyangInfo(searchKeyword);
-                    } else if (aptData) {
-                        // 기축 아파트 모드: 부동산원이 찾아준 옛날 이름(예: 광명1구역)들로 과거 기록 스캔
-                        for (let nameToSearch of aptData.pastNames) {
-                            cyResult = await fetchChungyangInfo(nameToSearch);
-                            if (cyResult) break;
-                        }
+                    // 검색할 이름들 수집 (입력된 키워드 무조건 포함 + 부동산원이 찾은 옛날 이름 추가)
+                    let searchNames = [searchKeyword];
+                    if (aptData && aptData.pastNames) {
+                        aptData.pastNames.forEach(n => { if (!searchNames.includes(n)) searchNames.push(n); });
+                    }
+
+                    // 순차적으로 청약홈 찌르기 (하나라도 나오면 즉시 정지)
+                    for (let nameToSearch of searchNames) {
+                        cyResult = await fetchChungyangInfo(nameToSearch);
+                        if (cyResult) break;
                     }
 
                     if (cyResult) {
@@ -2329,7 +2335,7 @@ async function fetchAptBasicAndHistoryInfo(address, currentName) {
                         let priceHtml = "";
                         
                         if (pastPriceData && pastPriceData.length > 0) {
-                            // 🌟 세무사님 원본 4열 테이블 형태 완벽 복구
+                            // 🌟 세무사님 오리지널 4열 디자인 100% 복구 
                             priceHtml = `<div class="mt-3 bg-white rounded border border-blue-100 overflow-hidden shadow-sm">
                                 <div class="bg-blue-100 px-3 py-1.5 font-bold text-blue-900 text-xs text-center">평형별 최고 분양가액 (만원)</div>
                                 <div class="max-h-48 overflow-y-auto">
@@ -2382,7 +2388,7 @@ async function fetchAptBasicAndHistoryInfo(address, currentName) {
                         `;
                     }
                 }
-           }  
+           }
                 
             // 수동으로 단지명을 타이핑할 경우, 일단 스위치를 켜서 청약홈을 찔러보도록 허용
         document.getElementById('searchKeyword').addEventListener('input', () => {
