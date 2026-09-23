@@ -2292,10 +2292,11 @@ async function fetchAptBasicAndHistoryInfo(address, currentName) {
                 // =====================================================================
                 cardArea.innerHTML = ""; // 기존 카드 영역 초기화
 
-                // 1. 한국부동산원 아파트 제원 스캔
+                // 1. 한국부동산원 아파트 제원 스캔 (현재 아파트 정보)
                 let currentAddr = document.getElementById('address').value;
                 let aptData = await fetchAptBasicAndHistoryInfo(currentAddr, searchKeyword); 
 
+                // 🌟 기축/신축 아파트 제원 대시보드는 무조건 1순위로 렌더링합니다.
                 if (aptData && aptData.basicInfo) {
                     cardArea.innerHTML += `
                         <div class="mb-4 bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm">
@@ -2324,20 +2325,38 @@ async function fetchAptBasicAndHistoryInfo(address, currentName) {
                     }
 
                     if (cyResult) {
-                        // 과거 분양정보 상세 조회(평형별 분양가) 연동
                         const pastPriceData = await fetchSalePrices(cyResult.HOUSE_MANAGE_NO, cyResult.PBLANC_NO);
                         let priceHtml = "";
                         
                         if (pastPriceData && pastPriceData.length > 0) {
-                            priceHtml = `<div class="mt-3 text-xs border border-indigo-300 rounded overflow-hidden shadow-sm">
-                                <div class="bg-indigo-100 px-2 py-1.5 font-bold text-indigo-900 text-center">평형별 최고 분양가액 (만원)</div>
-                                <div class="bg-white p-2 max-h-32 overflow-y-auto">`;
+                            // 🌟 세무사님 원본 4열 테이블 형태 완벽 복구
+                            priceHtml = `<div class="mt-3 bg-white rounded border border-blue-100 overflow-hidden shadow-sm">
+                                <div class="bg-blue-100 px-3 py-1.5 font-bold text-blue-900 text-xs text-center">평형별 최고 분양가액 (만원)</div>
+                                <div class="max-h-48 overflow-y-auto">
+                                    <table class="w-full text-xs text-center">
+                                        <thead class="bg-slate-50 sticky top-0">
+                                            <tr>
+                                                <th class="py-1.5 border-b text-slate-600 font-bold">주택형</th>
+                                                <th class="py-1.5 border-b text-blue-600 font-bold">전용면적(㎡)</th>
+                                                <th class="py-1.5 border-b text-slate-600 font-bold">공급면적(㎡)</th>
+                                                <th class="py-1.5 border-b text-slate-600 font-bold">최고분양가</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>`;
                             pastPriceData.forEach(p => {
                                 let exclusiveArea = p.HOUSE_TY ? parseFloat(p.HOUSE_TY.replace(/[^0-9.]/g, '')) : '-';
                                 let priceStr = p.LTTOT_TOP_AMOUNT ? Number(p.LTTOT_TOP_AMOUNT.replace(/,/g, '')).toLocaleString() : '-';
-                                priceHtml += `<div class="flex justify-between border-b border-slate-100 py-1.5"><span class="font-medium text-slate-600">전용 ${exclusiveArea}㎡</span><span class="font-bold text-rose-500">${priceStr}</span></div>`;
+                                priceHtml += `<tr class="border-b border-slate-100 hover:bg-slate-50">
+                                                <td class="py-2 font-semibold text-slate-700">${p.MODEL_NO || '-'}</td>
+                                                <td class="py-2 text-blue-600 font-bold">${exclusiveArea}</td>
+                                                <td class="py-2 text-slate-700">${p.SUPLY_AR || '-'}</td>
+                                                <td class="py-2 text-red-500 font-bold">${priceStr}</td>
+                                            </tr>`;
                             });
-                            priceHtml += `</div></div>`;
+                            priceHtml += `      </tbody>
+                                    </table>
+                                </div>
+                            </div>`;
                         }
 
                         let badgeTitle = isPresaleSwitchOn ? "현재 분양정보" : "과거 최초 분양(청약) 당시 기록";
@@ -2363,7 +2382,7 @@ async function fetchAptBasicAndHistoryInfo(address, currentName) {
                         `;
                     }
                 }
-           }            
+           }  
                 
             // 수동으로 단지명을 타이핑할 경우, 일단 스위치를 켜서 청약홈을 찔러보도록 허용
         document.getElementById('searchKeyword').addEventListener('input', () => {
