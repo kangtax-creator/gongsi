@@ -2183,52 +2183,56 @@ window.moveMapCenter = async function(inputId) {
                 return null;
             }
                     
-                    // 🌟 2. 청약홈 분양정보 조회 함수 (본청약/최대규모 우선 정렬 탑재)
-            async function fetchChungyangInfo(keyword) {
-                if (!keyword) return null;
-                let pureKeyword = keyword.replace(/\s/g, '');
-                if (pureKeyword.length < 2) return null;
-                let searchKey = pureKeyword.substring(0, 2); 
-                let url = `${CHUNGYANG_BASE_URL}?page=1&perPage=100&cond[HOUSE_NM::LIKE]=${encodeURIComponent(searchKey)}&serviceKey=${DATA_GO_KR_KEY}`;
-            
-                try {
-                    let response = await fetch(url);
-                    if (response.ok) {
-                        let data = await response.json();
-                        if (data && data.data && data.data.length > 0) {
-                            let matchedItems = data.data.filter(item => {
-                                let cleanHouseNm = item.HOUSE_NM.replace(/\s/g, '');
-                                return cleanHouseNm.includes(pureKeyword) || pureKeyword.includes(cleanHouseNm);
-                            });
-            
-                            if (matchedItems.length > 0) {
-                                // 🌟 [핵심 수정] 무순위, 취소분 등 자잘한 내역을 걸러내고 '본청약(공급세대수 최대)'을 1순위로 정렬
-                                matchedItems.sort((a, b) => {
-                                    let aSupply = parseInt(a.TOT_SUPLY_HSHLDCO) || 0;
-                                    let bSupply = parseInt(b.TOT_SUPLY_HSHLDCO) || 0;
-                                    return bSupply - aSupply;
-                                });
-            
-                                // 지역 방어막
-                                if (matchedItems.length > 1 && typeof targetUmdNm !== 'undefined' && targetUmdNm) {
-                                    let pureDong = targetUmdNm.replace(/[동가읍면리]$/, '').replace(/\s/g, ''); 
-                                    let regionMatch = matchedItems.find(item => 
-                                        (item.HSSPLY_ADRES && item.HSSPLY_ADRES.replace(/\s/g, '').includes(pureDong)) ||
-                                        (item.HOUSE_NM && item.HOUSE_NM.replace(/\s/g, '').includes(pureDong))
-                                    );
-                                    if (regionMatch) return regionMatch;
-                                }
-                                
-                                return matchedItems[0];
-                            }
-                        }
+                    // 🌟 2. 청약홈 분양정보 조회 함수 (타 지역 동명이인 쳐내기 방어막 추가)
+async function fetchChungyangInfo(keyword, address = "") {
+    if (!keyword) return null;
+    let pureKeyword = keyword.replace(/\s/g, '');
+    if (pureKeyword.length < 2) return null;
+    let searchKey = pureKeyword.substring(0, 2); 
+    let url = `${CHUNGYANG_BASE_URL}?page=1&perPage=100&cond[HOUSE_NM::LIKE]=${encodeURIComponent(searchKey)}&serviceKey=${DATA_GO_KR_KEY}`;
+
+    try {
+        let response = await fetch(url);
+        if (response.ok) {
+            let data = await response.json();
+            if (data && data.data && data.data.length > 0) {
+                let matchedItems = data.data.filter(item => {
+                    let cleanHouseNm = item.HOUSE_NM.replace(/\s/g, '');
+                    return cleanHouseNm.includes(pureKeyword) || pureKeyword.includes(cleanHouseNm);
+                });
+
+                // 🌟 [핵심] 다른 지역의 동명이인 아파트 쳐내기 (예: 서울 금호어울림 vs 대구 금호어울림)
+                if (matchedItems.length > 1 && address) {
+                    let sido = address.split(' ')[0].substring(0, 2); // '서울', '경기', '부산' 등 2글자 추출
+                    
+                    let regionFiltered = matchedItems.filter(item => {
+                        if (!item.HSSPLY_ADRES) return true; // 청약홈 주소가 비어있으면 일단 살림
+                        return item.HSSPLY_ADRES.includes(sido);
+                    });
+
+                    // 필터링 후 남은 타겟이 있으면 그걸로 교체 (없으면 원본 유지하여 보험 처리)
+                    if (regionFiltered.length > 0) {
+                        matchedItems = regionFiltered;
                     }
-                    return null;
-                } catch (error) {
-                    console.error("청약홈 데이터 호출 실패:", error);
-                    return null;
+                }
+
+                if (matchedItems.length > 0) {
+                    // 세대수 최대인 '본청약'을 우선 정렬하여 자잘한 무순위/취소분 방어
+                    matchedItems.sort((a, b) => {
+                        let aSupply = parseInt(a.TOT_SUPLY_HSHLDCO) || 0;
+                        let bSupply = parseInt(b.TOT_SUPLY_HSHLDCO) || 0;
+                        return bSupply - aSupply;
+                    });
+                    return matchedItems[0];
                 }
             }
+        }
+        return null;
+    } catch (error) {
+        console.error("청약홈 데이터 호출 실패:", error);
+        return null;
+    }
+}
         
         // 🌟 [추가 1] 평형별 분양가액 조회 API (주택형별 상세조회)
         async function fetchSalePrices(houseManageNo, pblancNo) {
@@ -2393,7 +2397,8 @@ window.moveMapCenter = async function(inputId) {
                     }
 
                     for (let nameToSearch of searchNamesForCy) {
-                        cyResult = await fetchChungyangInfo(nameToSearch);
+                        // 🌟 청약홈 호출 시 currentAddr(현재 주소)를 같이 넘겨서 타 지역을 완벽하게 쳐냅니다!
+                        cyResult = await fetchChungyangInfo(nameToSearch, currentAddr);
                         if (cyResult) break;
                     }
 
