@@ -2115,123 +2115,120 @@ window.moveMapCenter = async function(inputId) {
         }
 
         // 🌟 1. 기술문서 100% 준수: API 주소 오타 수정 (AptidInfoSvc)
-const APT_ID_API_KEY = "83a79624397baf59da6f5daea52c9c0478aceccf3f20b707e26f9866c85f7b8f";
-const APT_ID_BASE_URL = "https://api.odcloud.kr/api/AptidInfoSvc/v1"; 
-
-// 🌟 2. 한국부동산원 단지 정보 조회 (문서 기반 완벽한 필드명 적용)
-async function fetchAptBasicAndHistoryInfo(address, currentName) {
-    if (!address) return null;
-    let result = { basicInfo: null, pastNames: [currentName] };
-
-    // 주소에서 검색 정확도를 높이기 위해 읍/면/동/리 앞부분만 추출 (예: "경기도 하남시 학암동 651" -> "학암동")
-    let pureDong = "";
-    let match = address.match(/([가-힣]+[동가읍면리])/);
-    if (match) {
-        pureDong = match[1];
-    } else {
-        pureDong = address.split(' ').slice(-2, -1).join(''); 
-    }
-
-    // 문서에 명시된 adres 조건(LIKE) 적용. 넉넉하게 500개를 뽑아와서 브라우저가 걸러냅니다.
-    let encodedAdres = encodeURIComponent('%' + pureDong + '%');
-    let infoUrl = `${APT_ID_BASE_URL}/getAptInfo?page=1&perPage=500&cond[adres::LIKE]=${encodedAdres}&serviceKey=${APT_ID_API_KEY}`;
-    
-    try {
-        let res = await fetch(infoUrl);
-        let data = res.ok ? await res.json() : null;
-        
-        if (data && data.data && data.data.length > 0) {
-            // 가져온 500개 중, 단지명에 내가 검색한 이름(currentName)이 포함된 진짜 타겟을 찾습니다.
-            let matchedApt = null;
-            if (currentName) {
-                let cleanInput = currentName.replace(/\s/g, '').toLowerCase();
-                matchedApt = data.data.find(item => {
-                    let nm1 = (item.complex_nm1 || "").replace(/\s/g, '').toLowerCase();
-                    let nm2 = (item.complex_nm2 || "").replace(/\s/g, '').toLowerCase();
-                    return nm1.includes(cleanInput) || nm2.includes(cleanInput) || cleanInput.includes(nm1);
-                });
-            }
+            const APT_ID_API_KEY = "83a79624397baf59da6f5daea52c9c0478aceccf3f20b707e26f9866c85f7b8f";
+            const APT_ID_BASE_URL = "https://api.odcloud.kr/api/AptidInfoSvc/v1"; 
             
-            // 이름이 없거나 못 찾았으면, 기술문서 명세(unit_cnt)대로 세대수가 가장 큰 단지 채택
-            let aptInfo = matchedApt;
-            if (!aptInfo) {
-                data.data.sort((a, b) => (parseInt(b.unit_cnt) || 0) - (parseInt(a.unit_cnt) || 0));
-                aptInfo = data.data[0];
-            }
+            async function fetchAptBasicAndHistoryInfo(address, currentName) {
+                if (!address) return null;
+                let result = { basicInfo: null, pastNames: [currentName] };
             
-            result.basicInfo = aptInfo;
-
-            // 문서 명세에 따라 complex_pk(단지고유번호)로 이력 추적
-            if (aptInfo.complex_pk) {
-                let histUrl = `${APT_ID_BASE_URL}/getHistInfo?page=1&perPage=10&cond[complex_pk::EQ]=${aptInfo.complex_pk}&serviceKey=${APT_ID_API_KEY}`;
-                let histRes = await fetch(histUrl);
+                // 주소에서 검색 정확도를 높이기 위해 '동/읍/면/리 + 지번' 추출
+                let pureDongJibun = "";
+                let match = address.match(/([가-힣]+[동가읍면리]\s+\d+(?:-\d+)?)/);
+                if (match) {
+                    pureDongJibun = match[1];
+                } else {
+                    pureDongJibun = address.split(' ').slice(-2).join(' '); 
+                }
+            
+                // 🌟 기술문서 준수: cond[ADRES::LIKE] 대문자 파라미터 및 와일드카드(%) 인코딩
+                let encodedAdres = encodeURIComponent('%' + pureDongJibun + '%');
+                let infoUrl = `${APT_ID_BASE_URL}/getAptInfo?page=1&perPage=500&cond[ADRES::LIKE]=${encodedAdres}&serviceKey=${APT_ID_API_KEY}`;
                 
-                if (histRes.ok) {
-                    let histData = await histRes.json();
-                    if (histData && histData.data && histData.data.length > 0) {
-                        histData.data.forEach(hist => {
-                            // 문서 명세: complex_ex_nm(변경전 단지명)
-                            if (hist.complex_ex_nm && !result.pastNames.includes(hist.complex_ex_nm)) {
-                                result.pastNames.push(hist.complex_ex_nm);
-                            }
-                        });
-                    }
-                }
-            }
-            return result;
-        }
-    } catch (error) {
-        console.error("단지 식별정보 호출 실패:", error);
-    }
-    return null;
-}
-        
-        // 🌟 2. 청약홈 분양정보 조회 함수 (본청약/최대규모 우선 정렬 탑재)
-async function fetchChungyangInfo(keyword) {
-    if (!keyword) return null;
-    let pureKeyword = keyword.replace(/\s/g, '');
-    if (pureKeyword.length < 2) return null;
-    let searchKey = pureKeyword.substring(0, 2); 
-    let url = `${CHUNGYANG_BASE_URL}?page=1&perPage=100&cond[HOUSE_NM::LIKE]=${encodeURIComponent(searchKey)}&serviceKey=${DATA_GO_KR_KEY}`;
-
-    try {
-        let response = await fetch(url);
-        if (response.ok) {
-            let data = await response.json();
-            if (data && data.data && data.data.length > 0) {
-                let matchedItems = data.data.filter(item => {
-                    let cleanHouseNm = item.HOUSE_NM.replace(/\s/g, '');
-                    return cleanHouseNm.includes(pureKeyword) || pureKeyword.includes(cleanHouseNm);
-                });
-
-                if (matchedItems.length > 0) {
-                    // 🌟 [핵심 수정] 무순위, 취소분 등 자잘한 내역을 걸러내고 '본청약(공급세대수 최대)'을 1순위로 정렬
-                    matchedItems.sort((a, b) => {
-                        let aSupply = parseInt(a.TOT_SUPLY_HSHLDCO) || 0;
-                        let bSupply = parseInt(b.TOT_SUPLY_HSHLDCO) || 0;
-                        return bSupply - aSupply;
-                    });
-
-                    // 지역 방어막
-                    if (matchedItems.length > 1 && typeof targetUmdNm !== 'undefined' && targetUmdNm) {
-                        let pureDong = targetUmdNm.replace(/[동가읍면리]$/, '').replace(/\s/g, ''); 
-                        let regionMatch = matchedItems.find(item => 
-                            (item.HSSPLY_ADRES && item.HSSPLY_ADRES.replace(/\s/g, '').includes(pureDong)) ||
-                            (item.HOUSE_NM && item.HOUSE_NM.replace(/\s/g, '').includes(pureDong))
-                        );
-                        if (regionMatch) return regionMatch;
-                    }
+                try {
+                    let res = await fetch(infoUrl);
+                    let data = res.ok ? await res.json() : null;
                     
-                    return matchedItems[0];
+                    if (data && data.data && data.data.length > 0) {
+                        let matchedApt = null;
+                        if (currentName) {
+                            let cleanInput = currentName.replace(/\s/g, '').toLowerCase();
+                            matchedApt = data.data.find(item => {
+                                // 🌟 기술문서 JSON 응답 예제 준수: COMPLEX_NM1 등 모두 대문자
+                                let nm1 = (item.COMPLEX_NM1 || "").replace(/\s/g, '').toLowerCase();
+                                let nm2 = (item.COMPLEX_NM2 || "").replace(/\s/g, '').toLowerCase();
+                                return nm1.includes(cleanInput) || nm2.includes(cleanInput) || cleanInput.includes(nm1);
+                            });
+                        }
+                        
+                        let aptInfo = matchedApt;
+                        if (!aptInfo) {
+                            // 이름 매칭 안 될 시 세대수(UNIT_CNT) 가장 큰 본단지 채택
+                            data.data.sort((a, b) => (parseInt(b.UNIT_CNT) || 0) - (parseInt(a.UNIT_CNT) || 0));
+                            aptInfo = data.data[0];
+                        }
+                        
+                        result.basicInfo = aptInfo;
+            
+                        if (aptInfo.COMPLEX_PK) {
+                            let histUrl = `${APT_ID_BASE_URL}/getHistInfo?page=1&perPage=10&cond[COMPLEX_PK::EQ]=${aptInfo.COMPLEX_PK}&serviceKey=${APT_ID_API_KEY}`;
+                            let histRes = await fetch(histUrl);
+                            
+                            if (histRes.ok) {
+                                let histData = await histRes.json();
+                                if (histData && histData.data && histData.data.length > 0) {
+                                    histData.data.forEach(hist => {
+                                        if (hist.COMPLEX_EX_NM && !result.pastNames.includes(hist.COMPLEX_EX_NM)) {
+                                            result.pastNames.push(hist.COMPLEX_EX_NM);
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                        return result;
+                    }
+                } catch (error) {
+                    console.error("단지 식별정보 호출 실패:", error);
+                }
+                return null;
+            }
+                    
+                    // 🌟 2. 청약홈 분양정보 조회 함수 (본청약/최대규모 우선 정렬 탑재)
+            async function fetchChungyangInfo(keyword) {
+                if (!keyword) return null;
+                let pureKeyword = keyword.replace(/\s/g, '');
+                if (pureKeyword.length < 2) return null;
+                let searchKey = pureKeyword.substring(0, 2); 
+                let url = `${CHUNGYANG_BASE_URL}?page=1&perPage=100&cond[HOUSE_NM::LIKE]=${encodeURIComponent(searchKey)}&serviceKey=${DATA_GO_KR_KEY}`;
+            
+                try {
+                    let response = await fetch(url);
+                    if (response.ok) {
+                        let data = await response.json();
+                        if (data && data.data && data.data.length > 0) {
+                            let matchedItems = data.data.filter(item => {
+                                let cleanHouseNm = item.HOUSE_NM.replace(/\s/g, '');
+                                return cleanHouseNm.includes(pureKeyword) || pureKeyword.includes(cleanHouseNm);
+                            });
+            
+                            if (matchedItems.length > 0) {
+                                // 🌟 [핵심 수정] 무순위, 취소분 등 자잘한 내역을 걸러내고 '본청약(공급세대수 최대)'을 1순위로 정렬
+                                matchedItems.sort((a, b) => {
+                                    let aSupply = parseInt(a.TOT_SUPLY_HSHLDCO) || 0;
+                                    let bSupply = parseInt(b.TOT_SUPLY_HSHLDCO) || 0;
+                                    return bSupply - aSupply;
+                                });
+            
+                                // 지역 방어막
+                                if (matchedItems.length > 1 && typeof targetUmdNm !== 'undefined' && targetUmdNm) {
+                                    let pureDong = targetUmdNm.replace(/[동가읍면리]$/, '').replace(/\s/g, ''); 
+                                    let regionMatch = matchedItems.find(item => 
+                                        (item.HSSPLY_ADRES && item.HSSPLY_ADRES.replace(/\s/g, '').includes(pureDong)) ||
+                                        (item.HOUSE_NM && item.HOUSE_NM.replace(/\s/g, '').includes(pureDong))
+                                    );
+                                    if (regionMatch) return regionMatch;
+                                }
+                                
+                                return matchedItems[0];
+                            }
+                        }
+                    }
+                    return null;
+                } catch (error) {
+                    console.error("청약홈 데이터 호출 실패:", error);
+                    return null;
                 }
             }
-        }
-        return null;
-    } catch (error) {
-        console.error("청약홈 데이터 호출 실패:", error);
-        return null;
-    }
-}
         
         // 🌟 [추가 1] 평형별 분양가액 조회 API (주택형별 상세조회)
         async function fetchSalePrices(houseManageNo, pblancNo) {
@@ -2312,32 +2309,23 @@ async function fetchChungyangInfo(keyword) {
                 tableBody.innerHTML = `<tr><td colspan="10" class="text-center p-4 text-indigo-600 font-bold">국토부 실거래가 데이터를 불러오는 중입니다...</td></tr>`;
 
                 // =====================================================================
-                // 🌟 [최종 통합본] 기술문서 공식 필드명(unit_cnt) 완벽 적용
+                // 🌟 [최종 정본] 건축물대장 우회 로직 완전 삭제 & API 원본 100% 신뢰
                 // =====================================================================
                 cardArea.innerHTML = ""; 
 
-                // 1. 단지 제원 스캔 
+                // 1. 단지 제원 스캔 (부동산원 API 결과만 사용)
                 let currentAddr = document.getElementById('address').value;
                 let aptData = await fetchAptBasicAndHistoryInfo(currentAddr, searchKeyword); 
 
-                // 기술문서 응답 명세: complex_nm1, useapr_dt, unit_cnt, dong_cnt (전부 소문자)
-                let bldName = aptData?.basicInfo?.complex_nm1 || aptData?.basicInfo?.complex_nm2 || (globalTitleItem ? globalTitleItem.bldNm : searchKeyword);
-                let useApr = aptData?.basicInfo?.useapr_dt ? formatPubDate(aptData.basicInfo.useapr_dt) : (globalTitleItem?.useAprDay ? formatPubDate(globalTitleItem.useAprDay) : '-');
-                
-                let unitCnt = aptData?.basicInfo?.unit_cnt || (globalTitleItem ? (globalTitleItem.hhldCnt || globalTitleItem.hoCnt) : '-');
-                let dongCnt = aptData?.basicInfo?.dong_cnt || (globalTitleItem ? globalTitleItem.mainBldCnt : '-');
+                // 🌟 건축물대장(globalTitleItem)을 억지로 끌어다 쓰던 로직 완전 철폐!
+                let bldName = aptData?.basicInfo?.COMPLEX_NM1 || aptData?.basicInfo?.COMPLEX_NM2 || searchKeyword;
+                let useApr = aptData?.basicInfo?.USEAPR_DT ? formatPubDate(aptData.basicInfo.USEAPR_DT) : '-';
+                let unitCnt = aptData?.basicInfo?.UNIT_CNT || '-';
+                let dongCnt = aptData?.basicInfo?.DONG_CNT || '-';
 
-                // 빈 값, 0, undefined 완벽 필터링
-                if (!unitCnt || unitCnt === 0 || unitCnt === '0' || String(unitCnt).includes('undefined')) {
-                    unitCnt = '-';
-                } else if (unitCnt !== '-') {
+                if (unitCnt !== '-') {
                     unitCnt = Number(String(unitCnt).replace(/,/g, '')).toLocaleString();
                 }
-
-                if (!dongCnt || dongCnt === 0 || dongCnt === '0' || String(dongCnt).includes('undefined')) {
-                    dongCnt = '-';
-                }
-                if (!useApr || String(useApr).includes('undefined')) useApr = '-';
 
                 if (bldName && bldName !== '-') {
                     cardArea.innerHTML += `
@@ -2423,7 +2411,7 @@ async function fetchChungyangInfo(keyword) {
                         `;
                     }
                 }
-            } 
+            }
         
             // 수동으로 단지명을 타이핑할 경우, 일단 스위치를 켜서 청약홈을 찔러보도록 허용
         document.getElementById('searchKeyword').addEventListener('input', () => {
