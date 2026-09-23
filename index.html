@@ -2117,32 +2117,51 @@ window.moveMapCenter = async function(inputId) {
         const APT_ID_API_KEY = "83a79624397baf59da6f5daea52c9c0478aceccf3f20b707e26f9866c85f7b8f";
 const APT_ID_BASE_URL = "https://api.odcloud.kr/api/AptldInfoSvc/v1"; // 문서에 명시된 URL
 
-// 🌟 1. 한국부동산원 단지 정보 및 과거 이름 추적 함수 (이름 검색 보강)
+// 🌟 1. 한국부동산원 단지 정보 및 과거 이름 추적 함수 (API 규격 완벽 준수 및 정밀 주소 스캔)
 async function fetchAptBasicAndHistoryInfo(address, currentName) {
-    if (!address && !currentName) return null;
+    if (!address) return null;
     let result = { basicInfo: null, pastNames: [currentName] };
 
-    // 1차 시도: 카카오 지번 주소로 검색
-    let pureDongJibun = address ? address.split(' ').slice(-2).join(' ') : ""; 
-    let infoUrl = `${APT_ID_BASE_URL}/getAptInfo?page=1&perPage=10&cond[ADRES::LIKE]=${encodeURIComponent(pureDongJibun)}&serviceKey=${APT_ID_API_KEY}`;
+    // 1. 카카오 주소에서 '동/읍/면/리 + 지번'만 정확히 추출 (예: "서울 서초구 반포동 1-1" -> "반포동 1-1")
+    let pureDongJibun = "";
+    let match = address.match(/([가-힣]+[동가읍면리]\s+\d+(?:-\d+)?)/);
+    if (match) {
+        pureDongJibun = match[1];
+    } else {
+        // 정규식 실패 시 최후의 보루 (끝 2어절)
+        pureDongJibun = address.split(' ').slice(-2).join(' '); 
+    }
+
+    // 🌟 API 규격에 명시된 ADRES(주소) 조건만을 사용하여 넉넉히 100건을 훑어옵니다.
+    let infoUrl = `${APT_ID_BASE_URL}/getAptInfo?page=1&perPage=100&cond[ADRES::LIKE]=${encodeURIComponent(pureDongJibun)}&serviceKey=${APT_ID_API_KEY}`;
     
     try {
         let res = await fetch(infoUrl);
         let data = res.ok ? await res.json() : null;
         
-        // 2차 시도: 주소로 못 찾으면 아파트 이름으로 검색 (원베일리 같은 신축/주소 불일치 완벽 방어)
-        if ((!data || !data.data || data.data.length === 0) && currentName) {
-            let nameUrl = `${APT_ID_BASE_URL}/getAptInfo?page=1&perPage=10&cond[COMPLEX_NM1::LIKE]=${encodeURIComponent(currentName)}&serviceKey=${APT_ID_API_KEY}`;
-            let nameRes = await fetch(nameUrl);
-            data = nameRes.ok ? await nameRes.json() : null;
-        }
-
         if (data && data.data && data.data.length > 0) {
-            // 검색된 데이터 중 세대수가 가장 큰 메인 단지 채택
-            data.data.sort((a, b) => (parseInt(b.UNIT_CNT) || 0) - (parseInt(a.UNIT_CNT) || 0));
-            let aptInfo = data.data[0];
+            // 2. 검색된 동일 지번 내의 여러 건물 중, 자바스크립트가 직접 이름을 대조해 진짜 타겟 단지를 찾아냄
+            let matchedApt = null;
+            
+            if (currentName) {
+                let cleanInput = currentName.replace(/\s/g, '').toLowerCase();
+                matchedApt = data.data.find(item => {
+                    let nm1 = (item.COMPLEX_NM1 || "").replace(/\s/g, '').toLowerCase();
+                    let nm2 = (item.COMPLEX_NM2 || "").replace(/\s/g, '').toLowerCase();
+                    return nm1.includes(cleanInput) || nm2.includes(cleanInput) || cleanInput.includes(nm1);
+                });
+            }
+            
+            // 이름이 정확히 매칭된 단지가 있으면 그것을, 없으면 세대수가 가장 큰 메인 단지를 채택
+            let aptInfo = matchedApt;
+            if (!aptInfo) {
+                data.data.sort((a, b) => (parseInt(b.UNIT_CNT) || 0) - (parseInt(a.UNIT_CNT) || 0));
+                aptInfo = data.data[0];
+            }
+            
             result.basicInfo = aptInfo;
 
+            // 3. 정확히 식별된 단지고유번호(COMPLEX_PK)로 이력 추적
             let histUrl = `${APT_ID_BASE_URL}/getHistInfo?page=1&perPage=10&cond[COMPLEX_PK::EQ]=${aptInfo.COMPLEX_PK}&serviceKey=${APT_ID_API_KEY}`;
             let histRes = await fetch(histUrl);
             
@@ -2150,7 +2169,9 @@ async function fetchAptBasicAndHistoryInfo(address, currentName) {
                 let histData = await histRes.json();
                 if (histData && histData.data && histData.data.length > 0) {
                     histData.data.forEach(hist => {
-                        if (hist.COMPLEX_EX_NM) result.pastNames.push(hist.COMPLEX_EX_NM);
+                        if (hist.COMPLEX_EX_NM && hist.COMPLEX_EX_NM !== currentName) {
+                            result.pastNames.push(hist.COMPLEX_EX_NM);
+                        }
                     });
                 }
             }
@@ -2161,6 +2182,7 @@ async function fetchAptBasicAndHistoryInfo(address, currentName) {
     }
     return null;
 }
+        
         // 🌟 2. 청약홈 분양정보 조회 함수 (본청약/최대규모 우선 정렬 탑재)
 async function fetchChungyangInfo(keyword) {
     if (!keyword) return null;
