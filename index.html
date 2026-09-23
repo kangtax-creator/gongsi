@@ -2292,15 +2292,21 @@ window.moveMapCenter = async function(inputId) {
             const tableBody = document.getElementById('siga-table-body');
             
             if (tableBody) {
-                // tbody를 감싸고 있는 껍데기(table 태그)를 찾아냅니다.
+                // tbody를 감싸고 있는 껍데기(table 태그)를 찾아냅니다. (에러 방어)
                 const tableElement = tableBody.closest('table');
-                const tableWrapper = tableElement.closest('.overflow-x-auto');
-                const legendDiv = tableWrapper.previousElementSibling;
+                const tableWrapper = tableElement ? tableElement.closest('.overflow-x-auto') : null;
                 
-                // 표 바로 위에 카드가 들어갈 영역을 만듭니다.
+                // 표 바로 위에 카드가 들어갈 영역을 만듭니다. (null 에러 완벽 차단)
                 let cardArea = document.getElementById('chungyangCardArea');
                 if (!cardArea) {
-                    legendDiv.insertAdjacentHTML('beforebegin', '<div id="chungyangCardArea" class="w-full"></div>');
+                    let insertTarget = tableWrapper || tableElement || tableBody;
+                    
+                    // 이전 요소가 존재하고, 그 텍스트에 '주체'라는 단어가 있으면 삽입 타겟을 그 위로 올림
+                    if (insertTarget.previousElementSibling && insertTarget.previousElementSibling.textContent.includes('주체')) {
+                        insertTarget = insertTarget.previousElementSibling;
+                    }
+                    
+                    insertTarget.insertAdjacentHTML('beforebegin', '<div id="chungyangCardArea" class="w-full"></div>');
                     cardArea = document.getElementById('chungyangCardArea');
                 }
                 
@@ -2314,10 +2320,10 @@ window.moveMapCenter = async function(inputId) {
                 // 🌟 [최종 병합본] 잘 되던 대문자 코드 + 스캐너 강화 로직
                 // =====================================================================
                 
-                // 1. 단지 제원 스캔 
-                let currentAddr = document.getElementById('address').value;
-                let aptData = await fetchAptBasicAndHistoryInfo(currentAddr, searchKeyword); 
-
+                // 1. 단지 제원 스캔 (주소칸 id null 방어)
+                let addrInput = document.getElementById('address');
+                let currentAddr = addrInput ? addrInput.value : searchKeyword;
+                let aptData = await fetchAptBasicAndHistoryInfo(currentAddr, searchKeyword);
                 // --- 🚀 스캐너 스마트 강화 로직 (전부 대문자 적용) ---
                 let allAptNames = [searchKeyword];
                 if (aptData && aptData.basicInfo) {
