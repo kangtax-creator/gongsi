@@ -2283,24 +2283,33 @@ async function fetchChungyangInfo(keyword) {
                 // 검색할 때마다 이전 청약홈 카드가 남아있을 수 있으니 비워줍니다.
                 cardArea.innerHTML = ""; 
 
-                // 기존 실거래가 표 안쪽에는 로딩 메시지를 띄워줍니다.
+               // 기존 실거래가 표 안쪽에는 로딩 메시지를 띄워줍니다.
                 tableBody.innerHTML = `<tr><td colspan="10" class="text-center p-4 text-indigo-600 font-bold">국토부 실거래가 데이터를 불러오는 중입니다...</td></tr>`;
 
                 // =====================================================================
-                // 🌟 [최종 통합본] 불필요한 건축물대장 덧셈 제거 + 완벽한 UI 표출
+                // 🌟 [완벽 복구본] 제원표 무조건 표출 + 청약홈 본청약 우선 스캔
                 // =====================================================================
                 cardArea.innerHTML = ""; 
 
-                // 1. 단지 제원 스캔 (이름 검색 보강된 API만 믿고 감)
+                // 1. 단지 제원 스캔 (부동산원 API 호출)
                 let currentAddr = document.getElementById('address').value;
                 let aptData = await fetchAptBasicAndHistoryInfo(currentAddr, searchKeyword); 
 
-                if (aptData && aptData.basicInfo) {
-                    let bldName = aptData.basicInfo.COMPLEX_NM1 || searchKeyword;
-                    let useApr = formatPubDate(aptData.basicInfo.USEAPR_DT) || '-';
-                    let unitCnt = aptData.basicInfo.UNIT_CNT ? Number(aptData.basicInfo.UNIT_CNT).toLocaleString() : '-';
-                    let dongCnt = aptData.basicInfo.DONG_CNT || '-';
+                // 🌟 제원표 방어 로직: API가 뻗어도 무조건 화면에 출력되도록 기본값 세팅
+                let bldName = aptData?.basicInfo?.COMPLEX_NM1 || aptData?.basicInfo?.COMPLEX_NM2 || (globalTitleItem ? globalTitleItem.bldNm : searchKeyword);
+                let useApr = aptData?.basicInfo?.USEAPR_DT ? formatPubDate(aptData.basicInfo.USEAPR_DT) : (globalTitleItem?.useAprDay ? formatPubDate(globalTitleItem.useAprDay) : '-');
+                let unitCnt = aptData?.basicInfo?.UNIT_CNT || (globalTitleItem ? (globalTitleItem.hhldCnt || globalTitleItem.hoCnt) : '-');
+                let dongCnt = aptData?.basicInfo?.DONG_CNT || (globalTitleItem ? globalTitleItem.mainBldCnt : '-');
 
+                // 빈 값 처리 및 포맷팅
+                if (!unitCnt || unitCnt === 0 || unitCnt === '0' || String(unitCnt).includes('undefined')) unitCnt = '-';
+                else if (unitCnt !== '-') unitCnt = Number(String(unitCnt).replace(/,/g, '')).toLocaleString();
+
+                if (!dongCnt || dongCnt === 0 || dongCnt === '0' || String(dongCnt).includes('undefined')) dongCnt = '-';
+                if (!useApr) useApr = '-';
+
+                // 🌟 제원표 카드 그리기 (API가 실패해도 무조건 그려집니다!)
+                if (bldName && bldName !== '-') {
                     cardArea.innerHTML += `
                         <div class="mb-4 bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm">
                             <div class="flex items-center gap-2 mb-2">
@@ -2362,7 +2371,6 @@ async function fetchChungyangInfo(keyword) {
 
                         let badgeTitle = isPresaleSwitchOn ? "현재 분양정보" : "과거 최초 분양(청약) 당시 기록";
                         let bgStyle = isPresaleSwitchOn ? "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200" : "bg-indigo-900/10 border-indigo-500/50";
-                        
                         let supplyScale = cyResult.TOT_SUPLY_HSHLDCO ? Number(cyResult.TOT_SUPLY_HSHLDCO).toLocaleString() : '-';
 
                         cardArea.innerHTML += `
@@ -2385,7 +2393,7 @@ async function fetchChungyangInfo(keyword) {
                         `;
                     }
                 }
-            }
+            } 
         
             // 수동으로 단지명을 타이핑할 경우, 일단 스위치를 켜서 청약홈을 찔러보도록 허용
         document.getElementById('searchKeyword').addEventListener('input', () => {
