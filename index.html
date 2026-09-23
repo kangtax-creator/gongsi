@@ -2299,8 +2299,11 @@ async function fetchAptBasicAndHistoryInfo(address, currentName) {
                 // 🌟 이중 안전장치: aptData가 실패하면 이미 확보해둔 globalTitleItem(건축물대장) 즉시 투입
                 let bldName = aptData?.basicInfo?.COMPLEX_NM1 || aptData?.basicInfo?.COMPLEX_NM2 || (globalTitleItem ? globalTitleItem.bldNm : searchKeyword);
                 let useApr = aptData?.basicInfo?.USEAPR_DT ? formatPubDate(aptData.basicInfo.USEAPR_DT) : (globalTitleItem?.useAprDay ? formatPubDate(globalTitleItem.useAprDay) : '-');
-                let unitCnt = aptData?.basicInfo?.UNIT_CNT || (globalTitleItem ? globalTitleItem.hoCnt : '-');
-                let dongCnt = aptData?.basicInfo?.DONG_CNT || (globalTitleItem ? globalTitleItem.mainBldCnt : '-');
+                let unitCnt = aptData?.basicInfo?.UNIT_CNT || (globalTitleItem ? (globalTitleItem.hhldCnt || globalTitleItem.hoCnt || '-') : '-');
+                let dongCnt = aptData?.basicInfo?.DONG_CNT || (globalTitleItem ? (globalTitleItem.mainBldCnt || '-') : '-');
+
+                if (!unitCnt || unitCnt === 0 || unitCnt === '0' || unitCnt === 'undefined') unitCnt = '-';
+                if (!dongCnt || dongCnt === 0 || dongCnt === '0' || dongCnt === 'undefined') dongCnt = '-';
                 
                 if (bldName && bldName !== '-' && searchKeyword) {
                     cardArea.innerHTML += `
