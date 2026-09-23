@@ -2312,15 +2312,15 @@ window.moveMapCenter = async function(inputId) {
                 let currentAddr = document.getElementById('address').value;
                 let aptData = await fetchAptBasicAndHistoryInfo(currentAddr, searchKeyword); 
 
-                // --- 🚀 [신규] 스캐너 스마트 강화 로직 ---
+                // --- 🚀 스캐너 스마트 강화 로직 ---
                 let allAptNames = [searchKeyword];
                 if (aptData && aptData.basicInfo) {
-                    // ① 고정밀 PNU 교체 (API가 준 공식 19자리 PNU로 전역 변수 즉시 동기화)
+                    // 🌟 소문자 원복 (pnu)
                     if (aptData.basicInfo.pnu && String(aptData.basicInfo.pnu).length === 19) {
                         globalCurrentPnu = String(aptData.basicInfo.pnu);
                     }
 
-                    // ② 단지종류(아파트/연립/다세대) 드롭다운 자동 스위칭
+                    // 🌟 소문자 원복 (complex_gb_cd)
                     let gbCd = String(aptData.basicInfo.complex_gb_cd);
                     let typeSelect = document.getElementById('sigaTargetType');
                     if (typeSelect) {
@@ -2328,13 +2328,12 @@ window.moveMapCenter = async function(inputId) {
                         else if (gbCd === '2' || gbCd === '3') typeSelect.value = 'RH';
                     }
 
-                    // ③ 이름 3종 세트 수집 (공시명, 대장명, 도로명) -> 청약홈 검색망 대폭 강화
+                    // 🌟 소문자 원복 (complex_nm1, 2, 3)
                     if (aptData.basicInfo.complex_nm1) allAptNames.push(aptData.basicInfo.complex_nm1);
                     if (aptData.basicInfo.complex_nm2) allAptNames.push(aptData.basicInfo.complex_nm2);
                     if (aptData.basicInfo.complex_nm3) allAptNames.push(aptData.basicInfo.complex_nm3);
                 }
                 
-                // 중복 이름 제거 (공백 지운 소문자 기준으로 꼼꼼하게 필터링)
                 let uniqueNames = [];
                 allAptNames.forEach(name => {
                     if (name && name !== '-') {
@@ -2346,22 +2345,15 @@ window.moveMapCenter = async function(inputId) {
                 });
                 // ------------------------------------------
 
+                // 🌟 화면 표출용 제원 데이터 소문자 원복 (complex_nm1, useapr_dt, unit_cnt, dong_cnt)
                 let bldName = aptData?.basicInfo?.complex_nm1 || aptData?.basicInfo?.complex_nm2 || searchKeyword;
                 let useApr = aptData?.basicInfo?.useapr_dt ? formatPubDate(aptData.basicInfo.useapr_dt) : '-';
                 let unitCnt = aptData?.basicInfo?.unit_cnt || '-';
                 let dongCnt = aptData?.basicInfo?.dong_cnt || '-';
 
-                // 빈 값 처리
-                if (!unitCnt || unitCnt === 0 || unitCnt === '0' || String(unitCnt).includes('undefined')) {
-                    unitCnt = '-';
-                } else if (unitCnt !== '-') {
+                if (unitCnt !== '-') {
                     unitCnt = Number(String(unitCnt).replace(/,/g, '')).toLocaleString();
                 }
-
-                if (!dongCnt || dongCnt === 0 || dongCnt === '0' || String(dongCnt).includes('undefined')) {
-                    dongCnt = '-';
-                }
-                if (!useApr || String(useApr).includes('undefined')) useApr = '-';
 
                 if (bldName && bldName !== '-') {
                     cardArea.innerHTML += `
@@ -2375,7 +2367,7 @@ window.moveMapCenter = async function(inputId) {
                     `;
                 }
 
-                // 2. 청약홈 스캔 (3중 이름 그물망 + 과거 이름 싹 다 던짐)
+                // 2. 청약홈 스캔
                 if (searchKeyword) {
                     let cyResult = null;
                     
@@ -2451,7 +2443,8 @@ window.moveMapCenter = async function(inputId) {
                         `;
                     }
                 }
-            }
+                // =====================================================================
+            } // 👈 (tableBody) if문의 닫는 괄호
         
             // 수동으로 단지명을 타이핑할 경우, 일단 스위치를 켜서 청약홈을 찔러보도록 허용
         document.getElementById('searchKeyword').addEventListener('input', () => {
