@@ -2294,40 +2294,74 @@ window.moveMapCenter = async function(inputId) {
             if (tableBody) {
                 // tbody를 감싸고 있는 껍데기(table 태그)를 찾아냅니다.
                 const tableElement = tableBody.closest('table');
-                const tableWrapper = tableElement.closest('.overflow-x-auto');
-                const legendDiv = tableWrapper.previousElementSibling;
                 
-                // 표 바로 위에 카드가 들어갈 영역을 만듭니다.
+                // 테이블을 감싸는 스크롤 영역과, 그 위에 있는 '주체: 개(개인)' 텍스트를 찾습니다.
+                const tableWrapper = tableElement.closest('.overflow-x-auto');
+                const legendDiv = tableWrapper.previousElementSibling; 
+                
+                // 범례(텍스트) '위쪽'에 제원표 카드를 통째로 삽입합니다. 
                 let cardArea = document.getElementById('chungyangCardArea');
                 if (!cardArea) {
                     legendDiv.insertAdjacentHTML('beforebegin', '<div id="chungyangCardArea" class="w-full"></div>');
                     cardArea = document.getElementById('chungyangCardArea');
                 }
-                
-                // 검색할 때마다 이전 청약홈 카드가 남아있을 수 있으니 비워줍니다.
+
                 cardArea.innerHTML = ""; 
 
-               // 기존 실거래가 표 안쪽에는 로딩 메시지를 띄워줍니다.
-                tableBody.innerHTML = `<tr><td colspan="10" class="text-center p-4 text-indigo-600 font-bold">국토부 실거래가 데이터를 불러오는 중입니다...</td></tr>`;
-
-                // =====================================================================
-                // 🌟 [최종 정본] 건축물대장 우회 로직 완전 삭제 & API 원본 100% 신뢰
-                // =====================================================================
-                cardArea.innerHTML = ""; 
-
-                // 1. 단지 제원 스캔 (부동산원 API 결과만 사용)
+                // 1. 단지 제원 스캔 
                 let currentAddr = document.getElementById('address').value;
                 let aptData = await fetchAptBasicAndHistoryInfo(currentAddr, searchKeyword); 
 
-                // 🌟 건축물대장(globalTitleItem)을 억지로 끌어다 쓰던 로직 완전 철폐!
-                let bldName = aptData?.basicInfo?.COMPLEX_NM1 || aptData?.basicInfo?.COMPLEX_NM2 || searchKeyword;
-                let useApr = aptData?.basicInfo?.USEAPR_DT ? formatPubDate(aptData.basicInfo.USEAPR_DT) : '-';
-                let unitCnt = aptData?.basicInfo?.UNIT_CNT || '-';
-                let dongCnt = aptData?.basicInfo?.DONG_CNT || '-';
+                // --- 🚀 [신규] 스캐너 스마트 강화 로직 ---
+                let allAptNames = [searchKeyword];
+                if (aptData && aptData.basicInfo) {
+                    // ① 고정밀 PNU 교체 (API가 준 공식 19자리 PNU로 전역 변수 즉시 동기화)
+                    if (aptData.basicInfo.pnu && String(aptData.basicInfo.pnu).length === 19) {
+                        globalCurrentPnu = String(aptData.basicInfo.pnu);
+                    }
 
-                if (unitCnt !== '-') {
+                    // ② 단지종류(아파트/연립/다세대) 드롭다운 자동 스위칭
+                    let gbCd = String(aptData.basicInfo.complex_gb_cd);
+                    let typeSelect = document.getElementById('sigaTargetType');
+                    if (typeSelect) {
+                        if (gbCd === '1') typeSelect.value = 'APT';
+                        else if (gbCd === '2' || gbCd === '3') typeSelect.value = 'RH';
+                    }
+
+                    // ③ 이름 3종 세트 수집 (공시명, 대장명, 도로명) -> 청약홈 검색망 대폭 강화
+                    if (aptData.basicInfo.complex_nm1) allAptNames.push(aptData.basicInfo.complex_nm1);
+                    if (aptData.basicInfo.complex_nm2) allAptNames.push(aptData.basicInfo.complex_nm2);
+                    if (aptData.basicInfo.complex_nm3) allAptNames.push(aptData.basicInfo.complex_nm3);
+                }
+                
+                // 중복 이름 제거 (공백 지운 소문자 기준으로 꼼꼼하게 필터링)
+                let uniqueNames = [];
+                allAptNames.forEach(name => {
+                    if (name && name !== '-') {
+                        let cleanName = name.replace(/\s/g, '').toLowerCase();
+                        if (!uniqueNames.some(u => u.replace(/\s/g, '').toLowerCase() === cleanName)) {
+                            uniqueNames.push(name);
+                        }
+                    }
+                });
+                // ------------------------------------------
+
+                let bldName = aptData?.basicInfo?.complex_nm1 || aptData?.basicInfo?.complex_nm2 || searchKeyword;
+                let useApr = aptData?.basicInfo?.useapr_dt ? formatPubDate(aptData.basicInfo.useapr_dt) : '-';
+                let unitCnt = aptData?.basicInfo?.unit_cnt || '-';
+                let dongCnt = aptData?.basicInfo?.dong_cnt || '-';
+
+                // 빈 값 처리
+                if (!unitCnt || unitCnt === 0 || unitCnt === '0' || String(unitCnt).includes('undefined')) {
+                    unitCnt = '-';
+                } else if (unitCnt !== '-') {
                     unitCnt = Number(String(unitCnt).replace(/,/g, '')).toLocaleString();
                 }
+
+                if (!dongCnt || dongCnt === 0 || dongCnt === '0' || String(dongCnt).includes('undefined')) {
+                    dongCnt = '-';
+                }
+                if (!useApr || String(useApr).includes('undefined')) useApr = '-';
 
                 if (bldName && bldName !== '-') {
                     cardArea.innerHTML += `
@@ -2341,16 +2375,20 @@ window.moveMapCenter = async function(inputId) {
                     `;
                 }
 
-                // 2. 청약홈 (분양권 or 기축 아파트 과거 분양가) 연쇄 스캔
+                // 2. 청약홈 스캔 (3중 이름 그물망 + 과거 이름 싹 다 던짐)
                 if (searchKeyword) {
                     let cyResult = null;
                     
-                    let searchNames = [searchKeyword];
+                    let searchNamesForCy = [...uniqueNames];
                     if (aptData && aptData.pastNames) {
-                        aptData.pastNames.forEach(n => { if (!searchNames.includes(n)) searchNames.push(n); });
+                        aptData.pastNames.forEach(n => { 
+                            if (!searchNamesForCy.some(u => u.replace(/\s/g, '').toLowerCase() === n.replace(/\s/g, '').toLowerCase())) {
+                                searchNamesForCy.push(n); 
+                            }
+                        });
                     }
 
-                    for (let nameToSearch of searchNames) {
+                    for (let nameToSearch of searchNamesForCy) {
                         cyResult = await fetchChungyangInfo(nameToSearch);
                         if (cyResult) break;
                     }
