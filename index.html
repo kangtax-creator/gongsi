@@ -2183,7 +2183,7 @@ window.moveMapCenter = async function(inputId) {
                 return null;
             }
                     
-                    // 🌟 2. 청약홈 분양정보 조회 함수 (타 지역 동명이인 쳐내기 방어막 추가)
+                    // 🌟 2. 청약홈 분양정보 조회 함수 (꼼수 배제: '동' 단위 엄격한 일치 검증)
 async function fetchChungyangInfo(keyword, address = "") {
     if (!keyword) return null;
     let pureKeyword = keyword.replace(/\s/g, '');
@@ -2201,23 +2201,26 @@ async function fetchChungyangInfo(keyword, address = "") {
                     return cleanHouseNm.includes(pureKeyword) || pureKeyword.includes(cleanHouseNm);
                 });
 
-                // 🌟 [핵심] 다른 지역의 동명이인 아파트 쳐내기 (예: 서울 금호어울림 vs 대구 금호어울림)
-                if (matchedItems.length > 1 && address) {
-                    let sido = address.split(' ')[0].substring(0, 2); // '서울', '경기', '부산' 등 2글자 추출
+                // 🌟 [핵심] '서울' 같은 광역 단위가 아니라 '목동' 같은 동 단위로 완벽하게 일치하는지 검증합니다.
+                if (matchedItems.length > 0 && address) {
+                    let dongMatch = address.match(/([가-힣]+[동가읍면리])/);
+                    let pureDong = dongMatch ? dongMatch[1] : "";
                     
-                    let regionFiltered = matchedItems.filter(item => {
-                        if (!item.HSSPLY_ADRES) return true; // 청약홈 주소가 비어있으면 일단 살림
-                        return item.HSSPLY_ADRES.includes(sido);
-                    });
-
-                    // 필터링 후 남은 타겟이 있으면 그걸로 교체 (없으면 원본 유지하여 보험 처리)
-                    if (regionFiltered.length > 0) {
-                        matchedItems = regionFiltered;
+                    if (pureDong) {
+                        let strictFiltered = matchedItems.filter(item => {
+                            let targetAddr = item.HSSPLY_ADRES || "";
+                            let targetNm = item.HOUSE_NM || "";
+                            // 청약홈 주소나 단지명에 '목동'이 포함되어 있어야만 통과
+                            return targetAddr.includes(pureDong) || targetNm.includes(pureDong);
+                        });
+                        
+                        // 검증을 통과한 진짜 데이터만 남깁니다. (도봉 금호어울림은 여기서 폐기됨)
+                        matchedItems = strictFiltered;
                     }
                 }
 
                 if (matchedItems.length > 0) {
-                    // 세대수 최대인 '본청약'을 우선 정렬하여 자잘한 무순위/취소분 방어
+                    // 세대수 최대인 '본청약'을 우선 정렬
                     matchedItems.sort((a, b) => {
                         let aSupply = parseInt(a.TOT_SUPLY_HSHLDCO) || 0;
                         let bSupply = parseInt(b.TOT_SUPLY_HSHLDCO) || 0;
