@@ -2855,11 +2855,22 @@ async function fetchChungyangInfo(keyword, address = "") {
 
                     let shortDate = row.date.substring(2).replace(/-/g, '.'); 
                     let rgstStr = "";
-                    if (row.rgstDate && row.rgstDate.length >= 8) {
-                        let rYear = row.rgstDate.substring(2, 4);
-                        let rMon = row.rgstDate.substring(4, 6);
-                        let rDay = row.rgstDate.substring(6, 8);
-                        rgstStr = `<br><span class="text-[10px] text-slate-400 font-medium block mt-0.5">등기 ${rYear}.${rMon}.${rDay}</span>`;
+                    
+                    if (row.rgstDate) {
+                        // 🌟 하이픈, 점, 공백 등을 모두 제거하고 순수 숫자만 추출 (예: "2026.06.18" -> "20260618")
+                        let cleanRgst = String(row.rgstDate).replace(/[^0-9]/g, '');
+                        
+                        if (cleanRgst.length >= 8) { // 20260618 (YYYYMMDD) 형태
+                            let rYear = cleanRgst.substring(2, 4);
+                            let rMon = cleanRgst.substring(4, 6);
+                            let rDay = cleanRgst.substring(6, 8);
+                            rgstStr = `<br><span class="text-[10px] text-slate-400 font-medium block mt-0.5">등기 ${rYear}.${rMon}.${rDay}</span>`;
+                        } else if (cleanRgst.length === 6) { // 260618 (YYMMDD) 형태 방어
+                            let rYear = cleanRgst.substring(0, 2);
+                            let rMon = cleanRgst.substring(2, 4);
+                            let rDay = cleanRgst.substring(4, 6);
+                            rgstStr = `<br><span class="text-[10px] text-slate-400 font-medium block mt-0.5">등기 ${rYear}.${rMon}.${rDay}</span>`;
+                        }
                     }
 
                     // 🌟 [수정된 부분] 2열: 단지명/지번 + 동·층 통합 (지번 별표 마스킹 포함)
