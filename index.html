@@ -2305,27 +2305,6 @@ async function fetchChungyangInfo(keyword, address = "") {
             btn.disabled = true;
             globalTransactions = [];
             let hasApiServerIssue = false; 
-            // 🌟 [스마트 로딩 UI 추가] 스캔 시작 직후 스피너를 띄우고 3초 뒤 메시지 전환
-            resultDiv.innerHTML = `
-                <div id="siga-loading-area" class="py-16 text-center w-full">
-                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-indigo-100 border-t-indigo-600 mb-4 shadow-sm"></div>
-                    <p id="siga-loading-msg" class="text-indigo-900 font-extrabold text-lg transition-colors duration-300">국토부 실거래가 데이터를 불러오는 중입니다...</p>
-                    <p id="siga-loading-sub" class="text-sm text-slate-500 mt-2 transition-opacity duration-300">거래가 많은 대단지는 수 초 이상 소요될 수 있습니다.</p>
-                </div>
-            `;
-
-            // 전역(혹은 상단)에서 접근할 수 있도록 타이머 변수 선언
-            window.sigaLoadingTimer = setTimeout(() => {
-                const msgEl = document.getElementById('siga-loading-msg');
-                const subEl = document.getElementById('siga-loading-sub');
-                if (msgEl && subEl) {
-                    msgEl.innerHTML = "대단지 물건의 방대한 데이터를 분석하고 있습니다.<br>잠시만 더 기다려주세요 ⏳";
-                    msgEl.classList.remove("text-indigo-900");
-                    msgEl.classList.add("text-rose-600"); // 3초 뒤 텍스트 색상을 붉은색 계열로 변경하여 시각적 환기
-                    subEl.innerText = "국토부 서버 응답 상태에 따라 5~10초 정도 소요될 수 있습니다.";
-                }
-            }, 3000);
-            
             // 🌟 [추가 1] 대상 부동산의 '법정동' 이름만 똑 떼어내기 (예: "강남구 역삼동" -> "역삼동")
             let targetUmdNm = "";
             if (globalLandItem && globalLandItem.ldCodeNm) {
@@ -2774,9 +2753,6 @@ async function fetchChungyangInfo(keyword, address = "") {
                 alert("조회 중 오류가 발생했습니다.");
                 console.error(err);
             } finally {
-                // 🌟 스캔이 완료되거나 오류로 끝났을 때 3초 타이머를 강제로 해제합니다.
-                if (window.sigaLoadingTimer) clearTimeout(window.sigaLoadingTimer);
-                
                 btn.innerText = "선택 기간 내 매매 / 전월세 / 분양·입주권 데이터 동시 스캔";
                 btn.disabled = false;
             }
