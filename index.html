@@ -2301,7 +2301,9 @@ async function fetchChungyangInfo(keyword, address = "") {
                 return;
             }
 
-            btn.innerText = "실거래가 데이터 스캔 중... (잠시만 기다려주세요)";
+            btn.innerText = "🛑 실거래가 데이터 스캔 중... (잠시만 기다려주세요)";
+            btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+            btn.classList.add('bg-rose-600', 'hover:bg-rose-700', 'scanning-active');
             btn.disabled = true;
             globalTransactions = [];
             let hasApiServerIssue = false; 
@@ -2782,6 +2784,8 @@ async function fetchChungyangInfo(keyword, address = "") {
                 if (window.sigaLoadingTimer) clearTimeout(window.sigaLoadingTimer);
 
                 btn.innerText = "선택 기간 내 매매 / 전월세 / 분양·입주권 데이터 동시 스캔";
+                btn.classList.remove('bg-rose-600', 'hover:bg-rose-700', 'scanning-active');
+                btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
                 btn.disabled = false;
             }
         }
