@@ -1200,8 +1200,15 @@ window.moveMapCenter = async function(inputId) {
             globalCurrentPnu = pnu; // 🌟 강남구 가짜 PNU 제거
             globalComplexName = "";
 
-                fetchDaejangInfo(globalCurrentPnu);
+            fetchDaejangInfo(globalCurrentPnu);
 
+            // 🌟 [병렬 스캔 엔진 가동] 대장, 실거래가, 정비사업을 동시에 출발시킵니다.
+            fetchComplexTransactions();
+            
+            let renewalInput = document.getElementById('renewalName');
+            if (renewalInput && renewalInput.value) {
+                fetchSeoulRenewal();
+            }
                 let noticeBanner = document.getElementById('commercial-notice');
                 if (!noticeBanner) {
                     noticeBanner = document.createElement('div');
@@ -1439,15 +1446,7 @@ window.moveMapCenter = async function(inputId) {
                 btn.classList.remove('scanning-active');
                 btn.disabled = false;
 
-                if (globalCurrentPnu) {
-                    fetchComplexTransactions(); // 2번 탭(실거래가) 미리 스캔
-                    
-                    // 🌟 4번 탭(정비사업) 프리페칭: 주소 검색 때 세팅된 이름이 있으면 그대로 백그라운드 스캔 출발!
-                    let renewalInput = document.getElementById('renewalName');
-                    if (renewalInput && renewalInput.value) {
-                        fetchSeoulRenewal();
-                    }
-                }
+                
             }
         }
 
