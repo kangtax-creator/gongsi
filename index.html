@@ -1394,6 +1394,17 @@ window.moveMapCenter = async function(inputId) {
                                     break;
                                 }
                             }
+                            
+                            // 🌟 [모바일 최적화] 탭 클릭 직후, '거래 금액 시각화' 차트 위치로 화면을 부드럽게 한 번 더 끌어내립니다.
+                            setTimeout(() => {
+                                if (window.innerWidth < 768) { // 모바일 화면(768px 미만)에서만 작동
+                                    const chartArea = document.getElementById('sigaChart');
+                                    if (chartArea) {
+                                        chartArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    }
+                                }
+                            }, 150); // 기존 탭 스크롤 기능과 충돌하지 않도록 0.15초 뒤에 실행
+
                         }, 1200);
 
                     } else {
