@@ -1395,15 +1395,22 @@ window.moveMapCenter = async function(inputId) {
                                 }
                             }
                             
-                            // 🌟 [모바일 최적화] 탭 클릭 직후, '거래 금액 시각화' 차트 위치로 화면을 부드럽게 한 번 더 끌어내립니다.
+                            // 🌟 [모바일 최적화] 탭 클릭 직후, '상세 거래 내역' 표 영역이 화면 상단에 오도록 쭉 끌어내립니다.
                             setTimeout(() => {
-                                if (window.innerWidth < 768) { // 모바일 화면(768px 미만)에서만 작동
-                                    const chartArea = document.getElementById('sigaChart');
-                                    if (chartArea) {
-                                        chartArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                if (window.innerWidth < 768) { // 모바일 화면에서만 작동
+                                    // '상세 거래 내역' 글씨 바로 옆에 있는 면적 필터(areaFilter)를 이정표로 삼습니다.
+                                    const targetElement = document.getElementById('areaFilter');
+                                    if (targetElement) {
+                                        // 해당 요소가 들어있는 흰색 카드 배경 전체를 화면 맨 위(start)로 맞춤
+                                        const cardContainer = targetElement.closest('.bg-white');
+                                        if (cardContainer) {
+                                            cardContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        } else {
+                                            targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        }
                                     }
                                 }
-                            }, 150); // 기존 탭 스크롤 기능과 충돌하지 않도록 0.15초 뒤에 실행
+                            }, 150);
 
                         }, 1200);
 
