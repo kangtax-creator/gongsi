@@ -4038,6 +4038,26 @@ async function fetchChungyangInfo(keyword, address = "") {
             
             if (isRegulated) {
                 resultBox.className = "rounded-xl border p-4 shadow-sm transition-all duration-300 bg-rose-50 border-rose-200";
+                
+                // 🌟 [수정된 부분] 2017.08.03 이전 지정 지역과 이후 지정 지역의 특례 기준일 분리
+                let exemptionGuide = "";
+                const sDate = new Date(startDate);
+                const lawDate = new Date("2017-08-03");
+
+                if (sDate < lawDate) {
+                    // 16.11.03, 17.06.19 등 8.2대책 이전 지정 지역
+                    exemptionGuide = `
+                        해당 지역은 거주요건이 신설된 8.2 대책 이전에 조정대상지역으로 지정된 곳입니다.<br>
+                        만약 무주택 1세대가 <b>2017년 8월 2일 이전에 매매계약을 체결하고 계약금을 지급한 경우</b> 거주 요건이 면제될 수 있습니다.
+                    `;
+                } else {
+                    // 8.2대책 이후 지정 지역
+                    exemptionGuide = `
+                        해당 지역의 조정지역 지정 공고(효력발생)일은 <b>${startDate}</b> 입니다.<br>
+                        만약 무주택 1세대가 <b>해당 공고일 이전에 매매계약을 체결하고 계약금을 지급한 경우</b> 거주 요건이 면제될 수 있습니다.
+                    `;
+                }
+
                 resultBox.innerHTML = `
                     <p class="text-sm font-black text-rose-800 mb-1 flex items-center">
                         <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
@@ -4046,8 +4066,7 @@ async function fetchChungyangInfo(keyword, address = "") {
                     <p class="text-xs text-rose-700 font-bold mb-3">${mainText}</p>
                     <div class="bg-white p-3 rounded-lg border border-rose-100 text-[11px] text-slate-600 leading-relaxed">
                         <p class="font-bold text-slate-800 mb-1">💡 무주택자 예외 확인</p>
-                        해당 지역의 조정지역 지정 공고일은 <b>${startDate}</b> 입니다.<br>
-                        만약 무주택 1세대가 <u>공고일 이전에 매매계약을 체결하고 계약금을 지급한 경우</u> 거주 요건이 면제될 수 있습니다.<br>
+                        ${exemptionGuide}<br>
                         <a href="https://www.micro-tax.com" target="_blank" class="inline-block mt-2 font-bold text-indigo-600 hover:underline">정확한 비과세 진단은 강승완 세무사에게 문의하세요 ↗</a>
                     </div>
                 `;
