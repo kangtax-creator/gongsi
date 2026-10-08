@@ -191,5 +191,60 @@ function checkRegulationStatus(fullAddress, acqDateStr) {
     };
 }
 
-// 브라우저 전역 객체에 노출 (index.html에서 호출 가능하도록)
-window.checkRegulationStatus = checkRegulationStatus;
+// 🌟 실거주 요건 판별 엔진 (외부 호출용)
+window.checkRegulationStatus = function(fullAddress, acqDateInput) {
+    if (!fullAddress || !acqDateInput) return { error: true };
+
+    // 🌟 [핵심 버그 픽스] 카카오 API의 줄임말(경기)을 DB의 정식명칭(경기도)으로 자동 치환
+    let normAddress = fullAddress
+        .replace(/^서울\s/, "서울특별시 ")
+        .replace(/^경기\s/, "경기도 ")
+        .replace(/^인천\s/, "인천광역시 ")
+        .replace(/^부산\s/, "부산광역시 ")
+        .replace(/^대구\s/, "대구광역시 ")
+        .replace(/^대전\s/, "대전광역시 ")
+        .replace(/^광주\s/, "광주광역시 ")
+        .replace(/^울산\s/, "울산광역시 ")
+        .replace(/^세종\s/, "세종특별자치시 ");
+
+    const acqDate = new Date(acqDateInput);
+    const lawDate = new Date("2017-08-03"); 
+
+    // 1. 대원칙: 17.08.02 이전 취득 무조건 면제
+    if (acqDate < lawDate) {
+        return { error: false, isBeforeLaw: true, isRegulated: false };
+    }
+
+    // 2. 글자수가 긴 구체적 주소(동 단위)부터 탐색하도록 정렬
+    const sortedDB = [...regulationDB].sort((a, b) => b.region.length - a.region.length);
+
+    let isRegulated = false;
+    let matchedPeriod = null;
+    let targetRegionName = "";
+
+    // 3. 교정된 주소(normAddress)로 대조
+    for (let reg of sortedDB) {
+        if (normAddress.includes(reg.region)) {
+            for (let p of reg.periods) {
+                let sDate = new Date(p.start);
+                let eDate = new Date(p.end);
+                if (acqDate >= sDate && acqDate <= eDate) {
+                    isRegulated = true;
+                    matchedPeriod = p.start;
+                    targetRegionName = reg.region;
+                    break;
+                }
+            }
+            // 매칭되는 지역을 찾았으면 하위 지역으로 넘어가지 않음
+            break; 
+        }
+    }
+
+    return {
+        error: false,
+        isBeforeLaw: false,
+        isRegulated: isRegulated,
+        targetRegionName: targetRegionName,
+        startDate: matchedPeriod
+    };
+};
