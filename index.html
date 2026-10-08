@@ -21,6 +21,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="./regulationData.js"></script>
 
     <!-- 카카오맵 API 로드 (세무사님 키 적용 및 services 라이브러리 포함) -->
     <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=aad42b1bdcb1fec4862775e7dcda0025&libraries=services"></script>
@@ -177,7 +178,26 @@
                     </div>
                 </div>
             </div>
-          </div>      
+          </div>
+
+            <!-- 🌟 신규 추가: 양도세 비과세 실거주 진단 섹션 -->
+            <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200 relative z-10 mb-6">
+                <h2 class="text-base font-extrabold text-slate-800 mb-3 flex items-center">
+                    <span class="w-2 h-2 bg-rose-500 rounded-full mr-2"></span> 1세대 1주택 비과세 실거주 진단
+                </h2>
+                <p class="text-[11px] text-slate-500 mb-4 leading-relaxed">
+                    상단에서 <b>주소를 먼저 스캔</b>한 후, <b>실제 취득일(잔금청산일과 등기접수일 중 빠른 날)</b>을 입력해 취득 당시 규제지역 여부를 확인하세요.
+                </p>
+                <div class="flex gap-2 mb-4">
+                    <input type="date" id="acqDate" class="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-800 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-200">
+                    <button type="button" onclick="checkResidencyRequirement()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-colors whitespace-nowrap">원칙 확인</button>
+                </div>
+                
+                <!-- 진단 결과가 표시될 박스 -->
+                <div id="residency-result-box" class="hidden rounded-xl border p-4 shadow-sm transition-all duration-300">
+                </div>
+            </div>
+
 
             <!-- 대량 조회 섹션 -->
             <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
@@ -3977,6 +3997,71 @@ async function fetchChungyangInfo(keyword, address = "") {
                 if(targetTab) targetTab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
             }, 50);
         };
+
+        // 🌟 실거주 요건 진단 실행 함수
+        function checkResidencyRequirement() {
+            const fullAddress = document.getElementById('address').value;
+            const acqDateInput = document.getElementById('acqDate').value;
+            const resultBox = document.getElementById('residency-result-box');
+
+            if (!fullAddress) {
+                alert("먼저 상단에서 대상 부동산 주소를 스캔(검색)해 주세요.");
+                return;
+            }
+            if (!acqDateInput) {
+                alert("취득일을 선택해 주세요.");
+                return;
+            }
+
+            // regulationData.js 에 있는 판별 엔진 호출
+            const result = window.checkRegulationStatus(fullAddress, acqDateInput);
+            
+            resultBox.classList.remove('hidden');
+
+            if (result.error) {
+                alert("입력값이 올바르지 않습니다.");
+                return;
+            }
+
+            if (result.isBeforeLaw) {
+                renderResidencyResult(false, "취득일이 2017년 8월 2일 이전이므로 지역과 무관하게 거주 요건이 없습니다.", null);
+            } else if (result.isRegulated) {
+                renderResidencyResult(true, \`취득 당시 해당 지역(\${result.targetRegionName})은 조정대상지역이었습니다.\`, result.startDate);
+            } else {
+                renderResidencyResult(false, "취득 당시 해당 지역은 비조정대상지역이었습니다.", null);
+            }
+        }
+
+        // 🌟 결과 화면(UI) 렌더링 함수
+        function renderResidencyResult(isRegulated, mainText, startDate) {
+            const resultBox = document.getElementById('residency-result-box');
+            
+            if (isRegulated) {
+                resultBox.className = "rounded-xl border p-4 shadow-sm transition-all duration-300 bg-rose-50 border-rose-200";
+                resultBox.innerHTML = \`
+                    <p class="text-sm font-black text-rose-800 mb-1 flex items-center">
+                        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        [원칙] 실거주 2년 필수!
+                    </p>
+                    <p class="text-xs text-rose-700 font-bold mb-3">\${mainText}</p>
+                    <div class="bg-white p-3 rounded-lg border border-rose-100 text-[11px] text-slate-600 leading-relaxed">
+                        <p class="font-bold text-slate-800 mb-1">💡 무주택자 예외 확인</p>
+                        해당 지역의 조정지역 지정 공고일은 <b>\${startDate}</b> 입니다.<br>
+                        만약 무주택 1세대가 <u>공고일 이전에 매매계약을 체결하고 계약금을 지급한 경우</u> 거주 요건이 면제될 수 있습니다.<br>
+                        <a href="https://www.micro-tax.com" target="_blank" class="inline-block mt-2 font-bold text-indigo-600 hover:underline">정확한 비과세 진단은 강승완 세무사에게 문의하세요 ↗</a>
+                    </div>
+                \`;
+            } else {
+                resultBox.className = "rounded-xl border p-4 shadow-sm transition-all duration-300 bg-emerald-50 border-emerald-200";
+                resultBox.innerHTML = \`
+                    <p class="text-sm font-black text-emerald-800 mb-1 flex items-center">
+                        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        실거주 의무 없음!
+                    </p>
+                    <p class="text-xs text-emerald-700 font-bold">\${mainText}<br>2년 이상 보유만 하시면 실거주 요건 없이 비과세 특례가 적용됩니다.</p>
+                \`;
+            }
+        }
         
     </script>
 </body>
