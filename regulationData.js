@@ -387,3 +387,53 @@ window.checkRegulationStatus = function(fullAddress, acqDateInput) {
         startDate: matchedPeriod
     };
 };
+
+// 🌟 특정 주소의 규제/해제 연혁 전체 조회 엔진
+window.getRegionHistory = function(fullAddress) {
+    if (!fullAddress) return null;
+    let normAddress = fullAddress
+        .replace(/^서울\s/, "서울특별시 ").replace(/^경기\s/, "경기도 ")
+        .replace(/^인천\s/, "인천광역시 ").replace(/^부산\s/, "부산광역시 ")
+        .replace(/^대구\s/, "대구광역시 ").replace(/^대전\s/, "대전광역시 ")
+        .replace(/^광주\s/, "광주광역시 ").replace(/^울산\s/, "울산광역시 ")
+        .replace(/^세종\s/, "세종특별자치시 ").replace(/^경북\s/, "경상북도 ")
+        .replace(/^경남\s/, "경상남도 ").replace(/^전북\s/, "전라북도 ")
+        .replace(/^전남\s/, "전라남도 ").replace(/^충북\s/, "충청북도 ")
+        .replace(/^충남\s/, "충청남도 ").replace(/^강원\s/, "강원도 ")
+        .replace(/^제주\s/, "제주특별자치도 ");
+
+    for (let reg of sortedRegulationDB) {
+        if (normAddress.includes(reg.region)) {
+            return { regionName: reg.region, periods: reg.periods };
+        }
+    }
+    return null;
+};
+
+// 🌟 특정 날짜 기준 전국 규제지역 스냅샷 조회 엔진
+window.getNationalSnapshot = function(dateStr) {
+    if (!dateStr) return [];
+    const targetDate = new Date(dateStr);
+    let snapshot = [];
+
+    for (let reg of sortedRegulationDB) {
+        // periods가 비어있는 핀셋 제외 구역은 목록에서 스킵 (규제지역이 아니므로)
+        if (!reg.periods || reg.periods.length === 0) continue; 
+        
+        let isReg = false;
+        for (let p of reg.periods) {
+            let sDate = new Date(p.start);
+            let eDate = new Date(p.end);
+            if (targetDate >= sDate && targetDate <= eDate) {
+                isReg = true;
+                break;
+            }
+        }
+        if (isReg) {
+            snapshot.push(reg.region);
+        }
+    }
+    
+    // 긴 주소(핀셋 규제 등)로 정렬된 것을 다시 광역시/도 기준으로 예쁘게 가나다 정렬
+    return snapshot.sort();
+};
