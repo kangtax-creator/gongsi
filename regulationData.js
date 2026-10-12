@@ -126,7 +126,7 @@ const regulationDB = [
     { region: "전라남도 광양시", periods: [{start: "2020-12-18", end: "2022-07-04"}] },
     { region: "경상북도 포항시 남구", periods: [{start: "2020-12-18", end: "2022-09-25"}] },
     { region: "경상북도 경산시", periods: [{start: "2020-12-18", end: "2022-07-04"}] },
-    { region: "경상남도 창원시 성산구", periods: [{start: "2020-12-18", end: "2022-09-25"}] }
+    { region: "경상남도 창원시 성산구", periods: [{start: "2020-12-18", end: "2022-09-25"}] },
 
     /* ====================================================
        🌟 [추가됨] 국토부 공고 각주 완벽 반영 (읍/면/동 핀셋 규제 제외 지역)
@@ -255,7 +255,7 @@ const regulationDB = [
     { region: "경상북도 포항시 대송면", periods: [] },
     { region: "경상북도 포항시 동해면", periods: [] },
     { region: "경상북도 포항시 장기면", periods: [] },
-    { region: "경상북도 포항시 호미곶면", periods: [] },
+    { region: "경상북도 포항시 호미곶면", periods: [] }
 ];
 
 /**
