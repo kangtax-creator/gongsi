@@ -195,7 +195,7 @@ function checkRegulationStatus(fullAddress, acqDateStr) {
 window.checkRegulationStatus = function(fullAddress, acqDateInput) {
     if (!fullAddress || !acqDateInput) return { error: true };
 
-    // 🌟 [핵심 버그 픽스] 카카오 API의 줄임말(경기)을 DB의 정식명칭(경기도)으로 자동 치환
+    // 🌟 [핵심 버그 픽스] 카카오 API의 줄임말(경기, 경북, 충남 등)을 DB의 정식명칭으로 완벽하게 자동 치환
     let normAddress = fullAddress
         .replace(/^서울\s/, "서울특별시 ")
         .replace(/^경기\s/, "경기도 ")
@@ -205,7 +205,15 @@ window.checkRegulationStatus = function(fullAddress, acqDateInput) {
         .replace(/^대전\s/, "대전광역시 ")
         .replace(/^광주\s/, "광주광역시 ")
         .replace(/^울산\s/, "울산광역시 ")
-        .replace(/^세종\s/, "세종특별자치시 ");
+        .replace(/^세종\s/, "세종특별자치시 ")
+        .replace(/^경북\s/, "경상북도 ")
+        .replace(/^경남\s/, "경상남도 ")
+        .replace(/^전북\s/, "전라북도 ")
+        .replace(/^전남\s/, "전라남도 ")
+        .replace(/^충북\s/, "충청북도 ")
+        .replace(/^충남\s/, "충청남도 ")
+        .replace(/^강원\s/, "강원도 ")
+        .replace(/^제주\s/, "제주특별자치도 ");
 
     const acqDate = new Date(acqDateInput);
     const lawDate = new Date("2017-08-03"); 
