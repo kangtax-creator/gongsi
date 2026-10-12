@@ -180,25 +180,6 @@
             </div>
            </div>     
 
-            <!-- 🌟 신규 추가: 양도세 비과세 실거주 진단 섹션 -->
-            <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200 relative z-10 mb-6">
-                <h2 class="text-base font-extrabold text-slate-800 mb-3 flex items-center">
-                    <span class="w-2 h-2 bg-rose-500 rounded-full mr-2"></span> 1세대 1주택 비과세 거주요건 진단
-                </h2>
-                <p class="text-[11px] text-slate-500 mb-4 leading-relaxed">
-                    상단에서 <b>주소를 먼저 스캔</b>한 후, <b>실제 취득일(잔금청산일과 등기접수일 중 빠른 날)</b>을 입력해 취득 당시 규제지역 여부를 확인하세요.
-                </p>
-                <div class="flex gap-2 mb-4">
-                    <input type="date" id="acqDate" class="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-800 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-200">
-                    <button type="button" onclick="checkResidencyRequirement()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-colors whitespace-nowrap">확인</button>
-                </div>
-                
-                <!-- 진단 결과가 표시될 박스 -->
-                <div id="residency-result-box" class="hidden rounded-xl border p-4 shadow-sm transition-all duration-300">
-                </div>
-            </div>
-
-
             <!-- 대량 조회 섹션 -->
             <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
                 <h2 class="text-lg font-extrabold text-slate-800 mb-2 flex items-center">
@@ -259,6 +240,9 @@
                 </button>
                 <button onclick="switchTab('renewal')" id="tab-renewal" class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap">
                     4. 정비사업현황
+                </button>
+                <button onclick="switchTab('residency')" id="tab-residency" class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 focus:outline-none whitespace-nowrap">
+                    5. 비과세 거주요건 진단
                 </button>
             </div>
 
@@ -480,6 +464,42 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- 🌟 탭 5: 비과세 실거주 진단 및 규제 연혁 (신규 독립 탭) -->
+            <div id="content-residency" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
+                    <h2 class="text-lg font-extrabold text-slate-800 mb-2 flex items-center">
+                        <span class="w-2 h-2 bg-rose-500 rounded-full mr-2"></span> 양도소득세 비과세 실거주 진단 및 연혁
+                    </h2>
+                    <p class="text-xs text-slate-500 mb-6 leading-relaxed">
+                        좌측에서 스캔한 <b>대상 부동산 주소</b>를 기준으로 판별합니다. <b>실제 취득일(잔금청산일/등기접수일 중 빠른 날)</b>을 입력해 주세요.
+                    </p>
+                    
+                    <div class="flex gap-2 mb-6">
+                        <input type="date" id="acqDate" class="flex-1 max-w-sm bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100 shadow-sm">
+                        <button type="button" onclick="checkResidencyRequirement()" class="bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-md transition-colors whitespace-nowrap">
+                            진단 및 연혁 스캔
+                        </button>
+                    </div>
+
+                    <!-- 1. 메인 진단 결과 (원칙/예외 안내) -->
+                    <div id="residency-result-box" class="hidden mb-6"></div>
+
+                    <!-- 2. 해당 지역 전체 규제 타임라인 -->
+                    <div id="region-history-box" class="hidden mb-6 bg-slate-50 p-5 rounded-xl border border-slate-200"></div>
+
+                    <!-- 3. 취득일 당시 전국 규제지역 스냅샷 (아코디언) -->
+                    <div id="national-snapshot-box" class="hidden border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                        <button onclick="toggleSnapshot()" class="w-full bg-white px-5 py-4 flex justify-between items-center hover:bg-slate-50 transition-colors focus:outline-none">
+                            <span id="snapshot-title" class="font-extrabold text-slate-800 text-sm"></span>
+                            <span id="snapshot-icon" class="text-slate-400 font-bold">▼</span>
+                        </button>
+                        <div id="snapshot-content" class="hidden bg-slate-50 p-5 border-t border-slate-200">
+                            <!-- 전국 규제 리스트가 여기에 꽂힙니다 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
 
                     <div class="overflow-x-auto max-h-[600px] border border-slate-100 rounded-lg">
                         <table class="w-full text-left border-collapse relative">
@@ -3975,7 +3995,7 @@ async function fetchChungyangInfo(keyword, address = "") {
 
         // 🌟 탭 전환 함수 덮어쓰기 (원래의 넓은 여백과 폰트 크기로 복구)
         window.switchTab = function(tab) {
-            const tabs = ['gongsi', 'siga', 'daejang', 'renewal'];
+            const tabs = ['gongsi', 'siga', 'daejang', 'renewal', 'residency'];
             tabs.forEach(t => {
                 const btn = document.getElementById('tab-' + t);
                 const content = document.getElementById('content-' + t);
@@ -3998,87 +4018,147 @@ async function fetchChungyangInfo(keyword, address = "") {
             }, 50);
         };
 
-        // 🌟 실거주 요건 진단 실행 함수
-        function checkResidencyRequirement() {
+        // 🌟 5번 탭 전용 아코디언 토글 함수
+        window.toggleSnapshot = function() {
+            const content = document.getElementById('snapshot-content');
+            const icon = document.getElementById('snapshot-icon');
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                icon.innerText = "▲";
+            } else {
+                content.classList.add('hidden');
+                icon.innerText = "▼";
+            }
+        };
+
+        // 🌟 실거주 요건 진단 및 연혁 스캔 실행
+        window.checkResidencyRequirement = function() {
             const fullAddress = document.getElementById('address').value;
             const acqDateInput = document.getElementById('acqDate').value;
-            const resultBox = document.getElementById('residency-result-box');
-
+            
             if (!fullAddress) {
-                alert("먼저 상단에서 대상 부동산 주소를 스캔(검색)해 주세요.");
+                alert("좌측 패널에서 대상 부동산 주소를 먼저 검색(스캔)해 주세요.");
                 return;
             }
             if (!acqDateInput) {
-                alert("취득일을 선택해 주세요.");
+                alert("취득일(잔금청산일 또는 등기접수일 중 빠른 날)을 선택해 주세요.");
                 return;
             }
 
-            // regulationData.js 에 있는 판별 엔진 호출
+            // 1. 핵심 진단 판별 (기존)
             const result = window.checkRegulationStatus(fullAddress, acqDateInput);
+            if (result.error) return;
+
+            // 2. 해당 지역 전체 연혁 가져오기 (신규)
+            const historyData = window.getRegionHistory(fullAddress);
+
+            // 3. 취득일 당시 전국 스냅샷 가져오기 (신규)
+            const snapshotData = window.getNationalSnapshot(acqDateInput);
+
+            // 4. 화면에 그리기
+            renderResidencyResult(result, historyData, snapshotData, acqDateInput, fullAddress);
+        };
+
+        // 🌟 5번 탭 결과 통합 렌더링 함수
+        function renderResidencyResult(result, history, snapshot, acqDateStr, fullAddress) {
+            const resultBox = document.getElementById('residency-result-box');
+            const historyBox = document.getElementById('region-history-box');
+            const snapshotBox = document.getElementById('national-snapshot-box');
             
             resultBox.classList.remove('hidden');
+            historyBox.classList.remove('hidden');
+            snapshotBox.classList.remove('hidden');
 
-            if (result.error) {
-                alert("입력값이 올바르지 않습니다.");
-                return;
-            }
-
-            if (result.isBeforeLaw) {
-                renderResidencyResult(false, "취득일이 2017년 8월 2일 이전이므로 지역과 무관하게 거주 요건이 없습니다.", null);
-            } else if (result.isRegulated) {
-                renderResidencyResult(true, `취득 당시 해당 지역(${result.targetRegionName})은 조정대상지역이었습니다.`, result.startDate);
-            } else {
-                renderResidencyResult(false, "취득 당시 해당 지역은 비조정대상지역이었습니다.", null);
-            }
-        }
-
-        // 🌟 결과 화면(UI) 렌더링 함수
-        function renderResidencyResult(isRegulated, mainText, startDate) {
-            const resultBox = document.getElementById('residency-result-box');
-            
-            if (isRegulated) {
-                resultBox.className = "rounded-xl border p-4 shadow-sm transition-all duration-300 bg-rose-50 border-rose-200";
-                
-                // 🌟 [수정된 부분] 2017.08.03 이전 지정 지역과 이후 지정 지역의 특례 기준일 분리
+            // --- 1. 메인 진단 박스 ---
+            if (result.isRegulated) {
+                resultBox.className = "rounded-xl border p-5 shadow-sm transition-all duration-300 bg-rose-50 border-rose-200 mb-6";
                 let exemptionGuide = "";
-                const sDate = new Date(startDate);
+                const sDate = new Date(result.startDate);
                 const lawDate = new Date("2017-08-03");
 
                 if (sDate < lawDate) {
-                    // 16.11.03, 17.06.19 등 8.2대책 이전 지정 지역
-                    exemptionGuide = `
-                        해당 지역은 거주요건이 신설된 8.2 대책 이전에 조정대상지역으로 지정된 곳입니다.<br>
-                        만약 무주택 1세대가 <b>2017년 8월 2일 이전에 매매계약을 체결하고 계약금을 지급한 경우</b> 거주 요건이 면제될 수 있습니다.
-                    `;
+                    exemptionGuide = `해당 지역은 거주요건이 신설된 8.2 대책 이전에 조정대상지역으로 지정된 곳입니다.<br>만약 무주택 1세대가 <b>2017년 8월 2일 이전에 매매계약을 체결하고 계약금을 지급한 경우</b> 거주 요건이 면제될 수 있습니다.`;
                 } else {
-                    // 8.2대책 이후 지정 지역
-                    exemptionGuide = `
-                        해당 지역의 조정지역 지정 공고(효력발생)일은 <b>${startDate}</b> 입니다.<br>
-                        만약 무주택 1세대가 <b>해당 공고일 이전에 매매계약을 체결하고 계약금을 지급한 경우</b> 거주 요건이 면제될 수 있습니다.
-                    `;
+                    exemptionGuide = `해당 지역의 조정지역 지정 공고(효력발생)일은 <b>${result.startDate}</b> 입니다.<br>만약 무주택 1세대가 <b>해당 공고일 이전에 매매계약을 체결하고 계약금을 지급한 경우</b> 거주 요건이 면제될 수 있습니다.`;
                 }
 
                 resultBox.innerHTML = `
-                    <p class="text-sm font-black text-rose-800 mb-1 flex items-center">
-                        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                        [원칙] 실거주 2년 필수!
+                    <p class="text-base font-black text-rose-800 mb-2 flex items-center">
+                        <svg class="w-6 h-6 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        [원칙] 실거주 2년 요건 충족 필수!
                     </p>
-                    <p class="text-xs text-rose-700 font-bold mb-3">${mainText}</p>
-                    <div class="bg-white p-3 rounded-lg border border-rose-100 text-[11px] text-slate-600 leading-relaxed">
+                    <p class="text-sm text-rose-700 font-bold mb-4">입력하신 취득일(${acqDateStr}) 당시, 해당 지역(${result.targetRegionName})은 조정대상지역이었습니다.</p>
+                    <div class="bg-white p-4 rounded-xl border border-rose-100 text-xs text-slate-600 leading-relaxed shadow-sm">
                         <p class="font-bold text-slate-800 mb-1">💡 무주택자 예외 확인</p>
-                        ${exemptionGuide}<br>
-                        <a href="https://www.micro-tax.com" target="_blank" class="inline-block mt-2 font-bold text-indigo-600 hover:underline">정확한 비과세 진단은 강승완 세무사에게 문의하세요 ↗</a>
+                        ${exemptionGuide}
                     </div>
                 `;
             } else {
-                resultBox.className = "rounded-xl border p-4 shadow-sm transition-all duration-300 bg-emerald-50 border-emerald-200";
+                resultBox.className = "rounded-xl border p-5 shadow-sm transition-all duration-300 bg-emerald-50 border-emerald-200 mb-6";
+                let reason = result.isBeforeLaw ? "취득일이 2017년 8월 2일 이전이므로 지역과 무관하게 거주 요건이 없습니다." : "취득 당시 해당 지역은 비조정대상지역이었습니다.";
                 resultBox.innerHTML = `
-                    <p class="text-sm font-black text-emerald-800 mb-1 flex items-center">
-                        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                        실거주 의무 없음!
+                    <p class="text-base font-black text-emerald-800 mb-2 flex items-center">
+                        <svg class="w-6 h-6 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        실거주 의무 없음! (2년 보유만 충족)
                     </p>
-                    <p class="text-xs text-emerald-700 font-bold">${mainText}<br>2년 이상 보유만 하시면 실거주 요건 없이 비과세 특례가 적용됩니다.</p>
+                    <p class="text-sm text-emerald-700 font-bold">${reason}</p>
                 `;
+            }
+
+            // --- 2. 해당 지역 규제 이력서 ---
+            let hTitle = history ? history.regionName : "평생 비규제 지역";
+            let hList = "";
+            if (history && history.periods.length > 0) {
+                hList = history.periods.map(p => {
+                    let endText = p.end === "2999-12-31" ? "현재 (규제 유지)" : p.end;
+                    let isAcqPeriod = (new Date(acqDateStr) >= new Date(p.start) && new Date(acqDateStr) <= new Date(p.end));
+                    let highlight = isAcqPeriod ? "bg-rose-100 text-rose-800 border-rose-300 font-black shadow-sm" : "bg-white text-slate-600 border-slate-200";
+                    let badge = isAcqPeriod ? `<span class="ml-2 text-[10px] bg-rose-500 text-white px-2 py-0.5 rounded-full">취득 시점</span>` : "";
+                    return `<div class="px-4 py-2 rounded-lg border ${highlight} text-sm mb-2 flex items-center">
+                                <span class="w-2 h-2 rounded-full ${isAcqPeriod ? 'bg-rose-500' : 'bg-slate-400'} mr-3"></span>
+                                ${p.start} ~ ${endText} ${badge}
+                            </div>`;
+                }).join('');
+            } else {
+                hList = `<p class="text-sm text-slate-500 font-bold ml-2">해당 지역은 조정대상지역으로 지정된 이력이 없습니다.</p>`;
+            }
+
+            historyBox.innerHTML = `
+                <h3 class="text-sm font-extrabold text-indigo-900 mb-3 flex items-center">
+                    <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs mr-2">타임라인</span>
+                    [${hTitle}] 지정/해제 이력
+                </h3>
+                <div>${hList}</div>
+            `;
+
+            // --- 3. 전국 스냅샷 렌더링 ---
+            document.getElementById('snapshot-title').innerHTML = `📅 ${acqDateStr} 기준 <span class="text-indigo-600 ml-1">전국 조정대상지역 현황 (${snapshot.length}곳)</span> 보기`;
+            const content = document.getElementById('snapshot-content');
+            
+            if (snapshot.length === 0) {
+                content.innerHTML = `<p class="text-sm text-slate-500 text-center font-bold">해당 일자에는 전국에 조정대상지역이 없었습니다.</p>`;
+            } else {
+                // 광역지자체별로 예쁘게 그룹화 (서울, 경기, 인천 등)
+                let groups = {};
+                snapshot.forEach(reg => {
+                    let city = reg.split(' ')[0]; // 예: 서울특별시, 경기도
+                    let rest = reg.replace(city, '').trim() || "전 지역";
+                    if (!groups[city]) groups[city] = [];
+                    groups[city].push(rest);
+                });
+
+                let snapHtml = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
+                for (let city in groups) {
+                    let tags = groups[city].map(r => `<span class="inline-block bg-white border border-slate-200 text-slate-700 text-xs px-2.5 py-1 rounded-md m-0.5 shadow-sm">${r}</span>`).join('');
+                    snapHtml += `
+                        <div class="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">
+                            <p class="text-xs font-black text-indigo-800 mb-2 border-b border-indigo-200 pb-1">${city} <span class="text-indigo-500 font-normal">(${groups[city].length})</span></p>
+                            <div>${tags}</div>
+                        </div>
+                    `;
+                }
+                snapHtml += `</div>`;
+                content.innerHTML = snapHtml;
             }
         }
         
