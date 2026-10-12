@@ -465,7 +465,28 @@
                         </div>
                     </div>
 
-                    <!-- 🌟 탭 5: 비과세 실거주 진단 및 규제 연혁 (신규 독립 탭) -->
+                    <!-- 🌟 4번 탭의 표(Table) 부분 (이게 먼저 와야 합니다!) -->
+                    <div class="overflow-x-auto max-h-[600px] border border-slate-100 rounded-lg">
+                        <table class="w-full text-left border-collapse relative">
+                            <thead class="sticky top-0 bg-slate-50 shadow-sm z-10">
+                                <tr class="border-b border-slate-200 text-slate-500 text-[11px] font-bold uppercase tracking-wider" id="renewal-table-head">
+                                    <th class="py-3 px-4 whitespace-nowrap">자치구</th>
+                                    <th class="py-3 px-4 whitespace-nowrap">사업구분</th>
+                                    <th class="py-3 px-4 min-w-[150px]">사업명(구역명)</th>
+                                    <th class="py-3 px-4 whitespace-nowrap">진행단계(인가현황)</th>
+                                    <th class="py-3 px-4 min-w-[120px]">대표지번</th>
+                                    <th class="py-3 px-4 text-center whitespace-nowrap">상세</th>
+                                </tr>
+                            </thead>
+                            <tbody id="renewal-table-body" class="text-xs divide-y divide-slate-100 text-slate-700">
+                                <tr><td colspan="6" class="py-12 text-center text-slate-400 font-medium">검색 조건을 입력하고 스캔 버튼을 눌러주세요.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div> <!-- 🚨 4번 탭(content-renewal)이 완전히 끝나는 지점 🚨 -->
+
+            <!-- 🌟 탭 5: 비과세 실거주 진단 및 규제 연혁 (여기에 위치해야 합니다!) -->
             <div id="content-residency" class="hidden space-y-6">
                 <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
                     <h2 class="text-lg font-extrabold text-slate-800 mb-2 flex items-center">
@@ -501,29 +522,8 @@
                 </div>
             </div>
 
-                    <div class="overflow-x-auto max-h-[600px] border border-slate-100 rounded-lg">
-                        <table class="w-full text-left border-collapse relative">
-                            <thead class="sticky top-0 bg-slate-50 shadow-sm z-10">
-                                <tr class="border-b border-slate-200 text-slate-500 text-[11px] font-bold uppercase tracking-wider" id="renewal-table-head">
-                                    <th class="py-3 px-4 whitespace-nowrap">자치구</th>
-                                    <th class="py-3 px-4 whitespace-nowrap">사업구분</th>
-                                    <th class="py-3 px-4 min-w-[150px]">사업명(구역명)</th>
-                                    <th class="py-3 px-4 whitespace-nowrap">진행단계(인가현황)</th>
-                                    <th class="py-3 px-4 min-w-[120px]">대표지번</th>
-                                    <th class="py-3 px-4 text-center whitespace-nowrap">상세</th>
-                                </tr>
-                            </thead>
-                            <tbody id="renewal-table-body" class="text-xs divide-y divide-slate-100 text-slate-700">
-                                <tr><td colspan="6" class="py-12 text-center text-slate-400 font-medium">검색 조건을 입력하고 스캔 버튼을 눌러주세요.</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-                   
-       </div>
-    </div>  
-   </div>  
+        </div> <!-- 우측 전체 패널 닫기 -->
+    </div> <!-- 메인 3단 그리드 닫기 -->
      
     
     <!-- 🌟 하단으로 이동된 면책 조항 및 주의 안내 -->
