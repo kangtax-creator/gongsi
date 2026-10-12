@@ -198,32 +198,34 @@ const regulationDB = [
     { region: "인천광역시 중구 덕교동", periods: [] },
     { region: "인천광역시 중구 무의동", periods: [] },
 
-    // 충청북도 청주시 핀셋 제외
-    { region: "충청북도 청주시 낭성면", periods: [] },
-    { region: "충청북도 청주시 미원면", periods: [] },
-    { region: "충청북도 청주시 가덕면", periods: [] },
-    { region: "충청북도 청주시 남일면", periods: [] },
-    { region: "충청북도 청주시 문의면", periods: [] },
-    { region: "충청북도 청주시 남이면", periods: [] },
-    { region: "충청북도 청주시 현도면", periods: [] },
-    { region: "충청북도 청주시 강내면", periods: [] },
-    { region: "충청북도 청주시 옥산면", periods: [] },
-    { region: "충청북도 청주시 내수읍", periods: [] },
-    { region: "충청북도 청주시 북이면", periods: [] },
+    // 충청북도 청주시 핀셋 제외 (구 단위 명시)
+    { region: "충청북도 청주시 상당구 낭성면", periods: [] },
+    { region: "충청북도 청주시 상당구 미원면", periods: [] },
+    { region: "충청북도 청주시 상당구 가덕면", periods: [] },
+    { region: "충청북도 청주시 상당구 남일면", periods: [] },
+    { region: "충청북도 청주시 상당구 문의면", periods: [] },
+    { region: "충청북도 청주시 서원구 남이면", periods: [] },
+    { region: "충청북도 청주시 서원구 현도면", periods: [] },
+    { region: "충청북도 청주시 흥덕구 강내면", periods: [] },
+    { region: "충청북도 청주시 흥덕구 옥산면", periods: [] },
+    { region: "충청북도 청주시 청원구 내수읍", periods: [] },
+    { region: "충청북도 청주시 청원구 북이면", periods: [] },
 
-    // 충청남도 천안/논산/공주 핀셋 제외
-    { region: "충청남도 천안시 목천읍", periods: [] },
-    { region: "충청남도 천안시 풍세면", periods: [] },
-    { region: "충청남도 천안시 광덕면", periods: [] },
-    { region: "충청남도 천안시 북면", periods: [] },
-    { region: "충청남도 천안시 성남면", periods: [] },
-    { region: "충청남도 천안시 수신면", periods: [] },
-    { region: "충청남도 천안시 병천면", periods: [] },
-    { region: "충청남도 천안시 동면", periods: [] },
-    { region: "충청남도 천안시 성환읍", periods: [] },
-    { region: "충청남도 천안시 성거읍", periods: [] },
-    { region: "충청남도 천안시 직산읍", periods: [] },
-    { region: "충청남도 천안시 입장면", periods: [] },
+    // 충청남도 천안시 핀셋 제외 (구 단위 명시)
+    { region: "충청남도 천안시 동남구 목천읍", periods: [] },
+    { region: "충청남도 천안시 동남구 풍세면", periods: [] },
+    { region: "충청남도 천안시 동남구 광덕면", periods: [] },
+    { region: "충청남도 천안시 동남구 북면", periods: [] },
+    { region: "충청남도 천안시 동남구 성남면", periods: [] },
+    { region: "충청남도 천안시 동남구 수신면", periods: [] },
+    { region: "충청남도 천안시 동남구 병천면", periods: [] },
+    { region: "충청남도 천안시 동남구 동면", periods: [] },
+    { region: "충청남도 천안시 서북구 성환읍", periods: [] },
+    { region: "충청남도 천안시 서북구 성거읍", periods: [] },
+    { region: "충청남도 천안시 서북구 직산읍", periods: [] },
+    { region: "충청남도 천안시 서북구 입장면", periods: [] },
+
+    // (논산, 공주는 구가 없으므로 기존 유지)
     { region: "충청남도 논산시 강경읍", periods: [] },
     { region: "충청남도 논산시 연무읍", periods: [] },
     { region: "충청남도 논산시 성동면", periods: [] },
@@ -248,14 +250,14 @@ const regulationDB = [
     { region: "충청남도 공주시 사곡면", periods: [] },
     { region: "충청남도 공주시 신풍면", periods: [] },
 
-    // 경상북도 포항시 핀셋 제외
-    { region: "경상북도 포항시 구룡포읍", periods: [] },
-    { region: "경상북도 포항시 연일읍", periods: [] },
-    { region: "경상북도 포항시 오천읍", periods: [] },
-    { region: "경상북도 포항시 대송면", periods: [] },
-    { region: "경상북도 포항시 동해면", periods: [] },
-    { region: "경상북도 포항시 장기면", periods: [] },
-    { region: "경상북도 포항시 호미곶면", periods: [] }
+    // 경상북도 포항시 핀셋 제외 (구 단위 명시)
+    { region: "경상북도 포항시 남구 구룡포읍", periods: [] },
+    { region: "경상북도 포항시 남구 연일읍", periods: [] },
+    { region: "경상북도 포항시 남구 오천읍", periods: [] },
+    { region: "경상북도 포항시 남구 대송면", periods: [] },
+    { region: "경상북도 포항시 남구 동해면", periods: [] },
+    { region: "경상북도 포항시 남구 장기면", periods: [] },
+    { region: "경상북도 포항시 남구 호미곶면", periods: [] }
 ];
 
 /**
