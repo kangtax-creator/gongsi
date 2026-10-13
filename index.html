@@ -4111,12 +4111,15 @@ async function fetchChungyangInfo(keyword, address = "") {
                     let isAcqPeriod = (new Date(acqDateStr) >= new Date(p.start) && new Date(acqDateStr) <= new Date(p.end));
                     let highlight = isAcqPeriod ? "bg-rose-100 text-rose-800 border-rose-300 font-black shadow-sm" : "bg-white text-slate-600 border-slate-200";
                     
-                    // 🌟 뱃지가 찌그러지거나 줄바꿈되지 않도록 whitespace-nowrap, shrink-0 적용 및 우측 끝(ml-auto) 정렬
                     let badge = isAcqPeriod ? `<span class="ml-auto text-[10px] bg-rose-500 text-white px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 shadow-sm">취득 시점</span>` : "";
                     
+                    // 🌟 모바일(md 이하)에서만 작동하는 <br> 태그 추가 및 줄간격(leading-relaxed) 최적화
                     return `<div class="px-3 md:px-4 py-2.5 rounded-lg border ${highlight} text-sm mb-2 flex items-center">
                                 <span class="w-2 h-2 rounded-full ${isAcqPeriod ? 'bg-rose-500' : 'bg-slate-400'} mr-2.5 shrink-0"></span>
-                                <span class="tracking-tight mr-2">${p.start} ~ ${endText}</span>
+                                <span class="tracking-tight mr-2 leading-relaxed">
+                                    ${p.start} ~ <br class="md:hidden">
+                                    <span class="inline-block">${endText}</span>
+                                </span>
                                 ${badge}
                             </div>`;
                 }).join('');
