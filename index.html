@@ -4110,10 +4110,14 @@ async function fetchChungyangInfo(keyword, address = "") {
                     let endText = p.end === "2999-12-31" ? "현재 (규제 유지)" : p.end;
                     let isAcqPeriod = (new Date(acqDateStr) >= new Date(p.start) && new Date(acqDateStr) <= new Date(p.end));
                     let highlight = isAcqPeriod ? "bg-rose-100 text-rose-800 border-rose-300 font-black shadow-sm" : "bg-white text-slate-600 border-slate-200";
-                    let badge = isAcqPeriod ? `<span class="ml-2 text-[10px] bg-rose-500 text-white px-2 py-0.5 rounded-full">취득 시점</span>` : "";
-                    return `<div class="px-4 py-2 rounded-lg border ${highlight} text-sm mb-2 flex items-center">
-                                <span class="w-2 h-2 rounded-full ${isAcqPeriod ? 'bg-rose-500' : 'bg-slate-400'} mr-3"></span>
-                                ${p.start} ~ ${endText} ${badge}
+                    
+                    // 🌟 뱃지가 찌그러지거나 줄바꿈되지 않도록 whitespace-nowrap, shrink-0 적용 및 우측 끝(ml-auto) 정렬
+                    let badge = isAcqPeriod ? `<span class="ml-auto text-[10px] bg-rose-500 text-white px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 shadow-sm">취득 시점</span>` : "";
+                    
+                    return `<div class="px-3 md:px-4 py-2.5 rounded-lg border ${highlight} text-sm mb-2 flex items-center">
+                                <span class="w-2 h-2 rounded-full ${isAcqPeriod ? 'bg-rose-500' : 'bg-slate-400'} mr-2.5 shrink-0"></span>
+                                <span class="tracking-tight mr-2">${p.start} ~ ${endText}</span>
+                                ${badge}
                             </div>`;
                 }).join('');
             } else {
