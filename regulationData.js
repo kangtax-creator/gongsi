@@ -433,52 +433,68 @@ window.checkRegulationStatus = function(fullAddress, acqDateInput) {
     };
 };
 
-// 🌟 특정 주소의 규제/해제 연혁 전체 조회 엔진
+// 🌟 특정 주소의 규제/해제 연혁 전체 조회 엔진 (업그레이드: 상/하위 지역 이력 완벽 병합)
 window.getRegionHistory = function(fullAddress) {
     if (!fullAddress) return null;
+
+    // 1. 주소 정규화 (메인 엔진과 동일하게 특별자치도 등 호환)
     let normAddress = fullAddress
         .replace(/^서울\s/, "서울특별시 ").replace(/^경기\s/, "경기도 ")
         .replace(/^인천\s/, "인천광역시 ").replace(/^부산\s/, "부산광역시 ")
         .replace(/^대구\s/, "대구광역시 ").replace(/^대전\s/, "대전광역시 ")
         .replace(/^광주\s/, "광주광역시 ").replace(/^울산\s/, "울산광역시 ")
-        .replace(/^세종\s/, "세종특별자치시 ").replace(/^경북\s/, "경상북도 ")
-        .replace(/^경남\s/, "경상남도 ").replace(/^전북\s/, "전라북도 ")
-        .replace(/^전남\s/, "전라남도 ").replace(/^충북\s/, "충청북도 ")
-        .replace(/^충남\s/, "충청남도 ").replace(/^강원\s/, "강원도 ")
-        .replace(/^제주\s/, "제주특별자치도 ");
+        .replace(/^세종\s/, "세종특별자치시 ").replace(/^세종시\s/, "세종특별자치시 ")
+        .replace(/^경북\s/, "경상북도 ").replace(/^경남\s/, "경상남도 ")
+        .replace(/^전북\s/, "전라북도 ").replace(/^전남\s/, "전라남도 ")
+        .replace(/^충북\s/, "충청북도 ").replace(/^충남\s/, "충청남도 ")
+        .replace(/^강원\s/, "강원도 ").replace(/^제주\s/, "제주특별자치도 ")
+        .replace(/전북특별자치도/, "전라북도").replace(/강원특별자치도/, "강원도");
 
-    for (let reg of sortedRegulationDB) {
-        if (normAddress.includes(reg.region)) {
-            return { regionName: reg.region, periods: reg.periods };
-        }
+    // 글자 수가 긴(구체적인) 주소부터 매칭
+    const sortedDB = [...regulationDB].sort((a, b) => b.region.length - a.region.length);
+    const matchedRegions = sortedDB.filter(reg => normAddress.includes(reg.region));
+
+    if (matchedRegions.length === 0) return null;
+
+    // 🚨 핀셋 비규제 예외 구역 처리 (빈 배열)
+    if (!matchedRegions[0].periods || matchedRegions[0].periods.length === 0) {
+        return { regionName: matchedRegions[0].region, periods: [] };
     }
-    return null;
-};
 
-// 🌟 특정 날짜 기준 전국 규제지역 스냅샷 조회 엔진
-window.getNationalSnapshot = function(dateStr) {
-    if (!dateStr) return [];
-    const targetDate = new Date(dateStr);
-    let snapshot = [];
+    // 🌟 2. 매칭된 모든 지역(동, 구, 시)의 규제 기간을 하나로 싹 긁어모음
+    let rawPeriods = [];
+    matchedRegions.forEach(reg => {
+        if (reg.periods) {
+            rawPeriods.push(...reg.periods);
+        }
+    });
 
-    for (let reg of sortedRegulationDB) {
-        // periods가 비어있는 핀셋 제외 구역은 목록에서 스킵 (규제지역이 아니므로)
-        if (!reg.periods || reg.periods.length === 0) continue; 
-        
-        let isReg = false;
-        for (let p of reg.periods) {
-            let sDate = new Date(p.start);
-            let eDate = new Date(p.end);
-            if (targetDate >= sDate && targetDate <= eDate) {
-                isReg = true;
-                break;
+    // 3. 시작일 기준으로 시간순 오름차순 정렬
+    rawPeriods.sort((a, b) => new Date(a.start) - new Date(b.start));
+
+    // 4. 기간이 겹치는 경우 하나의 기간으로 깔끔하게 병합 (Merge Intervals)
+    let mergedPeriods = [];
+    if (rawPeriods.length > 0) {
+        mergedPeriods.push({ start: rawPeriods[0].start, end: rawPeriods[0].end });
+        for (let i = 1; i < rawPeriods.length; i++) {
+            let current = rawPeriods[i];
+            let last = mergedPeriods[mergedPeriods.length - 1];
+
+            let currentStart = new Date(current.start);
+            let lastEnd = new Date(last.end);
+
+            if (currentStart <= lastEnd) {
+                // 기간이 겹치면 종료일을 더 늦은 날짜로 연장
+                let currentEnd = new Date(current.end);
+                if (currentEnd > lastEnd) {
+                    last.end = current.end;
+                }
+            } else {
+                // 겹치지 않으면 새로운 줄(타임라인)로 추가
+                mergedPeriods.push({ start: current.start, end: current.end });
             }
         }
-        if (isReg) {
-            snapshot.push(reg.region);
-        }
     }
-    
-    // 긴 주소(핀셋 규제 등)로 정렬된 것을 다시 광역시/도 기준으로 예쁘게 가나다 정렬
-    return snapshot.sort();
+
+    return { regionName: matchedRegions[0].region, periods: mergedPeriods };
 };
