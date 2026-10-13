@@ -347,7 +347,7 @@ function checkRegulationStatus(fullAddress, acqDateStr) {
 window.checkRegulationStatus = function(fullAddress, acqDateInput) {
     if (!fullAddress || !acqDateInput) return { error: true };
 
-    // 🌟 [핵심 버그 픽스] 카카오 API의 줄임말(경기, 경북, 충남 등)을 DB의 정식명칭으로 완벽하게 자동 치환
+    // 🌟 1. 주소 자동 치환 및 신규 행정구역(특별자치도) 완벽 호환
     let normAddress = fullAddress
         .replace(/^서울\s/, "서울특별시 ")
         .replace(/^경기\s/, "경기도 ")
@@ -358,6 +358,7 @@ window.checkRegulationStatus = function(fullAddress, acqDateInput) {
         .replace(/^광주\s/, "광주광역시 ")
         .replace(/^울산\s/, "울산광역시 ")
         .replace(/^세종\s/, "세종특별자치시 ")
+        .replace(/^세종시\s/, "세종특별자치시 ")
         .replace(/^경북\s/, "경상북도 ")
         .replace(/^경남\s/, "경상남도 ")
         .replace(/^전북\s/, "전라북도 ")
@@ -365,7 +366,22 @@ window.checkRegulationStatus = function(fullAddress, acqDateInput) {
         .replace(/^충북\s/, "충청북도 ")
         .replace(/^충남\s/, "충청남도 ")
         .replace(/^강원\s/, "강원도 ")
-        .replace(/^제주\s/, "제주특별자치도 ");
+        .replace(/^제주\s/, "제주특별자치도 ")
+        .replace(/전북특별자치도/, "전라북도")  // 신규 행정구역 -> 구 명칭으로 맵핑
+        .replace(/강원특별자치도/, "강원도");   // 신규 행정구역 -> 구 명칭으로 맵핑
+
+    // 🚨 2. [안전망] 광역지자체(시/도) 명칭이 정확히 존재하는지 검증
+    const validSido = [
+        "서울특별시", "부산광역시", "대구광역시", "인천광역시", "광주광역시", "대전광역시", "울산광역시", "세종특별자치시", 
+        "경기도", "강원도", "충청북도", "충청남도", "전라북도", "전라남도", "경상북도", "경상남도", "제주특별자치도"
+    ];
+    
+    let isValidFormat = validSido.some(sido => normAddress.includes(sido));
+    
+    // 시/도 명칭이 없으면 행정구역 개편이나 오타로 간주하여 수동 검토(isUnknown) 반환
+    if (!isValidFormat) {
+        return { isUnknown: true };
+    }
 
     const acqDate = new Date(acqDateInput);
     const lawDate = new Date("2017-08-03"); 
