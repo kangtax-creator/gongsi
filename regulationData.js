@@ -498,3 +498,31 @@ window.getRegionHistory = function(fullAddress) {
 
     return { regionName: matchedRegions[0].region, periods: mergedPeriods };
 };
+
+// 🌟 특정 날짜 기준 전국 규제지역 스냅샷 조회 엔진 (이 부분이 빠져서 버튼 에러가 났습니다!)
+window.getNationalSnapshot = function(dateStr) {
+    if (!dateStr) return [];
+    const targetDate = new Date(dateStr);
+    let snapshot = [];
+
+    for (let reg of sortedRegulationDB) {
+        // periods가 비어있는 핀셋 제외 구역은 목록에서 스킵 (규제지역이 아니므로)
+        if (!reg.periods || reg.periods.length === 0) continue; 
+        
+        let isReg = false;
+        for (let p of reg.periods) {
+            let sDate = new Date(p.start);
+            let eDate = new Date(p.end);
+            if (targetDate >= sDate && targetDate <= eDate) {
+                isReg = true;
+                break;
+            }
+        }
+        if (isReg) {
+            snapshot.push(reg.region);
+        }
+    }
+    
+    // 긴 주소(핀셋 규제 등)로 정렬된 것을 다시 가나다 정렬
+    return snapshot.sort();
+};
