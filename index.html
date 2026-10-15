@@ -493,14 +493,18 @@
                 </div>
             </div> <!-- 🚨 4번 탭(content-renewal)이 완전히 끝나는 지점 🚨 -->
 
-            <!-- 🌟 탭 5: 비과세 실거주 진단 및 규제 연혁 (여기에 위치해야 합니다!) -->
+            <!-- 🌟 탭 5: 비과세 실거주 진단 및 규제 연혁 (신규 독립 탭) -->
             <div id="content-residency" class="hidden space-y-6">
                 <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
-                    <h2 class="text-lg font-extrabold text-slate-800 mb-2 flex items-center">
-                        <span class="w-2 h-2 bg-rose-500 rounded-full mr-2"></span> 양도소득세 비과세 실거주 진단 및 연혁
+                    
+                    <!-- 🌟 모바일 한 줄 고정(whitespace-nowrap, tracking-tight) 및 반응형 폰트 크기 적용 -->
+                    <h2 class="text-[15px] md:text-lg tracking-tighter md:tracking-normal whitespace-nowrap font-extrabold text-slate-800 mb-2 flex items-center">
+                        <span class="w-2 h-2 bg-rose-500 rounded-full mr-2 shrink-0"></span> 양도소득세 비과세 실거주 진단 및 연혁
                     </h2>
+                    
+                    <!-- 🌟 모바일(위에서) / PC(좌측에서) 반응형 텍스트 스위칭 -->
                     <p class="text-xs text-slate-500 mb-6 leading-relaxed">
-                        좌측에서 스캔한 <b>대상 부동산 주소</b>를 기준으로 판별합니다. <b>실제 취득일(잔금청산일/등기접수일 중 빠른 날)</b>을 입력해 주세요.
+                        <span class="md:hidden">위에서</span><span class="hidden md:inline">좌측에서</span> 스캔한 <b>대상 부동산 주소</b>를 기준으로 판별합니다. <b>실제 취득일(잔금청산일/등기접수일 중 빠른 날)</b>을 입력해 주세요.
                     </p>
                     
                     <div class="flex gap-2 mb-6">
@@ -4168,13 +4172,14 @@ async function fetchChungyangInfo(keyword, address = "") {
                 `;
             } else {
                 resultBox.className = "rounded-xl border p-5 shadow-sm transition-all duration-300 bg-emerald-50 border-emerald-200 mb-6";
-                let reason = result.isBeforeLaw ? "취득일이 2017년 8월 2일 이전이므로 지역과 무관하게 거주 요건이 없습니다." : "취득 당시 해당 지역은 비조정대상지역이었습니다.";
                 resultBox.innerHTML = `
-                    <p class="text-base font-black text-emerald-800 mb-2 flex items-center">
-                        <svg class="w-6 h-6 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    <p class="text-[14px] md:text-base tracking-tighter md:tracking-normal whitespace-nowrap font-black text-emerald-800 mb-2 flex items-center">
+                        <svg class="w-5 h-5 md:w-6 md:h-6 mr-1.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                         실거주 의무 없음! (2년 보유만 충족)
                     </p>
-                    <p class="text-sm text-emerald-700 font-bold">${reason}</p>
+                    <p class="text-xs md:text-sm text-emerald-700 font-bold leading-relaxed ml-1 md:ml-2">
+                        취득 당시 해당 지역은<br>비조정대상지역이었습니다.
+                    </p>
                 `;
             }
 
