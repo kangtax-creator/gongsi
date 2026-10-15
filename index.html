@@ -4089,7 +4089,7 @@ async function fetchChungyangInfo(keyword, address = "") {
             if (historyBox) historyBox.classList.add('hidden');
             if (snapshotBox) snapshotBox.classList.add('hidden');
 
-            // 🌟 2. 딜레이 3초(3000ms)로 증가시켜 딥서치 느낌 극대화
+            // 🌟 2. 딜레이 2.5초(2500ms)로 증가시켜 딥서치 느낌 극대화
             setTimeout(() => {
                 // 로딩이 끝나면 버튼을 원래의 상태로 복구
                 btn.classList.remove('bg-rose-600', 'cursor-not-allowed', 'relative', 'overflow-hidden');
@@ -4133,7 +4133,7 @@ async function fetchChungyangInfo(keyword, address = "") {
                 // 5. 화면에 그리기
                 renderResidencyResult(result, historyData, snapshotData, acqDateInput, fullAddress);
                 
-            }, 3000); // 3초 딜레이
+            }, 2500); // 2.5초 딜레이
         };
         
         // 🌟 5번 탭 결과 통합 렌더링 함수
@@ -4149,25 +4149,21 @@ async function fetchChungyangInfo(keyword, address = "") {
             // --- 1. 메인 진단 박스 ---
             if (result.isRegulated) {
                 resultBox.className = "rounded-xl border p-5 shadow-sm transition-all duration-300 bg-rose-50 border-rose-200 mb-6";
-                let exemptionGuide = "";
-                const sDate = new Date(result.startDate);
-                const lawDate = new Date("2017-08-03");
-
-                if (sDate < lawDate) {
-                    exemptionGuide = `해당 지역은 거주요건이 신설된 8.2 대책 이전에 조정대상지역으로 지정된 곳입니다.<br>만약 무주택 1세대가 <b>2017년 8월 2일 이전에 매매계약을 체결하고 계약금을 지급한 경우</b> 거주 요건이 면제될 수 있습니다.`;
-                } else {
-                    exemptionGuide = `해당 지역의 조정지역 지정 공고(효력발생)일은 <b>${result.startDate}</b> 입니다.<br>만약 무주택 1세대가 <b>해당 공고일 이전에 매매계약을 체결하고 계약금을 지급한 경우</b> 거주 요건이 면제될 수 있습니다.`;
-                }
-
                 resultBox.innerHTML = `
-                    <p class="text-base font-black text-rose-800 mb-2 flex items-center">
-                        <svg class="w-6 h-6 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    <p class="text-[14px] md:text-base tracking-tighter md:tracking-normal whitespace-nowrap font-black text-rose-800 mb-2 flex items-center">
+                        <svg class="w-5 h-5 md:w-6 md:h-6 mr-1.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                         [원칙] 실거주 2년 요건 충족 필수!
                     </p>
-                    <p class="text-sm text-rose-700 font-bold mb-4">입력하신 취득일(${acqDateStr}) 당시, 해당 지역(${result.targetRegionName})은 조정대상지역이었습니다.</p>
-                    <div class="bg-white p-4 rounded-xl border border-rose-100 text-xs text-slate-600 leading-relaxed shadow-sm">
-                        <p class="font-bold text-slate-800 mb-1">💡 무주택자 예외 확인</p>
-                        ${exemptionGuide}
+                    <p class="text-xs md:text-sm text-rose-700 font-bold leading-relaxed ml-1 md:ml-2">
+                        입력하신 취득일(<strong>${acqDateStr}</strong>) 당시, <br class="md:hidden">해당 지역(<strong>${result.targetRegionName}</strong>)은 <br class="md:hidden">조정대상지역이었습니다.
+                    </p>
+                    
+                    <div class="mt-4 bg-white p-4 rounded-xl border border-rose-100 text-xs text-slate-600 leading-relaxed shadow-sm">
+                        <p class="font-bold text-slate-800 mb-1 flex items-center">
+                            <span class="text-[14px] mr-1">💡</span> 무주택자 예외 확인
+                        </p>
+                        해당 지역은 거주요건이 신설된 8.2 대책 이전에 조정대상지역으로 지정된 곳입니다.<br>
+                        만약 무주택 1세대가 2017년 8월 2일 이전에 매매계약을 체결하고 계약금을 지급한 경우 거주 요건이 면제될 수 있습니다.
                     </div>
                 `;
             } else {
@@ -4217,7 +4213,12 @@ async function fetchChungyangInfo(keyword, address = "") {
             `;
 
             // --- 3. 전국 스냅샷 렌더링 ---
-            document.getElementById('snapshot-title').innerHTML = `📅 ${acqDateStr} 기준 <span class="text-indigo-600 ml-1">전국 조정대상지역 현황 (${snapshot.length}곳)</span> 보기`;
+            document.getElementById('snapshot-title').innerHTML = `
+                <div class="text-left leading-relaxed">
+                    📅 ${acqDateStr} 기준 <br class="md:hidden">
+                    <span class="text-indigo-600 md:ml-1">전국 조정대상지역 현황 (${snapshot.length}곳) 보기</span>
+                </div>
+            `;
             const content = document.getElementById('snapshot-content');
             
             if (snapshot.length === 0) {
