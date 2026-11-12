@@ -708,6 +708,13 @@
             <span id="modal-address-badge" class="hidden bg-white px-2 py-1 rounded text-[10px] md:text-xs text-indigo-600 border border-indigo-200 font-extrabold shadow-sm transition-all whitespace-nowrap ml-2">입력됨!</span>
         </div>
 
+        <div id="renewal-map-warning" class="hidden bg-rose-50 p-2.5 border-b border-rose-200 flex justify-between items-start md:items-center z-10 shadow-sm relative">
+            <p class="text-[11px] md:text-xs text-rose-800 font-bold flex items-start md:items-center leading-relaxed">
+                <svg class="w-4 h-4 mr-1.5 mt-0.5 md:mt-0 shrink-0 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                <span>현재 핀(마커)은 대표지번 기준이며, 지적도의 색상을 통해 <b>대략적인 블록(구역) 범위만 참고</b>해 주세요. (정확한 펜스 경계선이 아닙니다)</span>
+            </p>
+        </div>
+
         <!-- 🌟 [수정됨] 지도 이동 검색창 (모바일 반응형 레이아웃 적용) -->
         <div class="p-2 bg-slate-100 border-b border-slate-200 flex flex-col md:flex-row gap-2 z-10 shadow-sm relative">
             <input type="text" id="modalMapMoveInput" placeholder="이동할 동/읍/면/리 입력 (예: 제주도 애월읍 하귀리)" class="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 font-bold" onkeypress="if(event.key==='Enter') moveMapCenter('modalMapMoveInput')">
@@ -3493,6 +3500,13 @@ async function fetchChungyangInfo(keyword, address = "") {
                                 
                                 <div><span class="font-bold text-rose-700 block mb-1.5 mt-2 md:mt-0 flex items-center"><span class="w-1.5 h-1.5 bg-rose-500 rounded-full mr-1.5"></span>이주기간</span><span class="text-slate-400">시작:</span> <span class="font-medium">${d_mig_start}</span><br><span class="text-slate-400">종료:</span> <span class="font-medium">${d_mig_end}</span></div>
                                 <div><span class="font-bold text-rose-700 block mb-1.5 mt-2 md:mt-0 flex items-center"><span class="w-1.5 h-1.5 bg-rose-500 rounded-full mr-1.5"></span>착공일</span><span class="font-medium">${d_const}</span></div>
+                                
+                                <div class="col-span-2 md:col-span-4 mt-2 pt-3 border-t border-slate-100 flex justify-end">
+                                    <button type="button" onclick="viewRenewalOnMap('${addr}', '${name}')" class="shrink-0 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-2 rounded-lg text-[11px] md:text-xs font-bold transition-colors flex items-center shadow-sm">
+                                        <svg class="w-4 h-4 mr-1.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                                        지도에서 대략적 위치 보기
+                                    </button>
+                                </div>
                             </div>
                         </td>
                     `;
@@ -4247,6 +4261,47 @@ async function fetchChungyangInfo(keyword, address = "") {
                 content.innerHTML = snapHtml;
             }
         }
+
+        // 🌟 [추가] 정비구역 전용 지도 보기 함수
+        window.viewRenewalOnMap = function(addr, name) {
+            if (!addr || addr === "-") {
+                alert("해당 구역의 대표지번 정보가 없어 위치를 표시할 수 없습니다.");
+                return;
+            }
+            
+            // 1. 모달 띄우기
+            openMapModal();
+            
+            // 2. 경고 배너 표시
+            const warningBanner = document.getElementById('renewal-map-warning');
+            if (warningBanner) warningBanner.classList.remove('hidden');
+            
+            // 3. 지적편집도 강제 켜기 (안 켜져있을 경우만)
+            if (!isCadastralOn) {
+                toggleCadastralMap();
+            }
+            
+            // 4. 입력창에 주소 넣고 워프 스캔 실행
+            const modalInput = document.getElementById('modalMapMoveInput');
+            if (modalInput) {
+                // 대표지번이 길 경우 앞부분(핵심 주소)만 자르기 (예: "서울특별시 강남구 대치동 312-1 외 3필지" -> "서울특별시 강남구 대치동 312-1")
+                let cleanAddr = addr.split('외')[0].split(',')[0].trim();
+                modalInput.value = cleanAddr;
+                
+                // 모달 렌더링 후 이동되도록 약간의 딜레이
+                setTimeout(() => {
+                    moveMapCenter('modalMapMoveInput');
+                }, 400); 
+            }
+        };
+
+        // 🌟 [덮어쓰기] 지도 모달 닫을 때 정비구역 경고 배너도 같이 닫히도록 수정
+        const originalCloseMapModal = window.closeMapModal;
+        window.closeMapModal = function() {
+            originalCloseMapModal(); // 기존 닫기 기능 실행
+            const warningBanner = document.getElementById('renewal-map-warning');
+            if (warningBanner) warningBanner.classList.add('hidden'); // 배너 숨김
+        };
         
     </script>
 </body>
