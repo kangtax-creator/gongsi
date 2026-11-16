@@ -1258,15 +1258,13 @@ window.moveMapCenter = async function(inputId) {
             globalCurrentPnu = pnu; // 🌟 강남구 가짜 PNU 제거
             globalComplexName = "";
 
-            fetchDaejangInfo(globalCurrentPnu);
+            // 🌟 [수정] 대장(토지이용계획 포함) 조회를 기다렸다가 정비사업 자동 연동(스파이/싹쓸이 전략) 실행
+            fetchDaejangInfo(globalCurrentPnu).then(() => {
+                autoSyncRenewal(address, globalLandUseTags);
+            });
 
-            // 🌟 [병렬 스캔 엔진 가동] 대장, 실거래가, 정비사업을 동시에 출발시킵니다.
+            // 🌟 실거래가는 병렬로 즉시 출발
             fetchComplexTransactions();
-            
-            let renewalInput = document.getElementById('renewalName');
-            if (renewalInput && renewalInput.value) {
-                fetchSeoulRenewal();
-            }
                 let noticeBanner = document.getElementById('commercial-notice');
                 if (!noticeBanner) {
                     noticeBanner = document.createElement('div');
@@ -3350,9 +3348,50 @@ async function fetchChungyangInfo(keyword, address = "") {
             reader.readAsArrayBuffer(file);
         }
 
-        async function fetchSeoulRenewal() {
+        // 🌟 [신규 추가] 주소와 토지이용계획 데이터를 융합해 정비사업을 자동 스캔하는 하이브리드 엔진
+        window.autoSyncRenewal = function(address, tags) {
+            if (!address || !address.includes('서울')) return; // 서울시 API이므로 서울만 처리
+
+            // 주소에서 '구'와 '동' 추출 (예: 강남구 대치동)
+            let match = address.match(/([가-힣]+구)\s+([가-힣]+[동가읍면리])/);
+            if (!match) return;
+
+            let gu = match[1].replace('구', '');
+            let dong = match[2];
+            let specificZoneName = "";
+
+            // 🎯 [전략 A] 토지이용계획 태그에서 정비구역 이름 스파이 추출
+            if (tags && tags.length > 0) {
+                for (let t of tags) {
+                    if (t.includes('정비구역') || t.includes('촉진지구') || t.includes('재개발') || t.includes('재건축')) {
+                        // 예: "신림1재정비촉진구역" -> "신림1", "방배5구역주택재건축" -> "방배5"
+                        let zoneMatch = t.match(/([가-힣a-zA-Z0-9]+)(?:구역)?(?:주택)?(?:아파트)?(?:재정비|촉진|재개발|재건축)/);
+                        if (zoneMatch) {
+                            specificZoneName = zoneMatch[1];
+                            break;
+                        }
+                    }
+                }
+            }
+
+            const guInput = document.getElementById('renewalGu');
+            const nameInput = document.getElementById('renewalName');
+            
+            if (specificZoneName) {
+                // 전략 A 성공: 족집게 스캔
+                if (guInput) guInput.value = gu;
+                if (nameInput) nameInput.value = specificZoneName;
+                fetchSeoulRenewal(gu, specificZoneName, false);
+            } else {
+                // 전략 B: 해당 동(Dong) 싹쓸이 스캔 (동 이름을 검색어에 넣음)
+                if (guInput) guInput.value = gu;
+                if (nameInput) nameInput.value = dong;
+                fetchSeoulRenewal(gu, dong, true); // true: 동(Dong) 검색 모드 켬
+            }
+        };
+
+        async function fetchSeoulRenewal(autoGu = "", autoKeyword = "", isDongSearch = false) {
             const thead = document.getElementById('renewal-table-head');
-            // 🌟 [수정 1] 아실 스타일 표 뼈대: 모바일에서 자치구, 대표지번 숨김 (hidden md:table-cell)
             thead.innerHTML = `
                 <th class="py-3 px-2 md:px-4 whitespace-nowrap hidden md:table-cell">자치구</th>
                 <th class="py-3 px-2 md:px-4 whitespace-nowrap text-center">사업구분</th>
@@ -3383,8 +3422,9 @@ async function fetchChungyangInfo(keyword, address = "") {
                     return;
                 }
 
-                let targetGu = document.getElementById('renewalGu') ? document.getElementById('renewalGu').value.trim().replace(/구$/, '') : "";
-                let targetName = document.getElementById('renewalName') ? document.getElementById('renewalName').value.trim().toLowerCase() : "";
+                // 🌟 매개변수(자동 연동) 값이 있으면 우선 사용하고, 없으면 수동 입력창 값 사용
+                let targetGu = autoGu || (document.getElementById('renewalGu') ? document.getElementById('renewalGu').value.trim().replace(/구$/, '') : "");
+                let targetName = autoKeyword || (document.getElementById('renewalName') ? document.getElementById('renewalName').value.trim().toLowerCase() : "");
 
                 let filteredRows = rows;
                 
@@ -3398,14 +3438,26 @@ async function fetchChungyangInfo(keyword, address = "") {
                         }
                         if (targetName) {
                             let name = String(r.ZONE_NM || r.BIZ_NM || r.BIZ_NAME || "").toLowerCase();
-                            nameMatch = name.includes(targetName);
+                            let addr = String(r.JIBUN_ADDR || r.ROAD_ADDR || "").toLowerCase();
+                            
+                            // 🌟 핵심: 동(Dong) 단위 싹쓸이 모드일 때는 주소(addr)에 동 이름이 들어가는지까지 검사!
+                            if (isDongSearch) {
+                                nameMatch = name.includes(targetName) || addr.includes(targetName);
+                            } else {
+                                nameMatch = name.includes(targetName);
+                            }
                         }
                         return guMatch && nameMatch;
                     });
                 }
 
                 if (filteredRows.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-slate-500 font-medium">검색 조건에 맞는 정비사업 내역이 없습니다.</td></tr>`;
+                    // 🌟 동 싹쓸이 검색 실패 시 안내 메시지 차별화
+                    if (isDongSearch) {
+                        tbody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-slate-500 font-medium">[${targetGu} ${targetName}] 일대에서 진행 중인 서울시 정비사업 내역이 없습니다.</td></tr>`;
+                    } else {
+                        tbody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-slate-500 font-medium">검색 조건에 맞는 정비사업 내역이 없습니다.</td></tr>`;
+                    }
                     return;
                 }
 
