@@ -1340,10 +1340,8 @@
                 globalCurrentPnu = pnu;
                 globalComplexName = "";
 
-                // 대장 조회 완료 후 정비사업 자동 연동
-                fetchDaejangInfo(globalCurrentPnu).then(() => {
-                    autoSyncRenewal(address, globalLandUseTags);
-                });
+                // 대장 조회 출발 (정비사업 연동은 토지이용계획 직후 즉시 실행됨)
+                fetchDaejangInfo(globalCurrentPnu);
 
                 // 실거래가 병렬 출발
                 fetchComplexTransactions();
@@ -1759,6 +1757,10 @@
                 console.error("❌ 토지이용계획 에러:", e); 
                 document.getElementById('land-use-info').innerHTML = `<div class="p-4 bg-amber-50 rounded-xl text-center text-amber-700 text-xs font-bold border border-amber-200">데이터가 없거나 응답이 지연되었습니다.</div>`;
             }
+
+            // 🌟 [핵심 개선] 건축물대장을 기다리지 않고, 토지이용계획 스캔 직후 정비사업 즉시 자동 연동!
+            const currentAddress = document.getElementById('address') ? document.getElementById('address').value : "";
+            autoSyncRenewal(currentAddress, globalLandUseTags);
 
             // [3] 건축물대장
             try {
