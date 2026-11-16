@@ -3366,10 +3366,17 @@ async function fetchChungyangInfo(keyword, address = "") {
                     if (t.includes('정비구역') || t.includes('촉진지구') || t.includes('재개발') || t.includes('재건축')) {
                         // 예: "신림1재정비촉진구역" -> "신림1", "방배5구역주택재건축" -> "방배5"
                         let zoneMatch = t.match(/([가-힣a-zA-Z0-9]+)(?:구역)?(?:주택)?(?:아파트)?(?:재정비|촉진|재개발|재건축)/);
-                        if (zoneMatch) {
-                            specificZoneName = zoneMatch[1];
-                            break;
+                    if (zoneMatch) {
+                        let extracted = zoneMatch[1].trim();
+                        // 🚨 [추가] 추출된 단어가 단순 일반명사이거나 1글자면 스파이 실패로 간주하고 무효화
+                        const blacklist = ['재정비', '재건축', '재개발', '정비', '도시', '주택', '아파트', '촉진', '지구', '구역'];
+                        if (blacklist.includes(extracted) || extracted.length < 2) {
+                            continue; // 엉뚱한 단어면 무시하고 다음 태그 검사로 넘어감
                         }
+                        
+                        specificZoneName = extracted;
+                        break;
+                    }
                     }
                 }
             }
