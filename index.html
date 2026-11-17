@@ -304,12 +304,12 @@
                 
                 <!-- 조회 기간/조건 변경 아코디언 박스 -->
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    <button type="button" onclick="toggleSigaSearchFilter()" class="w-full px-5 py-3.5 flex justify-between items-center bg-slate-50 hover:bg-slate-100 transition-colors focus:outline-none">
-                        <div class="flex items-center space-x-2">
-                            <span class="w-2 h-2 bg-indigo-600 rounded-full"></span>
-                            <span class="text-xs md:text-sm font-extrabold text-slate-700">조회 기간 설정 및 분양권/단지명 직접 검색</span>
+                    <button type="button" onclick="toggleSigaSearchFilter()" class="w-full px-3.5 md:px-5 py-3.5 flex justify-between items-center bg-slate-50 hover:bg-slate-100 transition-colors focus:outline-none gap-2">
+                        <div class="flex items-center space-x-1.5 min-w-0">
+                            <span class="w-2 h-2 bg-indigo-600 rounded-full shrink-0"></span>
+                            <span class="text-[11px] sm:text-xs md:text-sm font-extrabold text-slate-700 tracking-tighter md:tracking-normal whitespace-nowrap truncate">조회 기간 설정 및 분양권/단지명 직접 검색</span>
                         </div>
-                        <span id="siga-filter-toggle-btn" class="text-xs font-bold text-indigo-600 bg-white px-2.5 py-1 rounded border border-indigo-200 shadow-sm">검색조건 열기 ▼</span>
+                        <span id="siga-filter-toggle-btn" class="shrink-0 whitespace-nowrap text-[11px] md:text-xs font-bold text-indigo-600 bg-white px-2.5 py-1 rounded border border-indigo-200 shadow-sm">검색조건 열기 ▼</span>
                     </button>
                     
                     <div id="siga-filter-panel" class="hidden p-5 border-t border-slate-200 space-y-4 bg-white">
@@ -372,8 +372,8 @@
                     </div>
                 </div>
 
-                <!-- 상세 거래 내역 테이블 (단지제원 및 청약홈 카드가 이 상단에 꽂힘) -->
-                <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200 space-y-4">
+                <!-- 상세 거래 내역 테이블 (모바일 패딩 p-3.5로 축소하여 표 공간 확보) -->
+                <div class="bg-white p-3.5 md:p-6 rounded-2xl shadow-md border border-slate-200 space-y-4">
                     <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
                         <div class="flex items-center gap-3">
                             <h3 class="text-base font-extrabold text-slate-800">상세 거래 내역</h3>
@@ -396,13 +396,13 @@
                         <p class="text-[10px] md:text-xs text-slate-500 font-medium">※ 주체: 개(개인), 법(법인), 공(공공기관), 기(기타) <span class="hidden md:inline">| 등기 완료 시 동 표출</span></p>
                     </div>
                     <div class="overflow-x-auto max-h-[600px] border border-slate-100 rounded-lg">
-                        <table class="w-full text-left border-collapse relative">
+                        <table class="w-full text-left border-collapse relative table-fixed md:table-auto">
                             <thead class="sticky top-0 bg-white border-b-2 border-slate-600 shadow-sm z-10">
-                                <tr class="text-slate-600 text-[10px] md:text-[11px] font-black uppercase tracking-wider">
-                                    <th class="py-2.5 px-2 md:px-4 text-left whitespace-nowrap">계약/등기</th>
-                                    <th class="py-2.5 px-2 md:px-4 text-center whitespace-nowrap">물건정보(동·층·면적)</th>
-                                    <th class="py-2.5 px-2 md:px-4 text-center whitespace-nowrap">유형/주체 ⓘ</th>
-                                    <th class="py-2.5 px-2 md:px-4 text-right whitespace-nowrap">거래금액(만원)</th>
+                                <tr class="text-slate-600 text-[10px] md:text-[11px] font-black uppercase tracking-tighter md:tracking-wider">
+                                    <th class="w-[21%] md:w-auto py-2.5 px-1 md:px-4 text-left whitespace-nowrap">계약/등기</th>
+                                    <th class="w-[36%] md:w-auto py-2.5 px-1 md:px-4 text-center whitespace-nowrap">물건정보<span class="hidden sm:inline">(동·층·면적)</span></th>
+                                    <th class="w-[18%] md:w-auto py-2.5 px-1 md:px-4 text-center whitespace-nowrap">유형/주체</th>
+                                    <th class="w-[25%] md:w-auto py-2.5 px-1 md:px-4 text-right whitespace-nowrap">거래금액<span class="hidden sm:inline">(만원)</span></th>
                                 </tr>
                             </thead>
                             <tbody id="siga-table-body" class="text-xs divide-y divide-slate-100 text-slate-700">
@@ -2578,18 +2578,17 @@
                             </div>`;
                         }
 
-                        let badgeTitle = isPresaleSwitchOn ? "현재 분양정보" : "과거 최초 분양(청약) 당시 기록";
                         let bgStyle = isPresaleSwitchOn ? "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200" : "bg-indigo-900/10 border-indigo-500/50";
                         let supplyScale = cyResult.TOT_SUPLY_HSHLDCO ? Number(cyResult.TOT_SUPLY_HSHLDCO).toLocaleString() : '-';
 
                         cardArea.innerHTML += `
                             <div class="mb-6 p-4 ${bgStyle} border rounded-xl shadow-sm">
-                                <div class="flex items-center justify-between mb-2">
-                                    <div class="flex items-center gap-2">
-                                        <span class="bg-indigo-500 text-white text-xs font-bold px-2 py-1 rounded">💡 [청약홈] ${badgeTitle}</span>
-                                        <h3 class="font-extrabold text-indigo-900 text-lg">${cyResult.HOUSE_NM || searchKeyword}</h3>
+                                <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <span class="shrink-0 whitespace-nowrap bg-indigo-500 text-white text-[11px] md:text-xs font-bold px-2 py-1 rounded">💡 분양정보</span>
+                                        <h3 class="font-extrabold text-indigo-900 text-base md:text-lg truncate">${cyResult.HOUSE_NM || searchKeyword}</h3>
                                     </div>
-                                    <span class="bg-white border border-indigo-200 text-indigo-800 text-xs px-2 py-1 rounded font-bold shadow-sm">공급규모: ${supplyScale}세대</span>
+                                    <span class="shrink-0 whitespace-nowrap bg-white border border-indigo-200 text-indigo-800 text-[11px] md:text-xs px-2 py-1 rounded font-bold shadow-sm">공급규모: ${supplyScale}세대</span>
                                 </div>
                                 <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm mb-4">
                                     <div class="bg-white p-2 rounded border border-indigo-100"><span class="text-slate-500 block text-xs">시행사</span><span class="font-bold truncate block" title="${cyResult.BSNS_MBY_NM || '-'}">${cyResult.BSNS_MBY_NM || '-'}</span></div>
@@ -3021,19 +3020,23 @@
 
                     tbody.innerHTML += `
                         <tr class="hover:bg-slate-50 transition-colors border-b border-slate-200 last:border-0">
-                            <td class="py-3 px-2 md:px-4 font-bold text-slate-800 text-[11px] md:text-xs whitespace-nowrap align-middle">
+                            <!-- 1열: 계약/등기 -->
+                            <td class="py-2.5 px-1 md:px-4 font-bold text-slate-800 text-[11px] md:text-xs whitespace-nowrap align-middle tracking-tighter md:tracking-normal">
                                 ${shortDate}${rgstStr}
                             </td>
-                            <td class="py-3 px-2 md:px-4 text-center align-middle max-w-[130px] md:max-w-[250px]">
+                            <!-- 2열: 위치 및 면적 -->
+                            <td class="py-2.5 px-1 md:px-4 text-center align-middle">
                                 <span class="font-extrabold text-slate-700 text-[11px] md:text-xs block whitespace-normal break-keep leading-tight">${mainInfo}</span>
-                                <span class="text-[10px] md:text-[11px] text-slate-500 font-mono mt-1 block">${shortArea}㎡</span>
+                                <span class="text-[10px] md:text-[11px] text-slate-500 font-mono mt-0.5 block">${shortArea}㎡</span>
                             </td>
-                            <td class="py-3 px-2 md:px-4 text-center align-middle">
+                            <!-- 3열: 유형/주체 및 뱃지 -->
+                            <td class="py-2.5 px-1 md:px-4 text-center align-middle">
                                 <span class="font-extrabold text-[11px] md:text-xs ${typeClass} block whitespace-nowrap">${row.type}</span>
                                 ${actorStr}
-                                <div class="mt-1 flex flex-wrap justify-center gap-y-1">${extraBadge}</div>
+                                <div class="mt-1 flex flex-wrap justify-center gap-y-0.5">${extraBadge}</div>
                             </td>
-                            <td class="py-3 px-2 md:px-4 font-extrabold text-right text-[13px] md:text-[15px] whitespace-nowrap align-middle">
+                            <!-- 4열: 거래금액 -->
+                            <td class="py-2.5 px-1 md:px-4 font-extrabold text-right text-[12px] sm:text-[13px] md:text-[15px] whitespace-nowrap align-middle tracking-tight md:tracking-normal">
                                 <span class="${amountClass} block">${amountText}</span>${monthlyText}
                             </td>
                         </tr>`;
@@ -4179,9 +4182,9 @@
             }
 
             historyBox.innerHTML = `
-                <h3 class="text-sm font-extrabold text-indigo-900 mb-3 flex items-center">
-                    <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs mr-2">타임라인</span>
-                    [${hTitle}] 지정/해제 이력
+                <h3 class="text-[13px] sm:text-sm font-extrabold text-indigo-900 mb-3 flex items-center tracking-tighter md:tracking-normal whitespace-nowrap overflow-hidden">
+                    <span class="shrink-0 whitespace-nowrap bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-[11px] md:text-xs mr-1.5 md:mr-2">타임라인</span>
+                    <span class="truncate">[${hTitle}] 지정/해제 이력</span>
                 </h3>
                 <div>${hList}</div>
             `;
