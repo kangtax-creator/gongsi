@@ -97,68 +97,59 @@
                 <div class="space-y-4">
                     <!-- STEP 1. 부동산 유형 선택 -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-2">STEP 1. 물건 유형 선택</label>
+                        <label class="block text-[13px] font-black text-slate-900 mb-2.5 flex items-center">
+                            <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md text-xs mr-1.5 font-extrabold">STEP 1</span> 물건 유형 선택
+                        </label>
                         <div class="flex flex-wrap gap-1.5">
                             <label class="cursor-pointer flex-1 text-center min-w-[70px]">
                                 <input type="radio" name="propType" value="공동주택" checked class="peer sr-only">
-                                <div class="px-2 py-2 rounded-lg border border-slate-200 text-slate-600 font-bold peer-checked:bg-indigo-600 peer-checked:border-indigo-600 peer-checked:text-white transition-all text-xs shadow-sm">공동주택</div>
+                                <div class="px-2 py-2 rounded-lg border border-slate-300 text-slate-700 font-bold peer-checked:bg-indigo-600 peer-checked:border-indigo-600 peer-checked:text-white transition-all text-xs shadow-sm">공동주택</div>
                             </label>
                             <label class="cursor-pointer flex-1 text-center min-w-[70px]">
                                 <input type="radio" name="propType" value="단독주택" class="peer sr-only">
-                                <div class="px-2 py-2 rounded-lg border border-slate-200 text-slate-600 font-bold peer-checked:bg-indigo-600 peer-checked:border-indigo-600 peer-checked:text-white transition-all text-xs shadow-sm">단독주택</div>
+                                <div class="px-2 py-2 rounded-lg border border-slate-300 text-slate-700 font-bold peer-checked:bg-indigo-600 peer-checked:border-indigo-600 peer-checked:text-white transition-all text-xs shadow-sm">단독주택</div>
                             </label>
                             <label class="cursor-pointer flex-1 text-center min-w-[80px]">
                                 <input type="radio" name="propType" value="상가/건물" class="peer sr-only">
-                                <div class="px-2 py-2 rounded-lg border border-slate-200 text-slate-600 font-bold peer-checked:bg-indigo-600 peer-checked:border-indigo-600 peer-checked:text-white transition-all text-xs shadow-sm">상가/빌딩</div>
+                                <div class="px-2 py-2 rounded-lg border border-slate-300 text-slate-700 font-bold peer-checked:bg-indigo-600 peer-checked:border-indigo-600 peer-checked:text-white transition-all text-xs shadow-sm">상가/빌딩</div>
                             </label>
                             <label class="cursor-pointer flex-1 text-center min-w-[65px]">
                                 <input type="radio" name="propType" value="토지" class="peer sr-only">
-                                <div class="px-2 py-2 rounded-lg border border-slate-200 text-slate-600 font-bold peer-checked:bg-indigo-600 peer-checked:border-indigo-600 peer-checked:text-white transition-all text-xs shadow-sm">토지</div>
+                                <div class="px-2 py-2 rounded-lg border border-slate-300 text-slate-700 font-bold peer-checked:bg-indigo-600 peer-checked:border-indigo-600 peer-checked:text-white transition-all text-xs shadow-sm">토지</div>
                             </label>
                             <label class="cursor-pointer flex-1 text-center min-w-[75px]">
                                 <input type="radio" name="propType" value="공장/창고" class="peer sr-only">
-                                <div class="px-2 py-2 rounded-lg border border-slate-200 text-slate-600 font-bold peer-checked:bg-indigo-600 peer-checked:border-indigo-600 peer-checked:text-white transition-all text-xs shadow-sm">공장/창고</div>
+                                <div class="px-2 py-2 rounded-lg border border-slate-300 text-slate-700 font-bold peer-checked:bg-indigo-600 peer-checked:border-indigo-600 peer-checked:text-white transition-all text-xs shadow-sm">공장/창고</div>
                             </label>
                         </div>
                     </div>
 
                     <!-- STEP 2. 주소 및 단지명 통합 입력 영역 -->
-                    <div class="pt-2 border-t border-slate-100 space-y-2.5">
-                        <label class="block text-xs font-bold text-slate-500">STEP 2. 주소 또는 단지명 입력</label>
+                    <div class="pt-3 border-t border-slate-200 space-y-2.5">
+                        <label class="block text-[13px] font-black text-slate-900 flex items-center">
+                            <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md text-xs mr-1.5 font-extrabold">STEP 2</span> 주소 또는 단지명 입력
+                        </label>
                         
-                        <!-- 단지명 빠른 자동완성 (공동주택 선택 시 노출) -->
+                        <!-- ① 단지명 빠른 자동완성 (공동주택 선택 시 노출) -->
                         <div class="relative" id="complex-search-container">
-                            <input type="text" id="keywordAutoSearch" placeholder="🏢 아파트/단지명 빠른 검색 (예: 은마, 레벤투스)" class="w-full px-3.5 py-2.5 bg-indigo-50/70 border border-indigo-200 rounded-xl focus:outline-none focus:border-indigo-600 focus:bg-white transition-colors font-bold text-xs md:text-sm text-slate-800 placeholder-indigo-400">
+                            <input type="text" id="keywordAutoSearch" placeholder="🏢 아파트/단지명 빠른 검색 (예: 은마, 레벤투스)" class="w-full px-3.5 py-2.5 bg-indigo-50 border-2 border-indigo-200 rounded-xl focus:outline-none focus:border-indigo-600 focus:bg-white transition-colors font-extrabold text-xs md:text-sm text-slate-800 placeholder-indigo-500 shadow-sm">
                             <ul id="keywordAutoResults" class="absolute z-50 w-full bg-white border border-slate-300 rounded-xl shadow-2xl mt-1 max-h-60 overflow-y-auto hidden divide-y divide-slate-100"></ul>
                         </div>
 
-                        <!-- 메인 주소 표시/직접 타이핑 입력창 -->
-                        <div>
-                            <input type="text" id="address" placeholder="도로명/지번 주소 직접 입력 또는 아래 버튼 검색" onkeypress="if(event.key==='Enter') document.getElementById('searchBtn').click();" oninput="updateActiveAddressBanner(this.value)" class="w-full bg-white border-2 border-slate-300 rounded-xl px-3.5 py-2.5 text-xs md:text-sm font-extrabold text-slate-800 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all shadow-sm">
-                        </div>
-
-                        <!-- 🌟 보조 검색 수단 버튼 2개 나란히 배치 (우편번호 / 지도) -->
+                        <!-- ② 우편번호 검색 / 지도에서 선택 버튼 (위로 이동 및 시인성 강화) -->
                         <div class="grid grid-cols-2 gap-2">
-                            <button type="button" onclick="execDaumPostcode()" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-2.5 rounded-xl text-xs font-bold transition-transform active:scale-95 shadow-sm flex items-center justify-center">
+                            <button type="button" onclick="execDaumPostcode()" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-2.5 rounded-xl text-xs font-extrabold transition-transform active:scale-95 shadow-sm flex items-center justify-center">
                                 <svg class="w-4 h-4 mr-1.5 text-indigo-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                                 우편번호 검색
                             </button>
-                            <button type="button" onclick="toggleMap()" id="map-toggle-btn" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2.5 rounded-xl text-xs font-bold border border-slate-300 transition-colors flex justify-center items-center shadow-sm">
-                                <svg class="w-4 h-4 mr-1.5 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                            <button type="button" onclick="toggleMap()" id="map-toggle-btn" class="bg-white hover:bg-slate-100 text-slate-800 px-3 py-2.5 rounded-xl text-xs font-extrabold border-2 border-slate-300 transition-colors flex justify-center items-center shadow-sm">
+                                <svg class="w-4 h-4 mr-1.5 text-indigo-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
                                 지도에서 선택 ▼
                             </button>
                         </div>
 
-                        <!-- 맹지 팁 박스 -->
-                        <div id="land-tip-box" class="bg-orange-50 border border-orange-200 p-3 rounded-xl shadow-sm hidden">
-                            <p class="text-[11px] text-orange-800 leading-relaxed">
-                                <span class="font-black text-orange-600">💡 맹지/지방 토지 검색 팁:</span><br>
-                                우편번호 검색에서 정확한 지번이 안 나오면, 위 주소창에 <b>지번을 직접 타이핑</b>하거나 <b>[지도에서 선택]</b>을 눌러 클릭해 주세요!
-                            </p>
-                        </div>
-
-                        <!-- 인라인 지도 컨테이너 -->
-                        <div id="map-container" class="hidden pt-2">
+                        <!-- 인라인 지도 컨테이너 (지도 버튼 바로 아래에서 열리도록 배치) -->
+                        <div id="map-container" class="hidden pt-1">
                             <div class="flex justify-between items-center bg-amber-50 p-2 mb-2 rounded-lg border border-amber-200">
                                 <span class="text-[11px] text-amber-800 font-bold">💡 지도 클릭 시 주소 자동 입력</span>
                                 <button type="button" onclick="openMapModal()" class="flex items-center text-[11px] bg-white border border-amber-300 text-amber-700 px-2 py-1 rounded hover:bg-amber-100 transition-colors shadow-sm font-bold active:scale-95">
@@ -173,14 +164,31 @@
                                 <div id="map" style="width: 100%; height: 280px; border-radius: 0.75rem; border: 1px solid #cbd5e1;"></div>
                             </div>
                         </div>
+
+                        <!-- ③ 주소 표시 및 수동 직접 타이핑 입력창 (아래로 이동) -->
+                        <div>
+                            <input type="text" id="address" placeholder="검색이 안될 경우 지번 직접 입력 (또는 위 버튼 검색)" onkeypress="if(event.key==='Enter') document.getElementById('searchBtn').click();" oninput="updateActiveAddressBanner(this.value)" class="w-full bg-slate-50 border-2 border-slate-300 rounded-xl px-3.5 py-2.5 text-xs md:text-sm font-extrabold text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all shadow-inner">
+                        </div>
+
+                        <!-- 맹지 팁 박스 -->
+                        <div id="land-tip-box" class="bg-orange-50 border border-orange-200 p-3 rounded-xl shadow-sm hidden">
+                            <p class="text-[11px] text-orange-800 leading-relaxed">
+                                <span class="font-black text-orange-600">💡 맹지/지방 토지 검색 팁:</span><br>
+                                우편번호 검색에서 정확한 지번이 안 나오면, 위 입력칸에 <b>지번을 직접 타이핑</b>하거나 <b>[지도에서 선택]</b>을 눌러 클릭해 주세요!
+                            </p>
+                        </div>
                     </div>
                     
-                    <!-- STEP 3. 동/호수 입력 (공동주택 선택 시 노출) -->
-                    <div id="dong-ho-container" class="pt-2 border-t border-slate-100">
-                        <label class="block text-xs font-bold text-slate-500 mb-2">STEP 3. 동·호수 입력 <span class="font-normal text-slate-400">(선택사항 / 3번 탭에서도 선택 가능)</span></label>
-                        <div class="grid grid-cols-2 gap-2.5">
-                            <input type="text" id="dong" placeholder="동 (예: 101)" onkeypress="if(event.key==='Enter') document.getElementById('searchBtn').click();" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs md:text-sm font-bold focus:bg-white focus:border-indigo-500 focus:outline-none transition-colors">
-                            <input type="text" id="ho" placeholder="호 (예: 502)" onkeypress="if(event.key==='Enter') document.getElementById('searchBtn').click();" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs md:text-sm font-bold focus:bg-white focus:border-indigo-500 focus:outline-none transition-colors">
+                    <!-- STEP 3. 동/호수 입력 (테두리 및 배경 박스로 눈에 확 띄게 강조) -->
+                    <div id="dong-ho-container" class="pt-3 border-t border-slate-200">
+                        <label class="block text-[13px] font-black text-slate-900 mb-2 flex items-center flex-wrap gap-y-1">
+                            <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md text-xs mr-1.5 font-extrabold">STEP 3</span> 
+                            <span>동·호수 입력</span>
+                            <span class="text-[11px] font-bold text-indigo-600 ml-1.5">(선택 / 3번 탭에서도 선택 가능)</span>
+                        </label>
+                        <div class="grid grid-cols-2 gap-2.5 bg-indigo-50/40 p-2.5 rounded-xl border border-indigo-100">
+                            <input type="text" id="dong" placeholder="동 (예: 101)" onkeypress="if(event.key==='Enter') document.getElementById('searchBtn').click();" class="w-full bg-white border-2 border-indigo-200 rounded-lg px-3 py-2 text-xs md:text-sm font-extrabold text-slate-800 placeholder-slate-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition-all shadow-sm">
+                            <input type="text" id="ho" placeholder="호 (예: 502)" onkeypress="if(event.key==='Enter') document.getElementById('searchBtn').click();" class="w-full bg-white border-2 border-indigo-200 rounded-lg px-3 py-2 text-xs md:text-sm font-extrabold text-slate-800 placeholder-slate-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition-all shadow-sm">
                         </div>
                     </div>
 
@@ -3825,21 +3833,21 @@
                             if(complexContainer) complexContainer.classList.remove('hidden');
                             if(dongHoContainer) dongHoContainer.classList.remove('hidden');
                             if(landTipBox) landTipBox.classList.add('hidden');
-                            if(addressInput) addressInput.placeholder = "도로명/지번 주소 직접 입력 또는 아래 버튼 검색";
+                            if(addressInput) addressInput.placeholder = "검색이 안될 경우 지번 직접 입력 (또는 위 버튼 검색)";
                             if (sigaSelect) sigaSelect.value = 'APT';
                         } 
                         else if (val === '토지' || val === '공장/창고') {
                             if(complexContainer) complexContainer.classList.add('hidden');
                             if(dongHoContainer) dongHoContainer.classList.add('hidden');
                             if(landTipBox) landTipBox.classList.remove('hidden');
-                            if(addressInput) addressInput.placeholder = "지번 주소를 정확히 입력하세요 (예: 무이리 123)";
+                            if(addressInput) addressInput.placeholder = "검색이 안될 경우 지번 직접 입력 (예: 무이리 123)";
                             if (sigaSelect) sigaSelect.value = val === '토지' ? 'LAND' : 'INDU';
                         } 
                         else {
                             if(complexContainer) complexContainer.classList.add('hidden');
                             if(dongHoContainer) dongHoContainer.classList.add('hidden');
                             if(landTipBox) landTipBox.classList.add('hidden');
-                            if(addressInput) addressInput.placeholder = "도로명 또는 지번 주소를 입력하세요";
+                            if(addressInput) addressInput.placeholder = "검색이 안될 경우 도로명/지번 직접 입력";
                             if (sigaSelect) sigaSelect.value = val === '단독주택' ? 'RH' : 'NRG';
                         }
 
